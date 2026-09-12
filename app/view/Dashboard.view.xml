@@ -98,7 +98,7 @@
                     titleStyle="H3"
                     class="flp-section-title" />
                 <HBox class="flp-tiles-grid">
-                    <GenericTile
+                    <!-- <GenericTile
                         header="Gate Entries &amp; Exits"
                         subheader="SAP Fiori Elements Floorplan"
                         sizeBehavior="Responsive"
@@ -111,7 +111,7 @@
                                 </content>
                             </TileContent>
                         </tileContent>
-                    </GenericTile>
+                    </GenericTile> -->
 
                     <GenericTile
                         header="Main Gate Operations"

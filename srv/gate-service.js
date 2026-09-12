@@ -40,9 +40,18 @@ export default cds.service.impl(async function () {
 
         // Vehicle Reg No is mandatory
         if (!req.data.vehicleRegNo) {
-            return req.error(400, 'Vehicle Registration Number is mandatory.', 'in/vehicleRegNo');
+            return req.reject(400, 'Vehicle Registration Number is mandatory.', 'in/vehicleRegNo');
         }
         req.data.vehicleRegNo = req.data.vehicleRegNo.trim().toUpperCase();
+
+        const vehicleRegex = /^[A-Z]{2}-\d{2}(?:-[A-Z]{1,3})?-\d{4}$/;
+        if (!vehicleRegex.test(req.data.vehicleRegNo)) {
+            return req.reject(
+                400,
+                `Invalid Vehicle Registration Number format '${req.data.vehicleRegNo}'. Format must be like AS-02-1234 or AS-02-AB-1234 (e.g. MH-04-JK-1234).`,
+                'in/vehicleRegNo'
+            );
+        }
 
         // Purpose of Visit is mandatory
         if (!req.data.purpose) {
@@ -120,9 +129,17 @@ export default cds.service.impl(async function () {
             return req.error(400, `Cannot modify transaction in '${existing.status}' status. Only Admin can make corrections.`);
         }
 
-        // If vehicle registration is updated, verify conflict
+        // If vehicle registration is updated, verify format and conflict
         if (req.data.vehicleRegNo && req.data.vehicleRegNo.toUpperCase() !== existing.vehicleRegNo) {
             const newReg = req.data.vehicleRegNo.trim().toUpperCase();
+            const vehicleRegex = /^[A-Z]{2}-\d{2}(?:-[A-Z]{1,3})?-\d{4}$/;
+            if (!vehicleRegex.test(newReg)) {
+                return req.reject(
+                    400,
+                    `Invalid Vehicle Registration Number format '${newReg}'. Format must be like AS-02-1234 or AS-02-AB-1234 (e.g. MH-04-JK-1234).`,
+                    'in/vehicleRegNo'
+                );
+            }
             req.data.vehicleRegNo = newReg;
             const conflict = await SELECT.one.from(GateTransactions).where({
                 vehicleRegNo: newReg,
@@ -336,16 +353,25 @@ export default cds.service.impl(async function () {
 
         // Validation
         if (!vehicleRegNo) {
-            return req.error(
+            return req.reject(
                 400,
                 'Vehicle Registration Number is mandatory.'
+            );
+        }
+
+        const normalizedRegNo = vehicleRegNo.trim().toUpperCase();
+        const vehicleRegex = /^[A-Z]{2}-\d{2}(?:-[A-Z]{1,3})?-\d{4}$/;
+        if (!vehicleRegex.test(normalizedRegNo)) {
+            return req.reject(
+                400,
+                `Invalid Vehicle Registration Number format '${vehicleRegNo}'. Format must be like AS-02-1234 or AS-02-AB-1234 (e.g. MH-04-JK-1234).`
             );
         }
 
         const effectiveVehicleType = vehicleType || 'TRUCK';
 
         if (!purpose) {
-            return req.error(
+            return req.reject(
                 400,
                 'Purpose of Visit is mandatory.'
             );
@@ -360,7 +386,7 @@ export default cds.service.impl(async function () {
         const existingTransaction = await SELECT.one
             .from(GateTransactions)
             .where({
-                vehicleRegNo: vehicleRegNo,
+                vehicleRegNo: normalizedRegNo,
                 status: {
                     in: [
                         'GATE_IN',
@@ -377,9 +403,9 @@ export default cds.service.impl(async function () {
 
         if (existingTransaction) {
 
-            return req.error(
+            return req.reject(
                 400,
-                `Vehicle ${vehicleRegNo} already has an active Gate IN transaction.`
+                `Vehicle ${normalizedRegNo} already has an active Gate IN transaction.`
             );
         }
 
@@ -401,7 +427,7 @@ export default cds.service.impl(async function () {
 
             gateInNumber: gateInNumber,
 
-            vehicleRegNo: vehicleRegNo,
+            vehicleRegNo: normalizedRegNo,
 
             vehicleType: effectiveVehicleType,
 
@@ -1088,11 +1114,19 @@ export default cds.service.impl(async function () {
             );
 
 
-        validateStage(
-            transaction,
-            'SECURITY_OUT',
-            req
-        );
+        if (transaction.status === 'COMPLETED') {
+            return req.reject(
+                400,
+                `Vehicle ${gateInNumber} has already completed Gate OUT (Status: COMPLETED).`
+            );
+        }
+
+        if (transaction.status === 'CANCELLED') {
+            return req.reject(
+                400,
+                `Gate Entry ${gateInNumber} is cancelled and cannot be gated OUT.`
+            );
+        }
 
 
         const exitDateTime =
@@ -1133,13 +1167,13 @@ export default cds.service.impl(async function () {
                 'MAIN_GATE_OUT',
 
             oldStatus:
-                'SECURITY_OUT',
+                transaction.status,
 
             newStatus:
                 'COMPLETED',
 
             oldStage:
-                'SECURITY_GATE_OUT',
+                transaction.currentStage,
 
             newStage:
                 'COMPLETED',
@@ -1207,7 +1241,7 @@ export default cds.service.impl(async function () {
 
         if (!gateInNumber) {
 
-            return req.error(
+            return req.reject(
                 400,
                 'Gate IN Number is mandatory.'
             );
@@ -1225,7 +1259,7 @@ export default cds.service.impl(async function () {
 
         if (!transaction) {
 
-            return req.error(
+            return req.reject(
                 404,
                 `Gate IN Number ${gateInNumber} does not exist.`
             );
@@ -1247,7 +1281,7 @@ export default cds.service.impl(async function () {
             expectedStatus
         ) {
 
-            return req.error(
+            return req.reject(
                 400,
                 `Invalid process stage. Expected ${expectedStatus}, current status is ${transaction.status}.`
             );

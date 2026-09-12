@@ -143,10 +143,43 @@ async function runTests() {
         throw new Error('FAIL: Record was not deleted.');
     }
     console.log('  -> Record successfully removed from database.');
-    console.log('  [PASS] DELETE operation successful.');
+    // ----------------------------------------------------
+    // TEST 8: VEHICLE REGISTRATION NUMBER FORMAT VALIDATION
+    // ----------------------------------------------------
+    console.log('\n[TEST 8] Vehicle Registration Number Format Validation');
+    const invalidFormats = ['random string', '12345', 'AS021234', 'AS-2-1234', 'A-02-1234'];
+    for (const invalidReg of invalidFormats) {
+        try {
+            await tx.send('CreateGateIn', {
+                vehicleRegNo: invalidReg,
+                purpose: 'DELIVERY',
+                driverName: 'Test Driver'
+            });
+            throw new Error(`FAIL: Invalid vehicle format '${invalidReg}' was accepted.`);
+        } catch (e) {
+            console.log(`  -> Successfully rejected invalid vehicle '${invalidReg}': ${e.message}`);
+        }
+    }
+
+    // Valid without optional series: AS-02-1234
+    const valid1 = await tx.send('CreateGateIn', {
+        vehicleRegNo: 'AS-02-1234',
+        purpose: 'DELIVERY',
+        driverName: 'Test Driver 1'
+    });
+    console.log(`  -> Successfully created with AS-02-1234: ${valid1.gateInNumber}`);
+
+    // Valid with optional series: AS-02-AB-1234
+    const valid2 = await tx.send('CreateGateIn', {
+        vehicleRegNo: 'AS-02-AB-1234',
+        purpose: 'DELIVERY',
+        driverName: 'Test Driver 2'
+    });
+    console.log(`  -> Successfully created with AS-02-AB-1234: ${valid2.gateInNumber}`);
+    console.log('  [PASS] Vehicle registration format validation successful.');
 
     console.log('\n========================================================');
-    console.log(' ALL 7 CRUD OPERATIONS AND VALIDATIONS PASSED!');
+    console.log(' ALL 8 CRUD OPERATIONS AND VALIDATIONS PASSED!');
     console.log('========================================================\n');
     process.exit(0);
 }

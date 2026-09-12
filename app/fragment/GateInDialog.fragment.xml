@@ -18,7 +18,9 @@
                     <Label text="Vehicle Registration No" required="true" />
                     <Input
                         id="inputVehicleRegNo"
-                        placeholder="e.g. MH-04-JK-9999"
+                        placeholder="e.g. AS-02-1234 or AS-02-AB-1234"
+                        liveChange=".onVehicleRegLiveChange"
+                        change=".onVehicleRegChange"
                         required="true" />
 
                     <Label text="Driver Name" required="true" />

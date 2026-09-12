@@ -15,6 +15,11 @@
                 height="24px"
                 press=".onHomePressed"
                 class="sapUiTinyMarginBegin sapUiTinyMarginEnd" />
+                <Image
+                src="/images/apl-logo.jpg"
+                height="24px"
+                press=".onHomePressed"
+                class="sapUiTinyMarginBegin sapUiTinyMarginEnd" />
             <Title text="APL Gate In- Gate Out" level="H2" class="sapUiTinyMarginEnd" />
             <Text text="| SAP Fiori Launchpad" class="sapUiTinyMarginEnd" />
             <ToolbarSpacer />
@@ -46,7 +51,7 @@
 
             <ToolbarSeparator />
 
-            <Label text="Persona:" design="Bold" class="sapUiTinyMarginBegin sapUiTinyMarginEnd" />
+            <Label text="Select Role:" design="Bold" class="sapUiTinyMarginBegin sapUiTinyMarginEnd" />
             <Select
                 id="personaSelect"
                 selectedKey="{/activeUser}"
@@ -58,8 +63,8 @@
                     <core:Item key="security_user" text="🛡️ security_user (SecurityGateUser)" />
                     <core:Item key="weighbridge_user" text="⚖️ weighbridge_user (WeighbridgeUser)" />
                     <core:Item key="factory_user" text="🏭 factory_user (FactoryGateUser)" />
-                    <core:Item key="admin_user" text="👔 admin_user (Admin)" />
-                    <core:Item key="auditor_user" text="📋 auditor_user (Auditor)" />
+                    <!-- <core:Item key="admin_user" text="👔 admin_user (Admin)" /> -->
+                    <!-- <core:Item key="auditor_user" text="📋 auditor_user (Auditor)" /> -->
                 </items>
             </Select>
             <!-- <Button

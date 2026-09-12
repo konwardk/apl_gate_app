@@ -381,15 +381,50 @@ sap.ui.define([
                 if (oReg) {
                     oReg.setValue("");
                     oReg.setValueState(ValueState.None);
+                    oReg.setValueStateText("");
                 }
                 if (oDriver) {
                     oDriver.setValue("");
                     oDriver.setValueState(ValueState.None);
+                    oDriver.setValueStateText("");
                 }
                 if (oDel) oDel.setSelected(true);
                 if (oPick) oPick.setSelected(false);
                 oDialog.open();
             });
+        },
+
+        _validateVehicleRegNo: function (oInput, sVal) {
+            if (!oInput) return false;
+            if (!sVal) {
+                oInput.setValueState(ValueState.None);
+                oInput.setValueStateText("");
+                return false;
+            }
+            // Format: AS-02-(Optional Series)-1234, e.g. AS-02-1234 or AS-02-AB-1234
+            const regex = /^[A-Z]{2}-\d{2}(?:-[A-Z]{1,3})?-\d{4}$/;
+            if (!regex.test(sVal)) {
+                oInput.setValueState(ValueState.Error);
+                oInput.setValueStateText("Invalid vehicle registration format. Expected: AS-02-1234 or AS-02-AB-1234 (e.g. MH-04-JK-9999)");
+                return false;
+            }
+            oInput.setValueState(ValueState.Success);
+            oInput.setValueStateText("");
+            return true;
+        },
+
+        onVehicleRegLiveChange: function (oEvt) {
+            const oInput = oEvt.getSource();
+            let sVal = (oEvt.getParameter("value") || "").trim().toUpperCase();
+            oInput.setValue(sVal);
+            this._validateVehicleRegNo(oInput, sVal);
+        },
+
+        onVehicleRegChange: function (oEvt) {
+            const oInput = oEvt.getSource();
+            let sVal = (oInput.getValue() || "").trim().toUpperCase();
+            oInput.setValue(sVal);
+            this._validateVehicleRegNo(oInput, sVal);
         },
 
         onDeliveryCheck: function (oEvt) {
@@ -422,10 +457,25 @@ sap.ui.define([
             const driver = oDriver ? oDriver.getValue().trim() : "";
 
             if (!regNo) {
-                if (oReg) oReg.setValueState(ValueState.Error);
+                if (oReg) {
+                    oReg.setValueState(ValueState.Error);
+                    oReg.setValueStateText("Vehicle Registration Number is mandatory.");
+                }
                 return MessageToast.show("Vehicle Registration Number is mandatory");
             }
-            if (oReg) oReg.setValueState(ValueState.None);
+
+            const vehicleRegex = /^[A-Z]{2}-\d{2}(?:-[A-Z]{1,3})?-\d{4}$/;
+            if (!vehicleRegex.test(regNo)) {
+                if (oReg) {
+                    oReg.setValueState(ValueState.Error);
+                    oReg.setValueStateText("Invalid vehicle registration format. Expected: AS-02-1234 or AS-02-AB-1234 (e.g. MH-04-JK-9999)");
+                }
+                return MessageBox.error("Invalid Vehicle Registration Number format.\n\nRequired format: AS-02-(Optional Series)-1234\n\nExamples:\n• AS-02-1234 (without series)\n• AS-02-A-1234 (with single letter series)\n• AS-02-AB-1234 (with double letter series)\n• MH-04-JK-9999\n\nPlease re-enter a valid vehicle registration number.");
+            }
+            if (oReg) {
+                oReg.setValueState(ValueState.Success);
+                oReg.setValueStateText("");
+            }
 
             if (!driver) {
                 if (oDriver) oDriver.setValueState(ValueState.Error);
@@ -510,18 +560,27 @@ sap.ui.define([
         // Dialog: Gate OUT
         // ============================================================
         openGateOutDialog: function () {
-            let eligible = this._rawTransactions.filter(tx => tx.status === "SECURITY_OUT");
-            if (eligible.length === 0) {
-                eligible = this._rawTransactions.filter(tx => tx.status !== "COMPLETED" && tx.status !== "CANCELLED");
-            }
+            let eligible = (this._rawTransactions || []).filter(tx => tx.status !== "COMPLETED" && tx.status !== "CANCELLED");
 
             if (eligible.length === 0) {
                 MessageBox.information("No vehicles currently active or waiting for Gate OUT.");
                 return;
             }
 
+            // Prioritize vehicles ready for final exit (SECURITY_OUT), followed by newest active entries
+            eligible = eligible.slice().sort((a, b) => {
+                if (a.status === "SECURITY_OUT" && b.status !== "SECURITY_OUT") return -1;
+                if (b.status === "SECURITY_OUT" && a.status !== "SECURITY_OUT") return 1;
+                const tA = new Date(a.createdAt || a.gateInDateTime || 0).getTime();
+                const tB = new Date(b.createdAt || b.gateInDateTime || 0).getTime();
+                return tB - tA;
+            });
+
             const sId = this.createId("gateOutFrag");
-            const oGateOutModel = new JSONModel({ eligibleVehicles: eligible });
+            const oGateOutModel = new JSONModel({
+                eligibleVehicles: eligible,
+                selectedVehicle: null
+            });
 
             if (!this._pGateOutDialog) {
                 this._pGateOutDialog = Fragment.load({
@@ -536,20 +595,72 @@ sap.ui.define([
 
             this._pGateOutDialog.then(function (oDialog) {
                 oDialog.setModel(oGateOutModel, "gateOutModel");
+                const oSelect = Fragment.byId(sId, "selectGateInPass");
+                if (oSelect) {
+                    oSelect.setSelectedKey("");
+                    oSelect.setValue("");
+                }
                 oDialog.open();
+            });
+        },
+
+        onGateOutPassChange: function () {
+            const sId = this.createId("gateOutFrag");
+            const oSelect = Fragment.byId(sId, "selectGateInPass");
+            if (!oSelect) return;
+
+            const sKey = oSelect.getSelectedKey();
+            const sVal = (oSelect.getValue() || "").trim().toUpperCase();
+
+            this._pGateOutDialog.then(function (oDialog) {
+                const oModel = oDialog.getModel("gateOutModel");
+                if (!oModel) return;
+                const eligible = oModel.getProperty("/eligibleVehicles") || [];
+
+                let matched = null;
+                if (sKey) {
+                    matched = eligible.find(v => v.gateInNumber === sKey);
+                }
+                if (!matched && sVal) {
+                    matched = eligible.find(v =>
+                        (v.gateInNumber && v.gateInNumber.toUpperCase() === sVal) ||
+                        (v.vehicleRegNo && v.vehicleRegNo.toUpperCase() === sVal)
+                    );
+                    if (matched) {
+                        oSelect.setSelectedKey(matched.gateInNumber);
+                    }
+                }
+                oModel.setProperty("/selectedVehicle", matched || null);
             });
         },
 
         onGateOutConfirm: async function () {
             const sId = this.createId("gateOutFrag");
             const oSelect = Fragment.byId(sId, "selectGateInPass");
-            const gateIn = oSelect ? oSelect.getSelectedKey() : "";
-
-            if (!gateIn) {
-                return MessageToast.show("Please select a Gate IN #");
-            }
+            let gateIn = oSelect ? oSelect.getSelectedKey() : "";
+            const sVal = oSelect ? (oSelect.getValue() || "").trim() : "";
 
             const oDialog = await this._pGateOutDialog;
+            const oModel = oDialog.getModel("gateOutModel");
+            const eligible = (oModel && oModel.getProperty("/eligibleVehicles")) || [];
+
+            if (!gateIn && sVal) {
+                const matched = eligible.find(v =>
+                    (v.gateInNumber && v.gateInNumber.toUpperCase() === sVal.toUpperCase()) ||
+                    (v.vehicleRegNo && v.vehicleRegNo.toUpperCase() === sVal.toUpperCase())
+                );
+                if (matched) {
+                    gateIn = matched.gateInNumber;
+                    oSelect.setSelectedKey(matched.gateInNumber);
+                } else {
+                    gateIn = sVal;
+                }
+            }
+
+            if (!gateIn) {
+                return MessageToast.show("Please enter or select a Gate IN #");
+            }
+
             try {
                 oDialog.setBusy(true);
                 const res = await fetch(`${ODATA_BASE}/MainGateOut`, {

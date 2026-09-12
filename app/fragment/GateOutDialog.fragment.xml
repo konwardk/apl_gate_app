@@ -5,28 +5,57 @@
     <Dialog
         id="gateOutDialog"
         title="Main Gate Exit - Authorize Gate OUT"
-        contentWidth="460px">
+        contentWidth="500px">
         <content>
             <form:SimpleForm
                 editable="true"
-                layout="ResponsiveGridLayout">
+                layout="ResponsiveGridLayout"
+                labelSpanXL="4"
+                labelSpanL="4"
+                labelSpanM="4"
+                labelSpanS="12">
                 <form:content>
                     <Label text="Select Vehicle Pass" required="true" />
-                    <Select
+                    <ComboBox
                         id="selectGateInPass"
                         width="100%"
-                        items="{gateOutModel>/eligibleVehicles}">
-                        <core:Item
+                        placeholder="Type to search or select Gate IN #, Vehicle Reg..."
+                        change=".onGateOutPassChange"
+                        filterSecondaryValues="true"
+                        showSecondaryValues="true"
+                        items="{
+                            path: 'gateOutModel>/eligibleVehicles',
+                            templateShareable: false
+                        }">
+                        <core:ListItem
                             key="{gateOutModel>gateInNumber}"
-                            text="{gateOutModel>gateInNumber} ({gateOutModel>vehicleRegNo} - {gateOutModel>status})" />
-                    </Select>
+                            text="{gateOutModel>gateInNumber}"
+                            additionalText="{gateOutModel>vehicleRegNo} ({gateOutModel>purpose}) - {gateOutModel>status}" />
+                    </ComboBox>
+
+                    <Label text="Vehicle Reg No" visible="{= !!${gateOutModel>/selectedVehicle} }" />
+                    <Text text="{gateOutModel>/selectedVehicle/vehicleRegNo}" visible="{= !!${gateOutModel>/selectedVehicle} }" />
+
+                    <Label text="Driver Name" visible="{= !!${gateOutModel>/selectedVehicle} }" />
+                    <Text text="{= ${gateOutModel>/selectedVehicle/driverName} || '-' }" visible="{= !!${gateOutModel>/selectedVehicle} }" />
+
+                    <Label text="Visit Purpose" visible="{= !!${gateOutModel>/selectedVehicle} }" />
+                    <Text text="{gateOutModel>/selectedVehicle/purpose}" visible="{= !!${gateOutModel>/selectedVehicle} }" />
+
+                    <Label text="Current Status" visible="{= !!${gateOutModel>/selectedVehicle} }" />
+                    <ObjectStatus
+                        text="{gateOutModel>/selectedVehicle/status}"
+                        state="{path: 'gateOutModel>/selectedVehicle/status', formatter: '.formatter.getStatusState'}"
+                        visible="{= !!${gateOutModel>/selectedVehicle} }" />
                 </form:content>
             </form:SimpleForm>
         </content>
         <beginButton>
             <Button
+                id="btnAuthorizeGateOut"
                 text="Authorize Gate OUT"
                 type="Success"
+                icon="sap-icon://log-out"
                 press=".onGateOutConfirm" />
         </beginButton>
         <endButton>
