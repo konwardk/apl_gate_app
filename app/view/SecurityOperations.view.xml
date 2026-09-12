@@ -1,0 +1,358 @@
+<mvc:View
+    controllerName="factory.gate.controller.SecurityOperations"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:layout="sap.ui.layout"
+    xmlns:core="sap.ui.core">
+    <Page showHeader="false" enableScrolling="true">
+        <!-- Subtoolbar -->
+        <OverflowToolbar class="fe-subtoolbar">
+            <Button
+                text="Back to Launchpad"
+                icon="sap-icon://nav-back"
+                type="Emphasized"
+                press=".onNavBack" />
+            <ToolbarSpacer />
+            <Title text="Security Gate Operations &amp; Verification" level="H2" titleStyle="H3" />
+            <ToolbarSpacer />
+            <Button
+                text="Main Gate Ops"
+                icon="sap-icon://log-in"
+                type="Transparent"
+                press=".onNavMainGateOps" />
+            <Button
+                text="Refresh Queue"
+                icon="sap-icon://refresh"
+                type="Transparent"
+                press=".onRefreshQueue" />
+        </OverflowToolbar>
+
+        <VBox class="flp-dashboard">
+            <!-- Context Banner -->
+            <MessageStrip
+                text="Security Gate Inspection: Verify vehicle physical condition, driver credentials, and delivery documentation against the Gate IN Number."
+                type="Information"
+                showIcon="true"
+                class="sapUiSmallMarginBottom" />
+
+            <!-- Security Check-In Panel / Form -->
+            <Panel
+                headerText="Security Gate Entry &amp; Document Clearance"
+                expandable="false"
+                class="sapUiSmallMarginBottom flp-tile-ops">
+                <content>
+                    <form:SimpleForm
+                        id="securityEntryForm"
+                        editable="true"
+                        layout="ResponsiveGridLayout"
+                        labelSpanXL="3"
+                        labelSpanL="3"
+                        labelSpanM="4"
+                        labelSpanS="12"
+                        adjustLabelSpan="false"
+                        emptySpanXL="1"
+                        emptySpanL="1"
+                        emptySpanM="0"
+                        emptySpanS="0"
+                        columnsXL="2"
+                        columnsL="2"
+                        columnsM="1">
+                        <form:content>
+                            <!-- Group 1: Vehicle & Gate Pass Identification -->
+                            <core:Title text="1. Gate IN Pass &amp; Vehicle Identification" />
+
+                            <Label text="Gate IN Number" required="true" />
+                            <ComboBox
+                                id="secGateInComboBox"
+                                width="100%"
+                                placeholder="Type to search or select Gate IN #, Vehicle Reg, or Driver..."
+                                selectedKey="{secModel>/selectedGateInNumber}"
+                                change=".onGateInSelectChange"
+                                filterSecondaryValues="true"
+                                showSecondaryValues="true"
+                                items="{
+                                    path: 'secModel>/waitingVehicles',
+                                    templateShareable: false
+                                }">
+                                <core:ListItem
+                                    key="{secModel>gateInNumber}"
+                                    text="{secModel>gateInNumber}"
+                                    additionalText="{secModel>vehicleRegNo} ({secModel>purpose}) - {secModel>driverName}" />
+                            </ComboBox>
+
+                            <Label text="Vehicle Reg No" />
+                            <Text text="{= ${secModel>/selectedVehicle/vehicleRegNo} || 'Select a Gate IN Number' }" />
+
+                            <Label text="Visit Purpose" />
+                            <HBox alignItems="Center">
+                                <ObjectStatus
+                                    text="{= ${secModel>/selectedVehicle/purpose} || '-' }"
+                                    state="{= ${secModel>/selectedVehicle/purpose} === 'DELIVERY' ? 'Information' : 'Warning' }"
+                                    class="sapUiTinyMarginEnd" />
+                                <Text text="{= ${secModel>/selectedVehicle/vehicleType} ? '(' + ${secModel>/selectedVehicle/vehicleType} + ')' : '' }" />
+                            </HBox>
+
+                            <Label text="Security Personnel" required="true" />
+                            <Input
+                                id="secPersonnel"
+                                value="{secModel>/securityPersonnel}"
+                                placeholder="Security Officer Name / ID"
+                                required="true" />
+
+                            <!-- Group 2: Driver & Physical Verification -->
+                            <core:Title text="2. Driver &amp; Physical Check" />
+
+                            <Label text="Driver License No" required="true" />
+                            <Input
+                                id="secDriverLicense"
+                                value="{secModel>/driverLicenseNo}"
+                                placeholder="e.g. DL-04-2021-008899"
+                                required="true" />
+
+                            <Label text="Driver Phone No" />
+                            <Input
+                                id="secDriverPhone"
+                                value="{secModel>/driverPhoneNo}"
+                                placeholder="e.g. +91 9876543210" />
+
+                            <Label text="Helper Name" />
+                            <Input
+                                id="secHelperName"
+                                value="{secModel>/helperName}"
+                                placeholder="Optional helper / assistant name" />
+
+                            <Label text="Physical Checks" />
+                            <VBox>
+                                <CheckBox
+                                    id="secDriverVerified"
+                                    text="Driver Identity &amp; License Verified"
+                                    selected="{secModel>/driverVerified}" />
+                                <CheckBox
+                                    id="secVehicleVerified"
+                                    text="Vehicle Condition &amp; Seal Inspected"
+                                    selected="{secModel>/vehicleVerified}" />
+                                <CheckBox
+                                    id="secDocsVerified"
+                                    text="Physical Documents &amp; Invoices Verified"
+                                    selected="{secModel>/documentsVerified}" />
+                            </VBox>
+
+                            <!-- Group 3: Delivery Documentation (Conditional) -->
+                            <core:Title text="3. Delivery Documentation &amp; PO Details" visible="{secModel>/isDelivery}" />
+
+                            <Label text="Without PO" visible="{secModel>/isDelivery}" />
+                            <VBox visible="{secModel>/isDelivery}">
+                                <CheckBox
+                                    id="secCbWithoutPO"
+                                    text="Without PO (Delivery without Purchase Order)"
+                                    selected="{secModel>/withoutPO}"
+                                    select=".onWithoutPOToggle" />
+                                <Text
+                                    text="Check this box if the delivery is authorized without a Purchase Order. When checked, PO, Sales Order, and Invoice Numbers are not mandatory."
+                                    class="sapUiTinyMarginTop sapUiSmallMarginBottom" />
+                            </VBox>
+
+                            <Label
+                                text="PO Number"
+                                visible="{secModel>/isDelivery}"
+                                required="{= ${secModel>/isDelivery} &amp;&amp; !${secModel>/withoutPO} }" />
+                            <Input
+                                id="secPoNumber"
+                                visible="{secModel>/isDelivery}"
+                                value="{secModel>/poNumber}"
+                                placeholder="e.g. PO-4500098711"
+                                enabled="{= !${secModel>/withoutPO} }"
+                                required="{= ${secModel>/isDelivery} &amp;&amp; !${secModel>/withoutPO} }" />
+
+                            <Label text="Sales Order No" visible="{secModel>/isDelivery}" />
+                            <Input
+                                id="secSoNumber"
+                                visible="{secModel>/isDelivery}"
+                                value="{secModel>/soNumber}"
+                                placeholder="e.g. SO-80001234 (Optional)"
+                                enabled="{= !${secModel>/withoutPO} }" />
+
+                            <Label
+                                text="Invoice Number"
+                                visible="{secModel>/isDelivery}"
+                                required="{= ${secModel>/isDelivery} &amp;&amp; !${secModel>/withoutPO} }" />
+                            <Input
+                                id="secInvoiceNumber"
+                                visible="{secModel>/isDelivery}"
+                                value="{secModel>/invoiceNumber}"
+                                placeholder="e.g. INV-2026-9011"
+                                enabled="{= !${secModel>/withoutPO} }"
+                                required="{= ${secModel>/isDelivery} &amp;&amp; !${secModel>/withoutPO} }" />
+
+                            <Label text="Invoice Date" visible="{secModel>/isDelivery}" />
+                            <DatePicker
+                                id="secInvoiceDate"
+                                visible="{secModel>/isDelivery}"
+                                value="{secModel>/invoiceDate}"
+                                valueFormat="yyyy-MM-dd"
+                                displayFormat="medium"
+                                enabled="{= !${secModel>/withoutPO} }" />
+
+                            <!-- Group 3b: Pickup Documentation & Gate Pass Details (Conditional) -->
+                            <core:Title text="3. Pickup Documentation &amp; Gate Pass Details (Optional at Entry)" visible="{secModel>/isPickup}" />
+
+                            <Label text="Notice" visible="{secModel>/isPickup}" />
+                            <MessageStrip
+                                visible="{secModel>/isPickup}"
+                                text="Pickup documentation (RGP / NRGP) is optional at initial Gate Entry. Physical gate pass documents will be validated and reconciled during Gate Exit."
+                                type="Information"
+                                showIcon="true"
+                                class="sapUiSmallMarginBottom" />
+
+                            <Label text="Gate Pass Type" visible="{secModel>/isPickup}" />
+                            <Select
+                                id="secGatePassType"
+                                visible="{secModel>/isPickup}"
+                                selectedKey="{secModel>/gatePassType}">
+                                <core:Item key="" text="-- Not Specified / Pending --" />
+                                <core:Item key="RGP" text="RGP (Returnable Gate Pass)" />
+                                <core:Item key="NRGP" text="NRGP (Non-Returnable Gate Pass)" />
+                            </Select>
+
+                            <Label text="RGP Document No" visible="{secModel>/isPickup}" />
+                            <Input
+                                id="secRgpDocNo"
+                                visible="{secModel>/isPickup}"
+                                value="{secModel>/rgpDocumentNo}"
+                                placeholder="e.g. RGP-2026-0042 (Optional)" />
+
+                            <Label text="NRGP Document No" visible="{secModel>/isPickup}" />
+                            <Input
+                                id="secNrgpDocNo"
+                                visible="{secModel>/isPickup}"
+                                value="{secModel>/nrgpDocumentNo}"
+                                placeholder="e.g. NRGP-2026-0089 (Optional)" />
+
+                            <Label text="Pickup Verification" visible="{secModel>/isPickup}" />
+                            <VBox visible="{secModel>/isPickup}">
+                                <CheckBox
+                                    id="secCbGatePassVerified"
+                                    text="Gate Pass / Delivery Challan physically sighted (if available)"
+                                    selected="{secModel>/gatePassVerified}" />
+                                <CheckBox
+                                    id="secCbEmptyInspected"
+                                    text="Empty Container / Vehicle bed physically inspected"
+                                    selected="{secModel>/emptyInspectionVerified}" />
+                            </VBox>
+
+                            <!-- Group 4: Remarks & Actions -->
+                            <core:Title text="4. Inspection Clearance &amp; Actions" />
+
+                            <Label text="Security Remarks" />
+                            <TextArea
+                                id="secRemarks"
+                                value="{secModel>/remarks}"
+                                rows="3"
+                                placeholder="Enter any security notes, container condition, seal numbers, or exceptions..." />
+
+                            <Label text="" />
+                            <HBox class="sapUiSmallMarginTop">
+                                <Button
+                                    text="Clear Security Gate IN"
+                                    icon="sap-icon://accept"
+                                    type="Emphasized"
+                                    press=".onClearSecurityGateIn"
+                                    class="sapUiSmallMarginEnd" />
+                                <Button
+                                    text="Reset Form"
+                                    icon="sap-icon://reset"
+                                    type="Transparent"
+                                    press=".onResetForm" />
+                            </HBox>
+                        </form:content>
+                    </form:SimpleForm>
+                </content>
+            </Panel>
+
+            <!-- Lower Section: Queue of Vehicles at Security -->
+            <IconTabBar id="secTabBar" class="sapUiMediumMarginTop" expandable="false">
+                <items>
+                    <IconTabFilter
+                        key="waiting"
+                        icon="sap-icon://pending"
+                        iconColor="Critical"
+                        text="Awaiting Security Clearance ({= ${secModel>/waitingVehicles}.length })">
+                        <Table
+                            id="waitingTable"
+                            items="{secModel>/waitingVehicles}"
+                            noDataText="No vehicles currently awaiting Security Gate IN">
+                            <columns>
+                                <Column><Text text="Gate IN #" /></Column>
+                                <Column><Text text="Vehicle Reg No" /></Column>
+                                <Column><Text text="Type" /></Column>
+                                <Column><Text text="Purpose" /></Column>
+                                <Column><Text text="Driver Name" /></Column>
+                                <Column><Text text="Gate IN Time" /></Column>
+                                <Column hAlign="End"><Text text="Action" /></Column>
+                            </columns>
+                            <items>
+                                <ColumnListItem>
+                                    <cells>
+                                        <ObjectIdentifier title="{secModel>gateInNumber}" />
+                                        <Text text="{secModel>vehicleRegNo}" />
+                                        <Text text="{secModel>vehicleType}" />
+                                        <ObjectStatus
+                                            text="{secModel>purpose}"
+                                            state="{= ${secModel>purpose} === 'DELIVERY' ? 'Information' : 'Warning' }" />
+                                        <Text text="{= ${secModel>driverName} || '-' }" />
+                                        <Text text="{path: 'secModel>gateInDateTime', formatter: '.formatter.formatDateTime' }" />
+                                        <Button
+                                            text="Process Check-In"
+                                            icon="sap-icon://shield"
+                                            type="Emphasized"
+                                            press=".onSelectWaitingVehicle" />
+                                    </cells>
+                                </ColumnListItem>
+                            </items>
+                        </Table>
+                    </IconTabFilter>
+
+                    <IconTabFilter
+                        key="cleared"
+                        icon="sap-icon://history"
+                        iconColor="Positive"
+                        text="Cleared Security Entries ({= ${secModel>/clearedEntries}.length })">
+                        <Table
+                            id="clearedTable"
+                            items="{secModel>/clearedEntries}"
+                            noDataText="No Security Gate entries recorded yet">
+                            <columns>
+                                <Column><Text text="Gate IN #" /></Column>
+                                <Column><Text text="Driver License" /></Column>
+                                <Column><Text text="Documentation Ref" /></Column>
+                                <Column><Text text="Pass / Doc Type" /></Column>
+                                <Column><Text text="Security Officer" /></Column>
+                                <Column><Text text="Cleared Time" /></Column>
+                                <Column><Text text="Remarks" /></Column>
+                            </columns>
+                            <items>
+                                <ColumnListItem>
+                                    <cells>
+                                        <ObjectIdentifier title="{secModel>gateInNumber}" />
+                                        <Text text="{secModel>driverLicenseNo}" />
+                                        <VBox>
+                                            <Text text="{= ${secModel>poNumber} ? 'PO: ' + ${secModel>poNumber} : (${secModel>rgpDocumentNo} ? 'RGP: ' + ${secModel>rgpDocumentNo} : (${secModel>nrgpDocumentNo} ? 'NRGP: ' + ${secModel>nrgpDocumentNo} : (${secModel>withoutPO} ? 'Delivery (Without PO)' : 'Pickup (Docs at Exit)'))) }" />
+                                            <Text text="{= ${secModel>invoiceNumber} ? 'Inv: ' + ${secModel>invoiceNumber} : '' }" class="sapUiTinyMarginTop" visible="{= !!${secModel>invoiceNumber} }" />
+                                        </VBox>
+                                        <ObjectStatus
+                                            text="{= ${secModel>withoutPO} ? 'Without PO' : (${secModel>gatePassType} ? ${secModel>gatePassType} : (${secModel>poNumber} ? 'PO Verified' : (${secModel>rgpDocumentNo} ? 'RGP' : (${secModel>nrgpDocumentNo} ? 'NRGP' : 'Standard Check')))) }"
+                                            state="{= ${secModel>withoutPO} ? 'Warning' : (${secModel>poNumber} || ${secModel>gatePassType} || ${secModel>rgpDocumentNo} || ${secModel>nrgpDocumentNo} ? 'Success' : 'Information') }" />
+                                        <Text text="{secModel>securityPersonnel}" />
+                                        <Text text="{path: 'secModel>securityInDateTime', formatter: '.formatter.formatDateTime' }" />
+                                        <Text text="{= ${secModel>remarks} || '-' }" />
+                                    </cells>
+                                </ColumnListItem>
+                            </items>
+                        </Table>
+                    </IconTabFilter>
+                </items>
+            </IconTabBar>
+        </VBox>
+    </Page>
+</mvc:View>

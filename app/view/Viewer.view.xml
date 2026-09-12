@@ -1,0 +1,32 @@
+<mvc:View
+    controllerName="factory.gate.controller.Viewer"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns:core="sap.ui.core"
+    xmlns="sap.m">
+    <Page showHeader="false" enableScrolling="false">
+        <OverflowToolbar class="fe-subtoolbar">
+            <Button
+                text="Back to Launchpad"
+                icon="sap-icon://nav-back"
+                type="Emphasized"
+                press=".onNavBack" />
+            <ToolbarSpacer />
+            <Title text="{/currentFeAppTitle}" level="H2" titleStyle="H3" />
+            <ToolbarSpacer />
+            <Button
+                text="Open in New Tab"
+                icon="sap-icon://action"
+                type="Transparent"
+                press=".onOpenNewTab" />
+            <Button
+                icon="sap-icon://refresh"
+                tooltip="Reload Fiori Elements App"
+                type="Transparent"
+                press=".onReload" />
+        </OverflowToolbar>
+
+        <core:HTML
+            id="feFrameHtml"
+            content="&lt;div class=&quot;fe-frame-container&quot;&gt;&lt;iframe id=&quot;fioriAppIframe&quot; class=&quot;fe-app-iframe&quot; src=&quot;about:blank&quot; allow=&quot;fullscreen&quot;&gt;&lt;/iframe&gt;&lt;/div&gt;" />
+    </Page>
+</mvc:View>

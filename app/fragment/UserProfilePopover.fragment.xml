@@ -1,0 +1,42 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:f="sap.f"
+    xmlns:core="sap.ui.core">
+    <Popover
+        title="User Account &amp; Security"
+        placement="Bottom"
+        contentWidth="340px">
+        <VBox alignItems="Center" class="sapUiSmallMargin">
+            <f:Avatar
+                initials="{/userInitials}"
+                backgroundColor="{/userAvatarColor}"
+                displaySize="L"
+                class="sapUiSmallMarginTop sapUiSmallMarginBottom" />
+            <Title text="{/activeUser}" level="H3" />
+            <Text text="Authentication: SAP CAP Mocked Basic Auth" class="sapUiTinyMarginBottom" />
+            <ObjectStatus
+                title="Security Roles"
+                text="{/userRolesText}"
+                state="Information"
+                class="sapUiSmallMarginBottom" />
+            <MessageStrip
+                text="Production Target: SAP BTP XSUAA OAuth2 / JWT via Approuter."
+                type="Information"
+                showIcon="true"
+                class="sapUiSmallMarginBottom" />
+            <HBox justifyContent="Center" class="sapUiSmallMarginBottom">
+                <Button
+                    text="Sign In / Switch User"
+                    icon="sap-icon://user-switch"
+                    type="Emphasized"
+                    press=".onSwitchUserPress"
+                    class="sapUiTinyMarginEnd" />
+                <Button
+                    text="Sign Out"
+                    icon="sap-icon://log-out"
+                    type="Reject"
+                    press=".onSignOutPress" />
+            </HBox>
+        </VBox>
+    </Popover>
+</core:FragmentDefinition>

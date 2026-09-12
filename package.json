@@ -1,0 +1,18 @@
+{
+  "name": "apl-gate-app",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@sap/cds": "^10"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "^3"
+  },
+  "scripts": {
+    "start": "cds-serve",
+    "test": "node test/gate-crud.test.js && node test/security-gate.test.js"
+  },
+  "private": true
+}
+
+

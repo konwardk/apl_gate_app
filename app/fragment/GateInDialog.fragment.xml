@@ -1,0 +1,59 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:core="sap.ui.core">
+    <Dialog
+        id="gateInDialog"
+        title="Create Gate IN (Entry Registration)"
+        contentWidth="480px">
+        <content>
+            <form:SimpleForm
+                editable="true"
+                layout="ResponsiveGridLayout"
+                labelSpanXL="4"
+                labelSpanL="4"
+                labelSpanM="4"
+                labelSpanS="12">
+                <form:content>
+                    <Label text="Vehicle Registration No" required="true" />
+                    <Input
+                        id="inputVehicleRegNo"
+                        placeholder="e.g. MH-04-JK-9999"
+                        required="true" />
+
+                    <Label text="Driver Name" required="true" />
+                    <Input
+                        id="inputDriverName"
+                        placeholder="e.g. Rajesh Kumar"
+                        required="true" />
+
+                    <Label text="Purpose of Visit" required="true" />
+                    <HBox alignItems="Center">
+                        <CheckBox
+                            id="cbDelivery"
+                            text="DELIVERY"
+                            selected="true"
+                            select=".onDeliveryCheck"
+                            class="sapUiMediumMarginEnd" />
+                        <CheckBox
+                            id="cbPickup"
+                            text="PICKUP"
+                            selected="false"
+                            select=".onPickupCheck" />
+                    </HBox>
+                </form:content>
+            </form:SimpleForm>
+        </content>
+        <beginButton>
+            <Button
+                text="Register Gate IN"
+                type="Emphasized"
+                press=".onGateInConfirm" />
+        </beginButton>
+        <endButton>
+            <Button
+                text="Cancel"
+                press=".onGateInCancel" />
+        </endButton>
+    </Dialog>
+</core:FragmentDefinition>

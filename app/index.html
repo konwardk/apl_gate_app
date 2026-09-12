@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>SAP Fiori Launchpad | Factory Gate Operations & Logistics</title>
+
+    <!-- Pre-bootstrap Auth Interceptor: ensures all OData & Fiori requests carry mock basic auth -->
+    <script>
+        const ODATA_BASE = '/gate';
+        const FIORI_PREVIEW_BASE = '/$fiori-preview/GateService';
+
+        const userPasswords = {
+            'superadmin_user': 'password',
+            'maingate_user': 'password',
+            'security_user': 'password',
+            'weighbridge_user': 'password',
+            'factory_user': 'password',
+            'admin_user': 'password',
+            'auditor_user': 'password'
+        };
+
+        function getActiveUser() {
+            return localStorage.getItem('gate_active_user') || 'superadmin_user';
+        }
+
+        function getAuthHeaderValue(user) {
+            const u = user || getActiveUser();
+            const p = userPasswords[u] || 'password';
+            return 'Basic ' + btoa(u + ':' + p);
+        }
+
+        // Intercept XMLHttpRequest to auto-inject credentials for GateService and Fiori Preview
+        (function() {
+            const origOpen = XMLHttpRequest.prototype.open;
+            XMLHttpRequest.prototype.open = function(method, url) {
+                this._url = url;
+                return origOpen.apply(this, arguments);
+            };
+
+            const origSend = XMLHttpRequest.prototype.send;
+            XMLHttpRequest.prototype.send = function(data) {
+                if (this._url && (this._url.startsWith('/gate') || this._url.includes('$fiori-preview') || this._url.includes('GateService'))) {
+                    try {
+                        this.setRequestHeader('Authorization', getAuthHeaderValue());
+                    } catch (e) {}
+                }
+                return origSend.apply(this, arguments);
+            };
+
+            const origFetch = window.fetch;
+            window.fetch = function(input, init) {
+                let url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+                if (url && (url.startsWith('/gate') || url.includes('$fiori-preview') || url.includes('GateService'))) {
+                    init = init || {};
+                    init.headers = new Headers(init.headers || {});
+                    if (!init.headers.has('Authorization')) {
+                        init.headers.set('Authorization', getAuthHeaderValue());
+                    }
+                }
+                return origFetch.call(this, input, init);
+            };
+        })();
+    </script>
+
+    <!-- SAPUI5 Horizon Theme Bootstrap from Official CDN -->
+    <script id="sap-ui-bootstrap"
+        src="https://ui5.sap.com/resources/sap-ui-core.js"
+        data-sap-ui-theme="sap_horizon"
+        data-sap-ui-libs="sap.m, sap.f, sap.ui.layout, sap.ui.core, sap.tnt, sap.ui.unified"
+        data-sap-ui-compatVersion="edge"
+        data-sap-ui-async="true"
+        data-sap-ui-bindingSyntax="complex"
+        data-sap-ui-resourceroots='{ "factory.gate": "./" }'
+        data-sap-ui-onInit="onInitBoot">
+    </script>
+
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+
+    <script>
+        let bBootstrapped = false;
+        function onInitBoot() {
+            if (bBootstrapped) return;
+            bBootstrapped = true;
+
+            sap.ui.require([
+                "sap/ui/core/ComponentContainer"
+            ], function (ComponentContainer) {
+                new ComponentContainer({
+                    name: "factory.gate",
+                    settings: { id: "factoryGate" },
+                    async: true,
+                    height: "100%"
+                }).placeAt("content");
+            });
+        }
+
+        if (!bBootstrapped) {
+            if (window.sap && sap.ui && sap.ui.getCore && sap.ui.getCore().isInitialized && sap.ui.getCore().isInitialized()) {
+                onInitBoot();
+            } else if (window.sap && sap.ui && sap.ui.getCore && sap.ui.getCore().attachInit) {
+                sap.ui.getCore().attachInit(onInitBoot);
+            }
+        }
+    </script>
+</head>
+<body class="sapUiBody" id="content">
+</body>
+</html>

@@ -1,0 +1,37 @@
+{
+  "requires": {
+    "auth": {
+      "kind": "mocked",
+      "users": {
+        "maingate_user": {
+          "password": "password",
+          "roles": ["MainGateUser"]
+        },
+        "security_user": {
+          "password": "password",
+          "roles": ["SecurityGateUser"]
+        },
+        "weighbridge_user": {
+          "password": "password",
+          "roles": ["WeighbridgeUser"]
+        },
+        "factory_user": {
+          "password": "password",
+          "roles": ["FactoryGateUser"]
+        },
+        "admin_user": {
+          "password": "password",
+          "roles": ["Admin"]
+        },
+        "superadmin_user": {
+          "password": "password",
+          "roles": ["Superadmin", "Admin", "MainGateUser", "SecurityGateUser", "WeighbridgeUser", "FactoryGateUser", "Auditor"]
+        },
+        "auditor_user": {
+          "password": "password",
+          "roles": ["Auditor"]
+        }
+      }
+    }
+  }
+}

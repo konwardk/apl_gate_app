@@ -1,0 +1,2 @@
+ID;gateTransaction_ID;weighbridgeNumber;weighmentType;weight;weightUnit;weighbridgeDateTime;operator;remarks
+c3333333-4444-5555-6666-777777777773;a1111111-2222-3333-4444-555555555553;WB-01;TARE_IN;12450.000;KG;2026-09-09T09:55:00Z;WeighOperator1;Tare Weight recorded before loading

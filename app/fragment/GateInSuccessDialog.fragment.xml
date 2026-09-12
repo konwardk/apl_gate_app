@@ -1,0 +1,51 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:core="sap.ui.core">
+    <Dialog
+        id="gateInSuccessDialog"
+        title="Gate IN Created Successfully"
+        type="Message"
+        state="Success"
+        contentWidth="460px">
+        <content>
+            <VBox alignItems="Center">
+                <Text text="Generated Gate IN Pass Identifier:" class="sapUiSmallMarginTop" />
+                <Title
+                    text="{gateInSuccess>/gateInNumber}"
+                    level="H1"
+                    titleStyle="H1"
+                    class="sapUiSmallMarginTop success-gate-number" />
+                <ObjectStatus
+                    text="Status: GATE_IN (Main Gate Entered)"
+                    state="Success"
+                    class="sapUiSmallMarginTop sapUiSmallMarginBottom" />
+                <form:SimpleForm
+                    layout="ResponsiveGridLayout"
+                    labelSpanXL="5"
+                    labelSpanL="5"
+                    labelSpanM="5"
+                    labelSpanS="12">
+                    <form:content>
+                        <Label text="Gate IN #" />
+                        <Text text="{gateInSuccess>/gateInNumber}" />
+                        <Label text="Vehicle Reg No" />
+                        <Text text="{gateInSuccess>/vehicleRegNo}" />
+                        <Label text="Driver Name" />
+                        <Text text="{gateInSuccess>/driverName}" />
+                        <Label text="Purpose" />
+                        <Text text="{gateInSuccess>/purpose}" />
+                        <Label text="Timestamp" />
+                        <Text text="{path: 'gateInSuccess>/gateInDateTime', formatter: '.formatter.formatDateTime'}" />
+                    </form:content>
+                </form:SimpleForm>
+            </VBox>
+        </content>
+        <beginButton>
+            <Button
+                text="Done"
+                type="Emphasized"
+                press=".onGateInSuccessDone" />
+        </beginButton>
+    </Dialog>
+</core:FragmentDefinition>

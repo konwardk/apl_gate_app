@@ -1,0 +1,108 @@
+<mvc:View
+    controllerName="factory.gate.controller.App"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:f="sap.f"
+    xmlns:tnt="sap.tnt"
+    xmlns:core="sap.ui.core"
+    displayBlock="true"
+    height="100%">
+    <VBox fitContainer="true" height="100%" class="app-root-container">
+        <!-- Clean Fiori Shell ToolHeader: Persona + Sign In only, no roles -->
+        <tnt:ToolHeader class="fiori-shellbar">
+            <Image
+                src="https://www.sap.com/dam/application/shared/logos/sap-logo-svg.svg"
+                height="24px"
+                press=".onHomePressed"
+                class="sapUiTinyMarginBegin sapUiTinyMarginEnd" />
+            <Title text="APL Gate In- Gate Out" level="H2" class="sapUiTinyMarginEnd" />
+            <Text text="| SAP Fiori Launchpad" class="sapUiTinyMarginEnd" />
+            <ToolbarSpacer />
+
+            <Button
+                text="Vehicle Selection"
+                icon="sap-icon://shipping-status"
+                type="Transparent"
+                tooltip="Return to Vehicle Category Selection Screen"
+                press=".onVehicleSelectionNav" />
+            <Button
+                text="Launchpad Dashboard"
+                icon="sap-icon://home"
+                type="Transparent"
+                tooltip="View Fiori Launchpad Applications"
+                press=".onLaunchpadNav" />
+            <!-- <Button
+                text="Gate IN"
+                icon="sap-icon://log-in"
+                type="Emphasized"
+                visible="{/canCreateGateIn}"
+                press=".onGateInPress" />
+            <Button
+                text="Gate OUT"
+                icon="sap-icon://log-out"
+                type="Success"
+                visible="{/canMainGateOut}"
+                press=".onGateOutPress" /> -->
+
+            <ToolbarSeparator />
+
+            <Label text="Persona:" design="Bold" class="sapUiTinyMarginBegin sapUiTinyMarginEnd" />
+            <Select
+                id="personaSelect"
+                selectedKey="{/activeUser}"
+                change=".onPersonaChange"
+                class="sapUiTinyMarginEnd">
+                <items>
+                    <core:Item key="superadmin_user" text="⚡ superadmin_user (Superadmin)" />
+                    <core:Item key="maingate_user" text="🚪 maingate_user (MainGateUser)" />
+                    <core:Item key="security_user" text="🛡️ security_user (SecurityGateUser)" />
+                    <core:Item key="weighbridge_user" text="⚖️ weighbridge_user (WeighbridgeUser)" />
+                    <core:Item key="factory_user" text="🏭 factory_user (FactoryGateUser)" />
+                    <core:Item key="admin_user" text="👔 admin_user (Admin)" />
+                    <core:Item key="auditor_user" text="📋 auditor_user (Auditor)" />
+                </items>
+            </Select>
+            <!-- <Button
+                text="Sign In"
+                icon="sap-icon://account"
+                tooltip="User Profile &amp; Sign In Options"
+                type="Transparent"
+                press=".onSignInPress" /> -->
+            <Button
+                icon="sap-icon://palette"
+                tooltip="Toggle Horizon Light / Dark Theme"
+                type="Transparent"
+                press=".onToggleTheme" />
+            <Button
+                icon="sap-icon://refresh"
+                tooltip="Refresh Data"
+                type="Transparent"
+                press=".onRefreshPress" />
+            <f:Avatar
+                id="shellAvatar"
+                initials="{/userInitials}"
+                backgroundColor="{/userAvatarColor}"
+                displaySize="XS"
+                tooltip="User Profile &amp; Authentication (Click to Open)"
+                press=".onProfilePressed"
+                class="sapUiTinyMarginBegin" />
+        </tnt:ToolHeader>
+
+        <!-- Navigation Container: landingPage is the opening screen -->
+        <NavContainer
+            id="navContainer"
+            autoFocus="false"
+            class="app-nav-container">
+            <layoutData>
+                <FlexItemData growFactor="1" baseSize="0" />
+            </layoutData>
+            <pages>
+                <mvc:XMLView id="landingPage" viewName="factory.gate.view.Landing" />
+                <mvc:XMLView id="launchpadPage" viewName="factory.gate.view.Dashboard" />
+                <mvc:XMLView id="feViewerPage" viewName="factory.gate.view.Viewer" />
+                <mvc:XMLView id="mainGateOpsPage" viewName="factory.gate.view.Operations" />
+                <mvc:XMLView id="securityGateOpsPage" viewName="factory.gate.view.SecurityOperations" />
+            </pages>
+        </NavContainer>
+    </VBox>
+</mvc:View>

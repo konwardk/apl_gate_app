@@ -1,0 +1,157 @@
+<mvc:View
+    controllerName="factory.gate.controller.Operations"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m">
+    <Page showHeader="false" enableScrolling="true">
+        <!-- Subtoolbar -->
+        <OverflowToolbar class="fe-subtoolbar">
+            <Button
+                text="Back to Launchpad"
+                icon="sap-icon://nav-back"
+                type="Emphasized"
+                press=".onNavBack" />
+            <ToolbarSpacer />
+            <Title text="Main Gate Operations &amp; Vehicle Check-In" level="H2" titleStyle="H3" />
+            <ToolbarSpacer />
+            <Button
+                text="Security Gate"
+                icon="sap-icon://shield"
+                type="Default"
+                press=".onNavSecurityGateOps" />
+            <Button
+                text="Gate IN"
+                icon="sap-icon://log-in"
+                type="Emphasized"
+                visible="{/canCreateGateIn}"
+                press=".onOpenGateIn" />
+            <Button
+                text="Gate OUT"
+                icon="sap-icon://log-out"
+                type="Success"
+                visible="{/canMainGateOut}"
+                press=".onOpenGateOut" />
+        </OverflowToolbar>
+
+        <!-- Main Content -->
+        <VBox class="flp-dashboard">
+            <MessageStrip
+                text="Select vehicle processing category. General cargo and trucks proceed with Main Gate Entry and Exit operations."
+                type="Information"
+                showIcon="true"
+                class="sapUiSmallMarginBottom" />
+
+            <!-- Stream selection tiles -->
+            <!-- <HBox justifyContent="Center" class="vehicle-selection-cards">
+                <GenericTile
+                    header="TANKER"
+                    subheader="Tanker Management System"
+                    sizeBehavior="Responsive"
+                    state="Disabled"
+                    class="vehicle-select-tile sapUiMediumMargin">
+                    <tileContent>
+                        <TileContent footer="External S/4HANA System (In Development)">
+                            <content>
+                                <NumericContent
+                                    icon="sap-icon://mileage"
+                                    value="Tankers"
+                                    valueColor="Neutral" />
+                            </content>
+                        </TileContent>
+                    </tileContent>
+                </GenericTile>
+
+                <GenericTile
+                    header="OTHER VEHICLE"
+                    subheader="Main Gate Processing Stream"
+                    sizeBehavior="Responsive"
+                    press=".onOtherVehicleStreamPress"
+                    class="vehicle-select-tile sapUiMediumMargin">
+                    <tileContent>
+                        <TileContent footer="Trucks, Containers, Trailers, LCV (Active)">
+                            <content>
+                                <NumericContent
+                                    icon="sap-icon://shipping-status"
+                                    value="Active"
+                                    valueColor="Good" />
+                            </content>
+                        </TileContent>
+                    </tileContent>
+                </GenericTile>
+            </HBox> -->
+
+            <!-- Active Transactions Table -->
+            <Table
+                id="quickTxTable"
+                growing="true"
+                growingThreshold="20"
+                items="{/transactions}"
+                class="sapUiMediumMarginTop">
+                <headerToolbar>
+                    <OverflowToolbar>
+                        <Title text="Active Gate Transactions ({= ${/transactions}.length })" />
+                        <ToolbarSpacer />
+                        <SearchField
+                            id="opsSearchField"
+                            width="280px"
+                            placeholder="Search by Gate IN #, Vehicle, Driver..."
+                            liveChange=".onSearchLiveChange"
+                            search=".onSearch" />
+                        <Button
+                            icon="sap-icon://clear-filter"
+                            tooltip="Reset Search"
+                            press=".onResetSearch" />
+                        <ToolbarSeparator />
+                        <Button
+                            text="Fiori Elements App"
+                            icon="sap-icon://table-view"
+                            type="Ghost"
+                            tooltip="Open standard Fiori Elements List Report &amp; Object Page with full CRUD"
+                            press=".onOpenFioriElementsApp" />
+                    </OverflowToolbar>
+                </headerToolbar>
+                <columns>
+                    <Column><header><Text text="Gate IN # / Vehicle" /></header></Column>
+                    <Column><header><Text text="Driver Name" /></header></Column>
+                    <Column><header><Text text="Purpose" /></header></Column>
+                    <Column><header><Text text="Status" /></header></Column>
+                    <Column><header><Text text="Current Stage" /></header></Column>
+                    <Column><header><Text text="Gate IN Time" /></header></Column>
+                    <Column><header><Text text="Gate OUT Time" /></header></Column>
+                    <Column hAlign="End"><header><Text text="Actions" /></header></Column>
+                </columns>
+                <items>
+                    <ColumnListItem type="Navigation" press=".onTxRowPress">
+                        <cells>
+                            <ObjectIdentifier
+                                title="{gateInNumber}"
+                                text="{vehicleRegNo}" />
+                            <Text text="{= ${driverName} || '-' }" />
+                            <ObjectStatus
+                                text="{purpose}"
+                                state="{path: 'purpose', formatter: '.formatter.getPurposeState'}" />
+                            <ObjectStatus
+                                text="{status}"
+                                state="{path: 'status', formatter: '.formatter.getStatusState'}" />
+                            <Text text="{currentStage}" />
+                            <Text text="{path: 'gateInDateTime', formatter: '.formatter.formatDateTime'}" />
+                            <Text text="{path: 'gateOutDateTime', formatter: '.formatter.formatDateTime'}" />
+                            <HBox justifyContent="End" class="sapUiTinyMarginBeginEnd">
+                                <Button
+                                    text="Details"
+                                    icon="sap-icon://detail-view"
+                                    type="Transparent"
+                                    press=".onTxDetailPress" />
+                                <Button
+                                    icon="sap-icon://delete"
+                                    type="Transparent"
+                                    tooltip="Delete Gate Entry"
+                                    visible="{= ${status} === 'GATE_IN' || ${status} === 'CANCELLED' }"
+                                    press=".onTxDeletePress" />
+                            </HBox>
+                        </cells>
+                    </ColumnListItem>
+                </items>
+            </Table>
+        </VBox>
+    </Page>
+</mvc:View>

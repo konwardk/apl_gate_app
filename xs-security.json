@@ -1,0 +1,137 @@
+{
+  "xsappname": "apl-gate-app",
+  "tenant-mode": "dedicated",
+  "description": "Security configuration for APL Gate Management Application",
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.MainGateUser",
+      "description": "Main Gate Operator - Create Gate IN and Main Gate OUT"
+    },
+    {
+      "name": "$XSAPPNAME.SecurityGateUser",
+      "description": "Security Gate Officer - Security Gate IN and Security Gate OUT verification"
+    },
+    {
+      "name": "$XSAPPNAME.WeighbridgeUser",
+      "description": "Weighbridge Operator - Record Gross and Tare Weighments"
+    },
+    {
+      "name": "$XSAPPNAME.FactoryGateUser",
+      "description": "Factory Gate Supervisor - Factory Yard IN and OUT tracking"
+    },
+    {
+      "name": "$XSAPPNAME.Admin",
+      "description": "Gate Application Admin - Manage Master Data and View Audit Logs"
+    },
+    {
+      "name": "$XSAPPNAME.Superadmin",
+      "description": "Super Administrator - Full system and operational access across all stages"
+    },
+    {
+      "name": "$XSAPPNAME.Auditor",
+      "description": "Auditor - Read-only access to Transactions and Gate Audit Logs"
+    }
+  ],
+  "role-templates": [
+    {
+      "name": "MainGateRole",
+      "description": "Role for Main Gate Operators",
+      "scope-references": [
+        "$XSAPPNAME.MainGateUser"
+      ]
+    },
+    {
+      "name": "SecurityGateRole",
+      "description": "Role for Security Gate Personnel",
+      "scope-references": [
+        "$XSAPPNAME.SecurityGateUser"
+      ]
+    },
+    {
+      "name": "WeighbridgeRole",
+      "description": "Role for Weighbridge Operators",
+      "scope-references": [
+        "$XSAPPNAME.WeighbridgeUser"
+      ]
+    },
+    {
+      "name": "FactoryGateRole",
+      "description": "Role for Factory Bay Supervisors",
+      "scope-references": [
+        "$XSAPPNAME.FactoryGateUser"
+      ]
+    },
+    {
+      "name": "AdminRole",
+      "description": "Role for Gate Application Administrators",
+      "scope-references": [
+        "$XSAPPNAME.Admin"
+      ]
+    },
+    {
+      "name": "SuperadminRole",
+      "description": "Role for Super Administrators",
+      "scope-references": [
+        "$XSAPPNAME.Superadmin"
+      ]
+    },
+    {
+      "name": "AuditorRole",
+      "description": "Role for Operational and Security Auditors",
+      "scope-references": [
+        "$XSAPPNAME.Auditor"
+      ]
+    }
+  ],
+  "role-collections": [
+    {
+      "name": "Gate_MainGate_Operator",
+      "description": "Main Gate Operator collection",
+      "role-template-references": [
+        "$XSAPPNAME.MainGateRole"
+      ]
+    },
+    {
+      "name": "Gate_Security_Officer",
+      "description": "Security Officer collection",
+      "role-template-references": [
+        "$XSAPPNAME.SecurityGateRole"
+      ]
+    },
+    {
+      "name": "Gate_Weighbridge_Operator",
+      "description": "Weighbridge Operator collection",
+      "role-template-references": [
+        "$XSAPPNAME.WeighbridgeRole"
+      ]
+    },
+    {
+      "name": "Gate_Factory_Supervisor",
+      "description": "Factory Supervisor collection",
+      "role-template-references": [
+        "$XSAPPNAME.FactoryGateRole"
+      ]
+    },
+    {
+      "name": "Gate_Administrator",
+      "description": "Application Administrator collection",
+      "role-template-references": [
+        "$XSAPPNAME.AdminRole"
+      ]
+    },
+    {
+      "name": "Gate_Super_Administrator",
+      "description": "Super Administrator collection",
+      "role-template-references": [
+        "$XSAPPNAME.SuperadminRole"
+      ]
+    },
+    {
+      "name": "Gate_Auditor",
+      "description": "Auditor collection",
+      "role-template-references": [
+        "$XSAPPNAME.AuditorRole"
+      ]
+    }
+  ]
+}

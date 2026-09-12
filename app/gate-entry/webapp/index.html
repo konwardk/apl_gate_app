@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Main Gate Entry Operations (SAP Fiori Elements)</title>
+
+    <!-- Auth credential interceptor to pass Basic auth headers seamlessly -->
+    <script>
+        const userPasswords = {
+            'superadmin_user': 'password',
+            'maingate_user': 'password',
+            'security_user': 'password',
+            'weighbridge_user': 'password',
+            'factory_user': 'password',
+            'admin_user': 'password',
+            'auditor_user': 'password'
+        };
+
+        function getActiveUser() {
+            return localStorage.getItem('gate_active_user') || 'maingate_user';
+        }
+
+        function getAuthHeaderValue(user) {
+            const u = user || getActiveUser();
+            const p = userPasswords[u] || 'password';
+            return 'Basic ' + btoa(u + ':' + p);
+        }
+
+        (function() {
+            const origOpen = XMLHttpRequest.prototype.open;
+            XMLHttpRequest.prototype.open = function(method, url) {
+                this._url = url;
+                return origOpen.apply(this, arguments);
+            };
+
+            const origSend = XMLHttpRequest.prototype.send;
+            XMLHttpRequest.prototype.send = function(data) {
+                if (this._url && (this._url.includes('/gate') || this._url.includes('GateService'))) {
+                    try {
+                        this.setRequestHeader('Authorization', getAuthHeaderValue());
+                    } catch (e) {}
+                }
+                return origSend.apply(this, arguments);
+            };
+
+            const origFetch = window.fetch;
+            window.fetch = function(input, init) {
+                let url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+                if (url && (url.includes('/gate') || url.includes('GateService'))) {
+                    init = init || {};
+                    init.headers = new Headers(init.headers || {});
+                    if (!init.headers.has('Authorization')) {
+                        init.headers.set('Authorization', getAuthHeaderValue());
+                    }
+                }
+                return origFetch.call(this, input, init);
+            };
+        })();
+    </script>
+
+    <!-- SAP Fiori Launchpad Sandbox Configuration -->
+    <script>
+        // Auto-navigate to the Fiori Elements application target if no hash is supplied
+        if (!window.location.hash || window.location.hash === "#" || window.location.hash === "#Shell-home") {
+            window.location.hash = "#preview-app";
+        }
+
+        window["sap-ushell-config"] = {
+            defaultRenderer: "fiori2",
+            services: {
+                EndUserFeedback: { config: { enabled: false } },
+                NavTargetResolution: {
+                    config: {
+                        enableClientSideTargetResolution: true
+                    }
+                }
+            },
+            renderers: {
+                fiori2: {
+                    componentData: {
+                        config: {
+                            enableNotificationsUI: false,
+                            enableNotifications: false,
+                            enableSearch: false,
+                            enablePersonalization: false,
+                            enableSetTheme: true,
+                            enableSetLanguage: true
+                        }
+                    }
+                }
+            },
+            applications: {
+                "preview-app": {
+                    title: "Main Gate Operations",
+                    description: "SAP Fiori Elements",
+                    additionalInformation: "SAPUI5.Component=factory.gate.entry",
+                    applicationType: "URL",
+                    url: "./",
+                    navigationMode: "embedded"
+                },
+                "GateTransactions-manage": {
+                    title: "Main Gate Operations",
+                    description: "SAP Fiori Elements",
+                    additionalInformation: "SAPUI5.Component=factory.gate.entry",
+                    applicationType: "URL",
+                    url: "./",
+                    navigationMode: "embedded"
+                }
+            }
+        };
+    </script>
+
+    <script id="sap-ushell-bootstrap" src="https://ui5.sap.com/test-resources/sap/ushell/bootstrap/sandbox.js"></script>
+    <script id="sap-ui-bootstrap"
+        src="https://ui5.sap.com/resources/sap-ui-core.js"
+        data-sap-ui-theme="sap_horizon"
+        data-sap-ui-libs="sap.m, sap.ui.core, sap.ushell, sap.fe.templates"
+        data-sap-ui-compatVersion="edge"
+        data-sap-ui-async="true"
+        data-sap-ui-flexibilityServices='[{"connector": "LocalStorageConnector"}]'
+        data-sap-ui-frameOptions="allow"
+        data-sap-ui-resourceroots='{ "factory.gate.entry": "./" }'
+        data-sap-ui-preload="async">
+    </script>
+
+    <script>
+        sap.ui.getCore().attachInit(function () {
+            sap.ushell.Container.createRenderer().placeAt("content");
+        });
+    </script>
+</head>
+<body class="sapUiBody sapUiSizeCompact" id="content" style="height: 100vh;">
+</body>
+</html>
