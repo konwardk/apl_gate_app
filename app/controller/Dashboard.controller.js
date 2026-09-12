@@ -29,6 +29,11 @@ sap.ui.define([
             oComponent.navigateTo("securityGateOpsPage", "slide");
         },
 
+        onOpenWeighbridgeOps: function () {
+            const oComponent = this.getOwnerComponent();
+            oComponent.navigateTo("weighbridgeOpsPage", "slide");
+        },
+
         onOpenVehiclesFE: function () {
             const oModel = this.getOwnerComponent().getModel();
             if (!oModel.getProperty("/canViewMasterData")) {

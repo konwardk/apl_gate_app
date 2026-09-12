@@ -138,11 +138,13 @@ sap.ui.define([
                 const activeUser = oModel.getProperty("/activeUser");
                 const perms = models.getPermissionsForUser(currentRoles, activeUser);
 
-                oModel.setProperty("/userRolesText", currentRoles.length ? currentRoles.join(", ") : (activeUser.includes("superadmin") ? "Superadmin" : "MainGateUser"));
+                oModel.setProperty("/userRolesText", currentRoles.length ? currentRoles.join(", ") : (activeUser.includes("superadmin") ? "Superadmin" : (activeUser.includes("weighbridge") ? "WeighbridgeUser" : "MainGateUser")));
                 oModel.setProperty("/canCreateGateIn", perms.canCreateGateIn);
                 oModel.setProperty("/canMainGateOut", perms.canMainGateOut);
                 oModel.setProperty("/canViewLiveOps", perms.canViewLiveOps);
                 oModel.setProperty("/canViewGateOps", perms.canViewGateOps);
+                oModel.setProperty("/canRecordWeighment", perms.canRecordWeighment);
+                oModel.setProperty("/canViewWeighbridgeOps", perms.canViewWeighbridgeOps);
                 oModel.setProperty("/canViewMasterData", perms.canViewMasterData);
                 oModel.setProperty("/canViewAuditTrail", perms.canViewAuditTrail);
                 oModel.setProperty("/canViewAudit", perms.canViewAuditTrail);
@@ -197,11 +199,32 @@ sap.ui.define([
             oModel.setProperty("/canMainGateOut", perms.canMainGateOut);
             oModel.setProperty("/canViewLiveOps", perms.canViewLiveOps);
             oModel.setProperty("/canViewGateOps", perms.canViewGateOps);
+            oModel.setProperty("/canRecordWeighment", perms.canRecordWeighment);
+            oModel.setProperty("/canViewWeighbridgeOps", perms.canViewWeighbridgeOps);
             oModel.setProperty("/canViewMasterData", perms.canViewMasterData);
             oModel.setProperty("/canViewAuditTrail", perms.canViewAuditTrail);
             oModel.setProperty("/canViewAudit", perms.canViewAuditTrail);
 
             this.loadOverviewData();
+
+            // Automatic role-based view navigation
+            if (newKey === "weighbridge_user") {
+                this.navigateTo("weighbridgeOpsPage", "slide");
+                const aPages = this._oNavContainer ? this._oNavContainer.getPages() : [];
+                const oWbPage = aPages.find(p => p.getId().endsWith("weighbridgeOpsPage"));
+                if (oWbPage && oWbPage.getController && oWbPage.getController().loadWeighbridgeData) {
+                    oWbPage.getController().loadWeighbridgeData();
+                }
+            } else if (newKey === "security_user") {
+                this.navigateTo("securityGateOpsPage", "slide");
+                const aPages = this._oNavContainer ? this._oNavContainer.getPages() : [];
+                const oSecPage = aPages.find(p => p.getId().endsWith("securityGateOpsPage"));
+                if (oSecPage && oSecPage.getController && oSecPage.getController().loadSecurityData) {
+                    oSecPage.getController().loadSecurityData();
+                }
+            } else if (newKey === "maingate_user") {
+                this.navigateTo("mainGateOpsPage", "slide");
+            }
 
             // If inside Fiori Elements viewer, reload frame
             if (this._oNavContainer) {

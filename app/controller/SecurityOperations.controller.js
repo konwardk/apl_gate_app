@@ -372,6 +372,10 @@ sap.ui.define([
 
         onNavMainGateOps: function () {
             this.getOwnerComponent().navigateTo("mainGateOpsPage", "slide");
+        },
+
+        onNavWeighbridgeOps: function () {
+            this.getOwnerComponent().navigateTo("weighbridgeOpsPage", "slide");
         }
     });
 });

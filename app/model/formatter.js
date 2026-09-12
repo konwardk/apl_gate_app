@@ -66,6 +66,42 @@ sap.ui.define([
             if (userId.includes("admin")) return "Accent7";
             if (userId.includes("auditor")) return "Accent4";
             return "Accent1";
+        },
+
+        formatWeight: function (val, unit) {
+            if (val === null || val === undefined || val === "") return "-";
+            const num = parseFloat(val);
+            if (isNaN(num)) return "-";
+            const sFormatted = num.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 });
+            return sFormatted + (unit ? " " + unit : " KG");
+        },
+
+        getWeighmentTypeState: function (type) {
+            switch (type) {
+                case "GROSS_IN":
+                case "GROSS_OUT":
+                    return ValueState.Success;
+                case "TARE_IN":
+                case "TARE_OUT":
+                    return ValueState.Information;
+                default:
+                    return ValueState.None;
+            }
+        },
+
+        getWeighmentTypeDesc: function (type) {
+            switch (type) {
+                case "GROSS_IN":
+                    return "GROSS_IN - Gross Inbound";
+                case "TARE_IN":
+                    return "TARE_IN - Tare Inbound (Empty Truck)";
+                case "TARE_OUT":
+                    return "TARE_OUT - Tare Outbound (Empty Truck)";
+                case "GROSS_OUT":
+                    return "GROSS_OUT - Gross Outbound (Loaded Truck)";
+                default:
+                    return type || "-";
+            }
         }
     };
 });

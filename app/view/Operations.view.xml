@@ -19,6 +19,11 @@
                 type="Default"
                 press=".onNavSecurityGateOps" />
             <Button
+                text="Weighbridge"
+                icon="sap-icon://dimension"
+                type="Default"
+                press=".onNavWeighbridgeOps" />
+            <Button
                 text="Gate IN"
                 icon="sap-icon://log-in"
                 type="Emphasized"

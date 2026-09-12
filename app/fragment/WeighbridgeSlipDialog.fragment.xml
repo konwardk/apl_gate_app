@@ -1,0 +1,161 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:core="sap.ui.core">
+    <Dialog
+        id="weighbridgeSlipDialog"
+        title="APL Factory Weighbridge Certificate"
+        contentWidth="680px"
+        class="sapUiContentPadding weighbridge-slip-dialog">
+        <customHeader>
+            <Bar>
+                <contentLeft>
+                    <core:Icon src="sap-icon://dimension" color="#0070f2" size="1.2rem" class="sapUiTinyMarginBegin" />
+                    <Title text="APL Factory Official Weighment Slip" level="H3" titleStyle="H4" />
+                </contentLeft>
+                <contentRight>
+                    <ObjectStatus
+                        text="VERIFIED &amp; CERTIFIED"
+                        state="Success"
+                        class="sapUiSmallMarginEnd" />
+                </contentRight>
+            </Bar>
+        </customHeader>
+        <content>
+            <VBox class="weighbridge-slip-content">
+                <!-- Slip Header / Company Reference -->
+                <HBox justifyContent="SpaceBetween" alignItems="Center" class="slip-header-banner sapUiSmallMarginBottom">
+                    <VBox>
+                        <Title text="APL LOGISTICS &amp; GATE OPERATIONS" level="H4" titleStyle="H5" />
+                        <Text text="Plant Weighbridge Station • ISO 9001 / Legal Metrology Certified" class="sapUiTinyMarginTop" />
+                    </VBox>
+                    <VBox alignItems="End">
+                        <Text text="Slip No: {slipModel>/slipNumber}" design="Bold" />
+                        <Text text="Date: {path: 'slipModel>/weighbridgeDateTime', formatter: '.formatter.formatDateTime'}" />
+                    </VBox>
+                </HBox>
+
+                <!-- Vehicle & Gate Pass Identification Form -->
+                <form:SimpleForm
+                    layout="ResponsiveGridLayout"
+                    labelSpanXL="4"
+                    labelSpanL="4"
+                    labelSpanM="4"
+                    labelSpanS="12"
+                    adjustLabelSpan="false"
+                    emptySpanXL="0"
+                    emptySpanL="0"
+                    columnsXL="2"
+                    columnsL="2">
+                    <form:content>
+                        <core:Title text="Vehicle &amp; Consignment Details" />
+
+                        <Label text="Gate IN Number" />
+                        <Text text="{slipModel>/gateInNumber}" design="Bold" />
+
+                        <Label text="Vehicle Reg No" />
+                        <Text text="{slipModel>/vehicleRegNo}" design="Bold" />
+
+                        <Label text="Vehicle Type" />
+                        <Text text="{slipModel>/vehicleType}" />
+
+                        <Label text="Driver Name" />
+                        <Text text="{= ${slipModel>/driverName} || 'Not Recorded' }" />
+
+                        <Label text="Purpose of Visit" />
+                        <ObjectStatus
+                            text="{slipModel>/purpose}"
+                            state="{path: 'slipModel>/purpose', formatter: '.formatter.getPurposeState'}" />
+
+                        <core:Title text="Scale &amp; Weighing Metadata" />
+
+                        <Label text="Weighbridge Number" />
+                        <Text text="{slipModel>/weighbridgeNumber}" design="Bold" />
+
+                        <Label text="Weighment Type" />
+                        <ObjectStatus
+                            text="{path: 'slipModel>/weighmentType', formatter: '.formatter.getWeighmentTypeDesc'}"
+                            state="{path: 'slipModel>/weighmentType', formatter: '.formatter.getWeighmentTypeState'}" />
+
+                        <Label text="Recorded Weight" />
+                        <Text text="{path: 'slipModel>/weight', formatter: '.formatter.formatWeight'} {= ${slipModel>/weightUnit} || 'KG' }" design="Bold" />
+
+                        <Label text="Weighbridge Operator" />
+                        <Text text="{slipModel>/operator}" />
+
+                        <Label text="Remarks" />
+                        <Text text="{= ${slipModel>/remarks} || 'None' }" />
+                    </form:content>
+                </form:SimpleForm>
+
+                <!-- Gross / Tare / Net Weight Card Summary -->
+                <Panel
+                    headerText="Net Weight Summary Calculation"
+                    class="sapUiSmallMarginTop net-weight-panel"
+                    visible="{slipModel>/hasNetCalculation}">
+                    <content>
+                        <HBox justifyContent="SpaceAround" alignItems="Center" class="net-weight-summary-box">
+                            <VBox alignItems="Center">
+                                <Label text="Gross Weight" design="Bold" />
+                                <Title
+                                    text="{path: 'slipModel>/grossWeight', formatter: '.formatter.formatWeight'}"
+                                    level="H3"
+                                    titleStyle="H4"
+                                    class="weight-metric gross-metric" />
+                                <Text text="{slipModel>/grossTimestampText}" class="sapUiTinyMarginTop" />
+                            </VBox>
+
+                            <Title text="−" level="H1" titleStyle="H1" class="math-operator" />
+
+                            <VBox alignItems="Center">
+                                <Label text="Tare Weight" design="Bold" />
+                                <Title
+                                    text="{path: 'slipModel>/tareWeight', formatter: '.formatter.formatWeight'}"
+                                    level="H3"
+                                    titleStyle="H4"
+                                    class="weight-metric tare-metric" />
+                                <Text text="{slipModel>/tareTimestampText}" class="sapUiTinyMarginTop" />
+                            </VBox>
+
+                            <Title text="=" level="H1" titleStyle="H1" class="math-operator" />
+
+                            <VBox alignItems="Center" class="net-result-box">
+                                <Label text="Net Cargo Weight" design="Bold" />
+                                <Title
+                                    text="{path: 'slipModel>/netWeight', formatter: '.formatter.formatWeight'}"
+                                    level="H2"
+                                    titleStyle="H2"
+                                    class="weight-metric net-metric" />
+                                <Text text="({slipModel>/netWeightMT} MT)" class="sapUiTinyMarginTop" design="Bold" />
+                            </VBox>
+                        </HBox>
+                    </content>
+                </Panel>
+
+                <!-- Footer Signoff Section -->
+                <HBox justifyContent="SpaceBetween" alignItems="Center" class="sapUiMediumMarginTop slip-footer-signatures">
+                    <VBox alignItems="Center">
+                        <Text text="___________________________" />
+                        <Text text="Driver Signature" class="sapUiTinyMarginTop" />
+                    </VBox>
+                    <VBox alignItems="Center">
+                        <Text text="___________________________" />
+                        <Text text="Weighbridge Officer ({slipModel>/operator})" class="sapUiTinyMarginTop" />
+                    </VBox>
+                </HBox>
+            </VBox>
+        </content>
+        <beginButton>
+            <Button
+                text="Print Slip"
+                icon="sap-icon://print"
+                type="Emphasized"
+                press=".onPrintSlip" />
+        </beginButton>
+        <endButton>
+            <Button
+                text="Close"
+                press=".onCloseSlipDialog" />
+        </endButton>
+    </Dialog>
+</core:FragmentDefinition>

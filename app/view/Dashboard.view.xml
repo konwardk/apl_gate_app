@@ -142,6 +142,21 @@
                             </TileContent>
                         </tileContent>
                     </GenericTile>
+
+                    <GenericTile
+                        header="Weighbridge Operations"
+                        subheader="Gross &amp; Tare Weighment Clearance"
+                        sizeBehavior="Responsive"
+                        press=".onOpenWeighbridgeOps"
+                        class="flp-tile flp-tile-ops">
+                        <tileContent>
+                            <TileContent footer="Digital Scale &amp; Net Weight">
+                                <content>
+                                    <NumericContent icon="sap-icon://dimension" valueColor="Neutral" />
+                                </content>
+                            </TileContent>
+                        </tileContent>
+                    </GenericTile>
                 </HBox>
             </VBox>
 

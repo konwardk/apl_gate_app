@@ -19,6 +19,10 @@ sap.ui.define([
             this.getOwnerComponent().navigateTo("securityGateOpsPage", "slide");
         },
 
+        onNavWeighbridgeOps: function () {
+            this.getOwnerComponent().navigateTo("weighbridgeOpsPage", "slide");
+        },
+
         onOpenGateIn: function () {
             this.getOwnerComponent().openGateInDialog();
         },

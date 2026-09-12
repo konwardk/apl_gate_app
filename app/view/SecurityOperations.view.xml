@@ -22,6 +22,11 @@
                 type="Transparent"
                 press=".onNavMainGateOps" />
             <Button
+                text="Weighbridge Ops"
+                icon="sap-icon://dimension"
+                type="Transparent"
+                press=".onNavWeighbridgeOps" />
+            <Button
                 text="Refresh Queue"
                 icon="sap-icon://refresh"
                 type="Transparent"
@@ -139,7 +144,9 @@
                             </VBox>
 
                             <!-- Group 3: Delivery Documentation (Conditional) -->
-                            <core:Title text="3. Delivery Documentation &amp; PO Details" visible="{secModel>/isDelivery}" />
+                            <Toolbar visible="{secModel>/isDelivery}">
+                                <Title text="3. Delivery Documentation &amp; PO Details" level="H4" titleStyle="H5" />
+                            </Toolbar>
 
                             <Label text="Without PO" visible="{secModel>/isDelivery}" />
                             <VBox visible="{secModel>/isDelivery}">
@@ -195,7 +202,9 @@
                                 enabled="{= !${secModel>/withoutPO} }" />
 
                             <!-- Group 3b: Pickup Documentation & Gate Pass Details (Conditional) -->
-                            <core:Title text="3. Pickup Documentation &amp; Gate Pass Details (Optional at Entry)" visible="{secModel>/isPickup}" />
+                            <Toolbar visible="{secModel>/isPickup}">
+                                <Title text="3. Pickup Documentation &amp; Gate Pass Details (Optional at Entry)" level="H4" titleStyle="H5" />
+                            </Toolbar>
 
                             <Label text="Notice" visible="{secModel>/isPickup}" />
                             <MessageStrip

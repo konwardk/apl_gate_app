@@ -107,6 +107,7 @@
                 <mvc:XMLView id="feViewerPage" viewName="factory.gate.view.Viewer" />
                 <mvc:XMLView id="mainGateOpsPage" viewName="factory.gate.view.Operations" />
                 <mvc:XMLView id="securityGateOpsPage" viewName="factory.gate.view.SecurityOperations" />
+                <mvc:XMLView id="weighbridgeOpsPage" viewName="factory.gate.view.WeighbridgeOperations" />
             </pages>
         </NavContainer>
     </VBox>

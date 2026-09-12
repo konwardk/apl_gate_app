@@ -183,3 +183,174 @@ html, body {
     border: 1px dashed #107e3e;
     text-align: center;
 }
+
+/* ============================================================
+   Weighbridge Operations & Scale Telemetry Styling
+   ============================================================ */
+.scale-monitor-container {
+    padding: 8px 4px;
+    gap: 16px;
+}
+
+.scale-station-cards {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.scale-station-card {
+    background: #ffffff;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    padding: 12px 18px;
+    width: 200px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.scale-station-card:hover {
+    border-color: #0070f2;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 112, 242, 0.15);
+}
+
+.scale-station-card-active {
+    border-color: #0070f2 !important;
+    background: #f0f7ff !important;
+    box-shadow: 0 4px 14px rgba(0, 112, 242, 0.2) !important;
+}
+
+/* Digital Scale LED Readout Box */
+.digital-scale-box {
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 14px 22px;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0, 0, 0, 0.15);
+    border: 1px solid #334155;
+    color: #e2e8f0;
+}
+
+.digital-led-display {
+    background: #0f172a;
+    padding: 8px 20px;
+    border-radius: 8px;
+    border: 1px solid #000000;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.digital-weight-value {
+    color: #4ade80 !important;
+    font-family: "Courier New", Courier, monospace, "72" !important;
+    font-size: 32px !important;
+    font-weight: 900 !important;
+    letter-spacing: 2px !important;
+    text-shadow: 0 0 12px rgba(74, 222, 128, 0.6) !important;
+}
+
+/* Net Weight Inline Summary */
+.net-weight-inline-badge {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-left: 4px solid #0070f2;
+    padding: 8px 16px;
+    border-radius: 6px;
+}
+
+.net-cargo-weight-text {
+    color: #0f766e !important;
+    font-weight: 800 !important;
+}
+
+/* Weighbridge Certificate / Slip Dialog */
+.weighbridge-slip-content {
+    background: #ffffff;
+    padding: 8px;
+}
+
+.slip-header-banner {
+    border-bottom: 2px solid #0070f2;
+    padding-bottom: 8px;
+}
+
+.net-weight-panel {
+    background: #f0fdf4 !important;
+    border: 1px solid #86efac !important;
+    border-radius: 8px;
+}
+
+.net-weight-summary-box {
+    padding: 12px 16px;
+}
+
+.weight-metric {
+    font-weight: 800 !important;
+}
+
+.gross-metric {
+    color: #1e40af !important;
+}
+
+.tare-metric {
+    color: #b45309 !important;
+}
+
+.net-metric {
+    color: #15803d !important;
+}
+
+.math-operator {
+    color: #64748b !important;
+    margin: 0 12px;
+}
+
+.slip-footer-signatures {
+    border-top: 1px dashed #cbd5e1;
+    padding-top: 24px;
+    margin-top: 16px;
+}
+
+@media print {
+    /* Hide the entire application background when printing from browser */
+    #content,
+    .sapUiUfdShell,
+    .sapUiBody > *:not(#sap-ui-static),
+    .sapUiBLKe,
+    .sapMDialogBlockLayer,
+    .sapMDialogFooter,
+    .sapMBarRight,
+    .sapMDialogTitleGroup .sapMBtn {
+        display: none !important;
+    }
+
+    /* Configure weighbridge slip dialog to occupy print area cleanly */
+    .weighbridge-slip-dialog {
+        position: static !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        box-shadow: none !important;
+        border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .weighbridge-slip-dialog .sapMDialogSection {
+        padding: 0 !important;
+        overflow: visible !important;
+    }
+
+    .weighbridge-slip-dialog .sapMDialogScroll,
+    .weighbridge-slip-dialog .sapMDialogScrollCont {
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    .weighbridge-slip-dialog .sapMBar {
+        border-bottom: 2px solid #0070f2 !important;
+    }
+}

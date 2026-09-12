@@ -331,6 +331,17 @@ annotate service.PickupDetails with @(
    ============================================================ */
 
 annotate service.WeighbridgeTransactions with @(
+    UI.HeaderInfo : {
+        TypeName : 'Weighment Record',
+        TypeNamePlural : 'Weighment Records',
+        Title : { $Type : 'UI.DataField', Value : weighbridgeNumber },
+        Description : { $Type : 'UI.DataField', Value : weighmentType }
+    },
+    UI.SelectionFields : [
+        weighbridgeNumber,
+        weighmentType,
+        operator
+    ],
     UI.LineItem : [
         { $Type : 'UI.DataField', Value : weighbridgeNumber },
         { $Type : 'UI.DataField', Value : weighmentType },

@@ -42,10 +42,14 @@ sap.ui.define([
                 isSuper: isSuper,
                 isAdmin: isAdmin,
                 isMainGate: isMainGate,
+                isSecurity: isSecurity,
+                isWeighbridge: isWeighbridge,
                 canCreateGateIn: isSuper || isMainGate,
                 canMainGateOut: isSuper || isMainGate,
                 canViewLiveOps: isSuper || isMainGate || isAdmin || isSecurity || isWeighbridge || isFactory || isAuditor,
-                canViewGateOps: isSuper || isMainGate || isAdmin || isSecurity,
+                canViewGateOps: isSuper || isMainGate || isAdmin || isSecurity || isWeighbridge,
+                canRecordWeighment: isSuper || isWeighbridge,
+                canViewWeighbridgeOps: isSuper || isWeighbridge || isMainGate || isSecurity || isAdmin || isAuditor,
                 canViewMasterData: isSuper || isAdmin,
                 canViewAuditTrail: isSuper || isAdmin || isAuditor
             };
@@ -59,7 +63,7 @@ sap.ui.define([
                 userInitials: formatter.getUserInitials(activeUser),
                 userAvatarColor: formatter.getUserAvatarColor(activeUser),
                 isAuthenticated: true,
-                userRolesText: activeUser === "superadmin_user" ? "Superadmin" : (activeUser === "maingate_user" ? "MainGateUser" : "Authenticated"),
+                userRolesText: activeUser === "superadmin_user" ? "Superadmin" : (activeUser === "maingate_user" ? "MainGateUser" : (activeUser === "weighbridge_user" ? "WeighbridgeUser" : "Authenticated")),
                 currentTheme: "sap_horizon",
                 counts: {
                     TOTAL: 0,
@@ -77,6 +81,8 @@ sap.ui.define([
                 canMainGateOut: perms.canMainGateOut,
                 canViewLiveOps: perms.canViewLiveOps,
                 canViewGateOps: perms.canViewGateOps,
+                canRecordWeighment: perms.canRecordWeighment,
+                canViewWeighbridgeOps: perms.canViewWeighbridgeOps,
                 canViewMasterData: perms.canViewMasterData,
                 canViewAuditTrail: perms.canViewAuditTrail,
                 canViewAudit: perms.canViewAuditTrail,

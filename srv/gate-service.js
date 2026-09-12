@@ -665,7 +665,12 @@ export default cds.service.impl(async function () {
         const {
             gateInNumber,
             weight,
-            weighbridgeNumber
+            weighbridgeNumber,
+            weighmentType: reqWeighmentType,
+            weightUnit,
+            weighbridgeDateTime,
+            operator,
+            remarks
         } = req.data;
 
 
@@ -783,19 +788,22 @@ export default cds.service.impl(async function () {
                 weighbridgeNumber,
 
             weighmentType:
-                weighmentType,
+                reqWeighmentType || weighmentType,
 
             weight:
                 weight,
 
             weightUnit:
-                'KG',
+                weightUnit || 'KG',
 
             weighbridgeDateTime:
-                new Date(),
+                weighbridgeDateTime ? new Date(weighbridgeDateTime) : new Date(),
 
             operator:
-                req.user?.id || 'SYSTEM'
+                operator || req.user?.id || 'SYSTEM',
+
+            remarks:
+                remarks || null
         });
 
 
@@ -840,6 +848,52 @@ export default cds.service.impl(async function () {
             .where({
                 ID: transaction.ID
             });
+
+
+        /*
+         * Audit Log
+         */
+
+        const finalType = reqWeighmentType || weighmentType;
+        const finalUnit = weightUnit || 'KG';
+        const finalOp = operator || req.user?.id || 'SYSTEM';
+
+        await INSERT.into(
+            GateAuditLogs
+        ).entries({
+
+            ID: cds.utils.uuid(),
+
+            gateTransaction_ID:
+                transaction.ID,
+
+            action:
+                `WEIGHMENT_${finalType}`,
+
+            oldStatus:
+                transaction.status,
+
+            newStatus:
+                newStatus,
+
+            oldStage:
+                transaction.currentStage,
+
+            newStage:
+                newStage,
+
+            actionDateTime:
+                weighbridgeDateTime ? new Date(weighbridgeDateTime) : new Date(),
+
+            userId:
+                finalOp,
+
+            userName:
+                finalOp,
+
+            remarks:
+                `Recorded ${finalType}: ${weight} ${finalUnit} on Scale #${weighbridgeNumber}${remarks ? ' - ' + remarks : ''}`
+        });
 
 
         return SELECT.one

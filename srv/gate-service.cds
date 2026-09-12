@@ -131,9 +131,14 @@ service GateService {
 
 
     action RecordWeighment(
-        gateInNumber : String,
-        weight : Decimal(15,3),
-        weighbridgeNumber : String
+        gateInNumber        : String,
+        weight              : Decimal(15,3),
+        weighbridgeNumber   : String,
+        weighmentType       : String,
+        weightUnit          : String,
+        weighbridgeDateTime : Timestamp,
+        operator            : String,
+        remarks             : String
     ) returns GateTransactions;
 
 

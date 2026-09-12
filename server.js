@@ -3,6 +3,7 @@ import cds from '@sap/cds';
 cds.on('bootstrap', (app) => {
     // Middleware to catch SAP flexibility & metrics requests without path-to-regexp issues
     app.use((req, res, next) => {
+        res.setHeader('Permissions-Policy', 'unload=*');
         if (req.path.startsWith('/sap/bc/lrep/flex/settings')) {
             return res.json({
                 isKeyUser: false,

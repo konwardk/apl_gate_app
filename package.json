@@ -10,7 +10,7 @@
   },
   "scripts": {
     "start": "cds-serve",
-    "test": "node test/gate-crud.test.js && node test/security-gate.test.js && node test/gate-out.test.js"
+    "test": "node test/gate-crud.test.js && node test/security-gate.test.js && node test/weighbridge.test.js && node test/gate-out.test.js"
   },
   "private": true
 }
