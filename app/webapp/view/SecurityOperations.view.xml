@@ -184,7 +184,10 @@
                             </VBox>
 
                             <!-- 8. Actions -->
-                            <HBox justifyContent="End" class="sapUiTinyMarginBeginEnd">
+                            <HBox justifyContent="End"
+                                    alignItems="Center"
+                                    wrap="Wrap"
+                                    class="sapUiTinyMarginBeginEnd">
                                 <Button
                                     text="Gate IN"
                                     icon="sap-icon://shield"

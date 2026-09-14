@@ -1,6 +1,15 @@
 import cds from '@sap/cds';
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 cds.on('bootstrap', (app) => {
+    const webappDir = path.join(__dirname, 'app', 'webapp');
+    app.use('/webapp', express.static(webappDir));
+    app.use(express.static(webappDir));
     // Middleware to catch SAP flexibility & metrics requests without path-to-regexp issues
     app.use((req, res, next) => {
         res.setHeader('Permissions-Policy', 'unload=*');

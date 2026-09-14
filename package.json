@@ -10,9 +10,12 @@
   },
   "scripts": {
     "start": "cds-serve",
+    "watch": "cds watch",
     "test": "node test/gate-crud.test.js && node test/security-gate.test.js && node test/weighbridge.test.js && node test/gate-out.test.js && node test/security-gate-out.test.js && node test/bypass-weighbridge.test.js && node test/entry-wise-edit.test.js"
   },
+  "sapux": [
+    "app/gate-entry",
+    "app"
+  ],
   "private": true
 }
-
-
