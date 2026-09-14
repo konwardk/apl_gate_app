@@ -13,11 +13,12 @@ annotate GateService with @(requires: 'authenticated-user');
 annotate GateService.CreateGateIn     with @(requires: ['MainGateUser', 'Superadmin']);
 annotate GateService.SecurityGateIn   with @(requires: ['SecurityGateUser', 'Superadmin']);
 annotate GateService.RecordWeighment  with @(requires: ['WeighbridgeUser', 'Superadmin']);
-annotate GateService.FactoryGateIn    with @(requires: ['FactoryGateUser', 'Superadmin']);
-annotate GateService.FactoryGateOut   with @(requires: ['FactoryGateUser', 'Superadmin']);
-annotate GateService.SecurityGateOut  with @(requires: ['SecurityGateUser', 'Superadmin']);
-annotate GateService.MainGateOut      with @(requires: ['MainGateUser', 'Superadmin']);
-annotate GateService.userInfo         with @(requires: 'authenticated-user');
+annotate GateService.FactoryGateIn           with @(requires: ['FactoryGateUser', 'Superadmin']);
+annotate GateService.FactoryGateOut          with @(requires: ['FactoryGateUser', 'Superadmin']);
+annotate GateService.RecordFactoryOperation  with @(requires: ['FactoryGateUser', 'Superadmin']);
+annotate GateService.SecurityGateOut         with @(requires: ['SecurityGateUser', 'Superadmin']);
+annotate GateService.MainGateOut             with @(requires: ['MainGateUser', 'Superadmin']);
+annotate GateService.userInfo                with @(requires: 'authenticated-user');
 
 // 3. Entity Level Authorization
 
@@ -76,6 +77,11 @@ annotate GateService.WeighbridgeTransactions with @(restrict: [
 ]);
 
 // Factory Yard Records
+annotate GateService.FactoryGateEntries with @(restrict: [
+    { grant: 'READ', to: 'authenticated-user' },
+    { grant: '*',    to: ['FactoryGateUser', 'Admin', 'Superadmin'] }
+]);
+
 annotate GateService.FactoryGateEvents with @(restrict: [
     { grant: 'READ', to: 'authenticated-user' },
     { grant: '*',    to: ['FactoryGateUser', 'Admin', 'Superadmin'] }

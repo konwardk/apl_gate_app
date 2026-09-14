@@ -10,6 +10,7 @@ export default cds.service.impl(async function () {
         DeliveryDetails,
         PickupDetails,
         WeighbridgeTransactions,
+        FactoryGateEntries,
         FactoryGateEvents,
         GateAuditLogs,
         Vehicles,
@@ -938,17 +939,27 @@ export default cds.service.impl(async function () {
      */
 
     this.on('FactoryGateIn', async (req) => {
-
         const {
-            gateInNumber
+            gateInNumber,
+            factoryGateInDateTime,
+            factoryGateInOperator,
+            factoryArea,
+            unloadingPoint,
+            poNumber: reqPoNumber,
+            invoiceNumber: reqInvoiceNumber,
+            invoiceDate: reqInvoiceDate,
+            supplierName: reqSupplierName,
+            transporterName: reqTransporterName,
+            materialDescription,
+            deliveryNoteNo,
+            remarks
         } = req.data;
 
+        if (!gateInNumber) {
+            return req.error(400, 'Gate IN Number is mandatory.');
+        }
 
-        const transaction = await getTransaction(
-            gateInNumber,
-            req
-        );
-
+        const transaction = await getTransaction(gateInNumber, req);
 
         // Allow both SECURITY_IN (direct entry without scale) and WEIGHBRIDGE_IN (entry after scale)
         validateStage(
@@ -957,36 +968,83 @@ export default cds.service.impl(async function () {
             req
         );
 
+        // Pull PO, Invoice and Delivery data from SecurityGateEntries if not supplied
+        const secEntry = await SELECT.one.from(SecurityGateEntries).where({ gateTransaction_ID: transaction.ID });
+        const poNumber = reqPoNumber || secEntry?.poNumber || '';
+        const invoiceNumber = reqInvoiceNumber || secEntry?.invoiceNumber || '';
+        const invoiceDate = reqInvoiceDate || secEntry?.invoiceDate || null;
 
-        await INSERT.into(
-            FactoryGateEvents
-        ).entries({
+        let supplierName = reqSupplierName || '';
+        if (!supplierName && transaction.supplier_ID) {
+            const s = await SELECT.one.from(Suppliers).where({ ID: transaction.supplier_ID });
+            if (s) supplierName = s.supplierName;
+        }
 
-            ID: cds.utils.uuid(),
+        let transporterName = reqTransporterName || '';
+        if (!transporterName && transaction.transporter_ID) {
+            const t = await SELECT.one.from(Transporters).where({ ID: transaction.transporter_ID });
+            if (t) transporterName = t.transporterName;
+        }
 
-            gateTransaction_ID:
-                transaction.ID,
+        const sOperator = factoryGateInOperator || req.user?.id || 'SYSTEM';
+        const inTimestamp = factoryGateInDateTime ? new Date(factoryGateInDateTime) : new Date();
 
-            factoryGateInDateTime:
-                new Date(),
-
-            factoryGateInOperator:
-                req.user?.id || 'SYSTEM'
-        });
-
+        // Check if consolidated record already exists
+        const existing = await SELECT.one.from(FactoryGateEntries).where({ gateTransaction_ID: transaction.ID });
+        if (existing) {
+            await UPDATE(FactoryGateEntries)
+                .set({
+                    factoryGateInDateTime: inTimestamp,
+                    factoryGateInOperator: sOperator,
+                    factoryArea: factoryArea || existing.factoryArea || 'Raw Material Yard',
+                    unloadingPoint: unloadingPoint || existing.unloadingPoint || '',
+                    poNumber: poNumber,
+                    invoiceNumber: invoiceNumber,
+                    invoiceDate: invoiceDate,
+                    supplierName: supplierName,
+                    transporterName: transporterName,
+                    materialDescription: materialDescription || existing.materialDescription || '',
+                    deliveryNoteNo: deliveryNoteNo || existing.deliveryNoteNo || '',
+                    remarks: remarks || existing.remarks || ''
+                })
+                .where({ ID: existing.ID });
+        } else {
+            await INSERT.into(FactoryGateEntries).entries({
+                ID: cds.utils.uuid(),
+                gateTransaction_ID: transaction.ID,
+                gateInNumber: transaction.gateInNumber,
+                factoryGateInDateTime: inTimestamp,
+                factoryGateInOperator: sOperator,
+                factoryArea: factoryArea || 'Raw Material Yard',
+                unloadingPoint: unloadingPoint || '',
+                poNumber: poNumber,
+                invoiceNumber: invoiceNumber,
+                invoiceDate: invoiceDate,
+                supplierName: supplierName,
+                transporterName: transporterName,
+                materialDescription: materialDescription || '',
+                deliveryNoteNo: deliveryNoteNo || '',
+                unloadingStatus: 'IN_PROGRESS',
+                remarks: remarks || ''
+            });
+        }
 
         await UPDATE(GateTransactions)
             .set({
-
-                status:
-                    'FACTORY_IN',
-
-                currentStage:
-                    'FACTORY'
+                status: 'FACTORY_IN',
+                currentStage: 'FACTORY'
             })
             .where({
                 ID: transaction.ID
             });
+
+        const flowTypeDesc = transaction.status === 'SECURITY_IN'
+            ? 'Direct Factory Entry (Weighbridge bypassed)'
+            : 'Factory Entry following Inbound Weighment';
+
+        const auditRemarks = remarks
+            ? `Factory Gate IN: ${remarks} (${flowTypeDesc})`
+            : `Factory Gate IN recorded by ${sOperator} (${flowTypeDesc}, PO: ${poNumber || 'N/A'}, Inv: ${invoiceNumber || 'N/A'})`;
 
         await INSERT.into(GateAuditLogs).entries({
             ID: cds.utils.uuid(),
@@ -996,20 +1054,13 @@ export default cds.service.impl(async function () {
             newStatus: 'FACTORY_IN',
             oldStage: transaction.currentStage,
             newStage: 'FACTORY',
-            actionDateTime: new Date(),
+            actionDateTime: inTimestamp,
             userId: req.user?.id || 'SYSTEM',
-            userName: req.user?.id || 'SYSTEM',
-            remarks: transaction.status === 'SECURITY_IN'
-                ? 'Vehicle proceeded directly to Factory Gate (Weighbridge bypassed)'
-                : 'Vehicle entered Factory Gate after Inbound Weighment'
+            userName: sOperator,
+            remarks: auditRemarks
         });
 
-
-        return SELECT.one
-            .from(GateTransactions)
-            .where({
-                ID: transaction.ID
-            });
+        return SELECT.one.from(GateTransactions).where({ ID: transaction.ID });
     });
 
 
@@ -1020,18 +1071,23 @@ export default cds.service.impl(async function () {
      */
 
     this.on('FactoryGateOut', async (req) => {
-
         const {
-            gateInNumber
+            gateInNumber,
+            factoryGateOutDateTime,
+            factoryGateOutOperator,
+            unloadingStatus,
+            unloadedQuantity,
+            quantityUnit,
+            goodsInspected,
+            sealVerified,
+            remarks
         } = req.data;
 
+        if (!gateInNumber) {
+            return req.error(400, 'Gate IN Number is mandatory.');
+        }
 
-        const transaction =
-            await getTransaction(
-                gateInNumber,
-                req
-            );
-
+        const transaction = await getTransaction(gateInNumber, req);
 
         validateStage(
             transaction,
@@ -1039,34 +1095,43 @@ export default cds.service.impl(async function () {
             req
         );
 
+        const sOperator = factoryGateOutOperator || req.user?.id || 'SYSTEM';
+        const outTimestamp = factoryGateOutDateTime ? new Date(factoryGateOutDateTime) : new Date();
 
-        await UPDATE(FactoryGateEvents)
-            .set({
-
-                factoryGateOutDateTime:
-                    new Date(),
-
-                factoryGateOutOperator:
-                    req.user?.id || 'SYSTEM'
-
-            })
-            .where({
-
-                gateTransaction_ID:
-                    transaction.ID
-
+        const existing = await SELECT.one.from(FactoryGateEntries).where({ gateTransaction_ID: transaction.ID });
+        if (existing) {
+            await UPDATE(FactoryGateEntries)
+                .set({
+                    factoryGateOutDateTime: outTimestamp,
+                    factoryGateOutOperator: sOperator,
+                    unloadingStatus: unloadingStatus || 'COMPLETED',
+                    unloadedQuantity: unloadedQuantity || existing.unloadedQuantity,
+                    quantityUnit: quantityUnit || existing.quantityUnit || 'KG',
+                    goodsInspected: goodsInspected !== undefined ? Boolean(goodsInspected) : existing.goodsInspected,
+                    sealVerified: sealVerified !== undefined ? Boolean(sealVerified) : existing.sealVerified,
+                    remarks: remarks || existing.remarks || 'Factory yard operations completed'
+                })
+                .where({ ID: existing.ID });
+        } else {
+            await INSERT.into(FactoryGateEntries).entries({
+                ID: cds.utils.uuid(),
+                gateTransaction_ID: transaction.ID,
+                gateInNumber: transaction.gateInNumber,
+                factoryGateOutDateTime: outTimestamp,
+                factoryGateOutOperator: sOperator,
+                unloadingStatus: unloadingStatus || 'COMPLETED',
+                unloadedQuantity: unloadedQuantity || null,
+                quantityUnit: quantityUnit || 'KG',
+                goodsInspected: goodsInspected !== undefined ? Boolean(goodsInspected) : true,
+                sealVerified: sealVerified !== undefined ? Boolean(sealVerified) : true,
+                remarks: remarks || 'Factory yard operations completed'
             });
-
+        }
 
         await UPDATE(GateTransactions)
             .set({
-
-                status:
-                    'FACTORY_OUT',
-
-                currentStage:
-                    'FACTORY'
-
+                status: 'FACTORY_OUT',
+                currentStage: 'FACTORY'
             })
             .where({
                 ID: transaction.ID
@@ -1080,18 +1145,162 @@ export default cds.service.impl(async function () {
             newStatus: 'FACTORY_OUT',
             oldStage: 'FACTORY',
             newStage: 'FACTORY',
-            actionDateTime: new Date(),
+            actionDateTime: outTimestamp,
             userId: req.user?.id || 'SYSTEM',
-            userName: req.user?.id || 'SYSTEM',
-            remarks: 'Factory yard operations completed. Vehicle released for exit clearance.'
+            userName: sOperator,
+            remarks: remarks
+                ? `Factory Gate OUT: ${remarks}`
+                : `Factory yard operations completed by ${sOperator}. Vehicle released for exit clearance.`
         });
 
+        return SELECT.one.from(GateTransactions).where({ ID: transaction.ID });
+    });
 
-        return SELECT.one
-            .from(GateTransactions)
+
+    /*
+     * ============================================================
+     * RECORD FACTORY OPERATION (CONSOLIDATED IN & OUT)
+     * ============================================================
+     */
+
+    this.on('RecordFactoryOperation', async (req) => {
+        const {
+            gateInNumber,
+            factoryGateInDateTime,
+            factoryGateInOperator,
+            factoryGateOutDateTime,
+            factoryGateOutOperator,
+            factoryArea,
+            unloadingPoint,
+            poNumber: reqPoNumber,
+            invoiceNumber: reqInvoiceNumber,
+            invoiceDate: reqInvoiceDate,
+            supplierName: reqSupplierName,
+            transporterName: reqTransporterName,
+            materialDescription,
+            unloadingStatus,
+            unloadedQuantity,
+            quantityUnit,
+            deliveryNoteNo,
+            goodsInspected,
+            sealVerified,
+            remarks
+        } = req.data;
+
+        if (!gateInNumber) {
+            return req.error(400, 'Gate IN Number is mandatory.');
+        }
+
+        const transaction = await getTransaction(gateInNumber, req);
+
+        // Can record if in SECURITY_IN, WEIGHBRIDGE_IN, or FACTORY_IN
+        validateStage(
+            transaction,
+            ['SECURITY_IN', 'WEIGHBRIDGE_IN', 'FACTORY_IN'],
+            req
+        );
+
+        const secEntry = await SELECT.one.from(SecurityGateEntries).where({ gateTransaction_ID: transaction.ID });
+        const poNumber = reqPoNumber || secEntry?.poNumber || '';
+        const invoiceNumber = reqInvoiceNumber || secEntry?.invoiceNumber || '';
+        const invoiceDate = reqInvoiceDate || secEntry?.invoiceDate || null;
+
+        let supplierName = reqSupplierName || '';
+        if (!supplierName && transaction.supplier_ID) {
+            const s = await SELECT.one.from(Suppliers).where({ ID: transaction.supplier_ID });
+            if (s) supplierName = s.supplierName;
+        }
+
+        let transporterName = reqTransporterName || '';
+        if (!transporterName && transaction.transporter_ID) {
+            const t = await SELECT.one.from(Transporters).where({ ID: transaction.transporter_ID });
+            if (t) transporterName = t.transporterName;
+        }
+
+        const inOp = factoryGateInOperator || req.user?.id || 'SYSTEM';
+        const outOp = factoryGateOutOperator || (factoryGateOutDateTime ? (req.user?.id || 'SYSTEM') : null);
+        const inTime = factoryGateInDateTime ? new Date(factoryGateInDateTime) : new Date();
+        const outTime = factoryGateOutDateTime ? new Date(factoryGateOutDateTime) : null;
+
+        const isOutRecorded = Boolean(outTime) || transaction.status === 'FACTORY_IN';
+        const newStatus = isOutRecorded ? 'FACTORY_OUT' : 'FACTORY_IN';
+
+        const existing = await SELECT.one.from(FactoryGateEntries).where({ gateTransaction_ID: transaction.ID });
+        if (existing) {
+            await UPDATE(FactoryGateEntries)
+                .set({
+                    factoryGateInDateTime: inTime || existing.factoryGateInDateTime,
+                    factoryGateInOperator: inOp || existing.factoryGateInOperator,
+                    factoryGateOutDateTime: outTime || existing.factoryGateOutDateTime,
+                    factoryGateOutOperator: outOp || existing.factoryGateOutOperator,
+                    factoryArea: factoryArea || existing.factoryArea || 'Raw Material Yard',
+                    unloadingPoint: unloadingPoint || existing.unloadingPoint || '',
+                    poNumber: poNumber || existing.poNumber,
+                    invoiceNumber: invoiceNumber || existing.invoiceNumber,
+                    invoiceDate: invoiceDate || existing.invoiceDate,
+                    supplierName: supplierName || existing.supplierName,
+                    transporterName: transporterName || existing.transporterName,
+                    materialDescription: materialDescription || existing.materialDescription || '',
+                    unloadingStatus: unloadingStatus || (isOutRecorded ? 'COMPLETED' : 'IN_PROGRESS'),
+                    unloadedQuantity: unloadedQuantity || existing.unloadedQuantity,
+                    quantityUnit: quantityUnit || existing.quantityUnit || 'KG',
+                    deliveryNoteNo: deliveryNoteNo || existing.deliveryNoteNo || '',
+                    goodsInspected: goodsInspected !== undefined ? Boolean(goodsInspected) : existing.goodsInspected,
+                    sealVerified: sealVerified !== undefined ? Boolean(sealVerified) : existing.sealVerified,
+                    remarks: remarks || existing.remarks || ''
+                })
+                .where({ ID: existing.ID });
+        } else {
+            await INSERT.into(FactoryGateEntries).entries({
+                ID: cds.utils.uuid(),
+                gateTransaction_ID: transaction.ID,
+                gateInNumber: transaction.gateInNumber,
+                factoryGateInDateTime: inTime,
+                factoryGateInOperator: inOp,
+                factoryGateOutDateTime: outTime,
+                factoryGateOutOperator: outOp,
+                factoryArea: factoryArea || 'Raw Material Yard',
+                unloadingPoint: unloadingPoint || '',
+                poNumber: poNumber,
+                invoiceNumber: invoiceNumber,
+                invoiceDate: invoiceDate,
+                supplierName: supplierName,
+                transporterName: transporterName,
+                materialDescription: materialDescription || '',
+                unloadingStatus: unloadingStatus || (isOutRecorded ? 'COMPLETED' : 'IN_PROGRESS'),
+                unloadedQuantity: unloadedQuantity || null,
+                quantityUnit: quantityUnit || 'KG',
+                deliveryNoteNo: deliveryNoteNo || '',
+                goodsInspected: goodsInspected !== undefined ? Boolean(goodsInspected) : true,
+                sealVerified: sealVerified !== undefined ? Boolean(sealVerified) : true,
+                remarks: remarks || ''
+            });
+        }
+
+        await UPDATE(GateTransactions)
+            .set({
+                status: newStatus,
+                currentStage: 'FACTORY'
+            })
             .where({
                 ID: transaction.ID
             });
+
+        await INSERT.into(GateAuditLogs).entries({
+            ID: cds.utils.uuid(),
+            gateTransaction_ID: transaction.ID,
+            action: isOutRecorded ? 'FACTORY_GATE_OUT' : 'FACTORY_GATE_IN',
+            oldStatus: transaction.status,
+            newStatus: newStatus,
+            oldStage: transaction.currentStage,
+            newStage: 'FACTORY',
+            actionDateTime: outTime || inTime,
+            userId: req.user?.id || 'SYSTEM',
+            userName: isOutRecorded ? (outOp || inOp) : inOp,
+            remarks: remarks || `Factory operations recorded (${newStatus})`
+        });
+
+        return SELECT.one.from(GateTransactions).where({ ID: transaction.ID });
     });
 
 

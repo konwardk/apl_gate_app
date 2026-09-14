@@ -929,6 +929,10 @@ sap.ui.define([
 
         onNavSecurityGateOps: function () {
             this.getOwnerComponent().navigateTo("securityGateOpsPage", "slide");
+        },
+
+        onNavFactoryGateOps: function () {
+            this.getOwnerComponent().navigateTo("factoryGateOpsPage", "slide");
         }
     });
 });

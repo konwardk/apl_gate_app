@@ -866,6 +866,11 @@ sap.ui.define([
             this.onOpenSecurityGateOutDialog(oTx);
         },
 
+        onRowPrintPress: function (oEvt) {
+            const oTx = oEvt.getSource().getBindingContext("secModel").getObject();
+            this.getOwnerComponent().printGateInPass(oTx);
+        },
+
         onRowDetailPress: function (oEvt) {
             const oTx = oEvt.getSource().getBindingContext("secModel").getObject();
             this.getOwnerComponent().openDetailDialog(oTx);
@@ -894,6 +899,10 @@ sap.ui.define([
 
         onNavWeighbridgeOps: function () {
             this.getOwnerComponent().navigateTo("weighbridgeOpsPage", "slide");
+        },
+
+        onNavFactoryGateOps: function () {
+            this.getOwnerComponent().navigateTo("factoryGateOpsPage", "slide");
         }
     });
 });

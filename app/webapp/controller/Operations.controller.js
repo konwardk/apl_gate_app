@@ -23,6 +23,10 @@ sap.ui.define([
             this.getOwnerComponent().navigateTo("weighbridgeOpsPage", "slide");
         },
 
+        onNavFactoryGateOps: function () {
+            this.getOwnerComponent().navigateTo("factoryGateOpsPage", "slide");
+        },
+
         onOpenGateIn: function () {
             this.getOwnerComponent().openGateInDialog();
         },
@@ -61,6 +65,11 @@ sap.ui.define([
         onTxDetailPress: function (oEvt) {
             const oTx = oEvt.getSource().getBindingContext().getObject();
             this.getOwnerComponent().openDetailDialog(oTx);
+        },
+
+        onTxPrintPress: function (oEvt) {
+            const oTx = oEvt.getSource().getBindingContext().getObject();
+            this.getOwnerComponent().printGateInPass(oTx);
         },
 
         onTxEditPress: function (oEvt) {

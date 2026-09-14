@@ -17,12 +17,20 @@
                 text="Security Gate"
                 icon="sap-icon://shield"
                 type="Default"
+                visible="{/canViewSecurityGateOps}"
                 press=".onNavSecurityGateOps" />
             <Button
                 text="Weighbridge"
                 icon="sap-icon://dimension"
                 type="Default"
+                visible="{/canViewWeighbridgeOps}"
                 press=".onNavWeighbridgeOps" />
+            <Button
+                text="Factory Gate"
+                icon="sap-icon://factory"
+                type="Default"
+                visible="{/canViewFactoryGateOps}"
+                press=".onNavFactoryGateOps" />
             <Button
                 text="Gate IN"
                 icon="sap-icon://log-in"
@@ -122,7 +130,7 @@
                     <Column><header><Text text="Current Stage" /></header></Column>
                     <Column><header><Text text="Gate IN Time" /></header></Column>
                     <Column><header><Text text="Gate OUT Time" /></header></Column>
-                    <Column hAlign="End"><header><Text text="Actions" /></header></Column>
+                    <Column hAlign="End" width="210px"><header><Text text="Actions" /></header></Column>
                 </columns>
                 <items>
                     <ColumnListItem type="Navigation" press=".onTxRowPress">
@@ -141,11 +149,12 @@
                             <Text text="{path: 'gateInDateTime', formatter: '.formatter.formatDateTime'}" />
                             <Text text="{path: 'gateOutDateTime', formatter: '.formatter.formatDateTime'}" />
                             <HBox justifyContent="End" class="sapUiTinyMarginBeginEnd">
-                                <!-- <Button
-                                    text="Details"
-                                    icon="sap-icon://detail-view"
+                                <Button
+                                    text="Print"
+                                    icon="sap-icon://print"
                                     type="Transparent"
-                                    press=".onTxDetailPress" /> -->
+                                    tooltip="Print Gate IN Pass"
+                                    press=".onTxPrintPress" />
                                 <Button
                                     text="Edit"
                                     icon="sap-icon://edit"

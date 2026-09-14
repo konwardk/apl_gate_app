@@ -206,12 +206,6 @@ annotate service.GateTransactions with @(
 /* Field Controls & Readonly/Mandatory annotations */
 annotate service.GateTransactions with {
     gateInNumber    @readonly;
-    status          @readonly;
-    currentStage    @readonly;
-    gateInDateTime  @readonly;
-    gateInOperator  @readonly;
-    gateOutDateTime @readonly;
-    gateOutOperator @readonly;
     vehicleRegNo    @mandatory;
     purpose         @mandatory;
 };

@@ -188,6 +188,16 @@ sap.ui.define([
             this._validateVehicleRegNo(sVal);
         },
 
+        onGateInDateTimeChange: function (oEvt) {
+            const oDate = oEvt.getSource().getDateValue();
+            this._oEditModel.setProperty("/gateInDateTime", oDate ? oDate.toISOString() : null);
+        },
+
+        onGateOutDateTimeChange: function (oEvt) {
+            const oDate = oEvt.getSource().getDateValue();
+            this._oEditModel.setProperty("/gateOutDateTime", oDate ? oDate.toISOString() : null);
+        },
+
         _hasUnsavedChanges: function () {
             if (!this._originalData) return false;
             const current = this._oEditModel.getData();
@@ -200,7 +210,9 @@ sap.ui.define([
                 "purpose",
                 "status",
                 "currentStage",
+                "gateInDateTime",
                 "gateInOperator",
+                "gateOutDateTime",
                 "gateOutOperator",
                 "remarks",
                 "transporter_ID",
@@ -231,6 +243,18 @@ sap.ui.define([
                 return;
             }
 
+            if (!oData.gateInOperator || !oData.gateInOperator.trim()) {
+                const oInOp = this.byId("inputEditGateInOperator");
+                if (oInOp) oInOp.setValueState(ValueState.Error);
+                MessageBox.error("Gate IN Operator is mandatory.");
+                return;
+            }
+
+            if (!oData.gateInDateTime) {
+                MessageBox.error("Gate IN Date & Time is mandatory.");
+                return;
+            }
+
             // 2. Check if anything was modified
             if (!this._hasUnsavedChanges()) {
                 MessageToast.show("No modifications detected to save.");
@@ -246,15 +270,17 @@ sap.ui.define([
                 status: oData.status,
                 currentStage: oData.currentStage,
                 remarks: oData.remarks || "",
-                gateInOperator: oData.gateInOperator || "",
-                gateOutOperator: oData.gateOutOperator || null,
+                gateInDateTime: oData.gateInDateTime,
+                gateInOperator: (oData.gateInOperator || "").trim(),
+                gateOutDateTime: oData.gateOutDateTime || null,
+                gateOutOperator: oData.gateOutOperator ? oData.gateOutOperator.trim() : null,
                 transporter_ID: oData.transporter_ID || null,
                 supplier_ID: oData.supplier_ID || null,
                 driver_ID: oData.driver_ID || null
             };
 
             // Automatically set gateOutDateTime if status completed
-            if (payload.status === "COMPLETED" && !oData.gateOutDateTime) {
+            if (payload.status === "COMPLETED" && !payload.gateOutDateTime) {
                 payload.gateOutDateTime = new Date().toISOString();
                 if (!payload.gateOutOperator) {
                     payload.gateOutOperator = models.getActiveUser();

@@ -9,9 +9,18 @@ sap.ui.define([
         },
 
         onKpiPress: function () {
+            const oModel = this.getOwnerComponent().getModel();
             const oComponent = this.getOwnerComponent();
-            oComponent.navigateTo("mainGateOpsPage", "slide");
-            oComponent.loadOverviewData();
+            if (oModel.getProperty("/canViewMainGateOps")) {
+                oComponent.navigateTo("mainGateOpsPage", "slide");
+                oComponent.loadOverviewData();
+            } else if (oModel.getProperty("/canViewSecurityGateOps")) {
+                oComponent.navigateTo("securityGateOpsPage", "slide");
+            } else if (oModel.getProperty("/canViewWeighbridgeOps")) {
+                oComponent.navigateTo("weighbridgeOpsPage", "slide");
+            } else if (oModel.getProperty("/canViewFactoryGateOps")) {
+                oComponent.navigateTo("factoryGateOpsPage", "slide");
+            }
         },
 
         onOpenGateTxFE: function () {
@@ -19,19 +28,44 @@ sap.ui.define([
         },
 
         onOpenMainGateOps: function () {
+            const oModel = this.getOwnerComponent().getModel();
+            if (!oModel.getProperty("/canViewMainGateOps")) {
+                MessageBox.error("Access Restricted: Main Gate Operations requires Main Gate Operator, Admin, or Superadmin role.");
+                return;
+            }
             const oComponent = this.getOwnerComponent();
             oComponent.navigateTo("mainGateOpsPage", "slide");
             oComponent.loadOverviewData();
         },
 
         onOpenSecurityGateOps: function () {
+            const oModel = this.getOwnerComponent().getModel();
+            if (!oModel.getProperty("/canViewSecurityGateOps")) {
+                MessageBox.error("Access Restricted: Security Gate Operations requires Security Officer, Admin, or Superadmin role.");
+                return;
+            }
             const oComponent = this.getOwnerComponent();
             oComponent.navigateTo("securityGateOpsPage", "slide");
         },
 
         onOpenWeighbridgeOps: function () {
+            const oModel = this.getOwnerComponent().getModel();
+            if (!oModel.getProperty("/canViewWeighbridgeOps")) {
+                MessageBox.error("Access Restricted: Weighbridge Operations requires Weighbridge Operator, Admin, or Superadmin role.");
+                return;
+            }
             const oComponent = this.getOwnerComponent();
             oComponent.navigateTo("weighbridgeOpsPage", "slide");
+        },
+
+        onOpenFactoryGateOps: function () {
+            const oModel = this.getOwnerComponent().getModel();
+            if (!oModel.getProperty("/canViewFactoryGateOps")) {
+                MessageBox.error("Access Restricted: Factory Gate Operations requires Factory Gate Operator, Admin, or Superadmin role.");
+                return;
+            }
+            const oComponent = this.getOwnerComponent();
+            oComponent.navigateTo("factoryGateOpsPage", "slide");
         },
 
         onOpenVehiclesFE: function () {

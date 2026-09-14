@@ -110,6 +110,7 @@
                 <mvc:XMLView id="weighbridgeOpsPage" viewName="factory.gate.view.WeighbridgeOperations" />
                 <mvc:XMLView id="editGateEntryPage" viewName="factory.gate.view.EditGateEntry" />
                 <mvc:XMLView id="editSecurityGateEntryPage" viewName="factory.gate.view.EditSecurityGateEntry" />
+                <mvc:XMLView id="factoryGateOpsPage" viewName="factory.gate.view.FactoryOperations" />
             </pages>
         </NavContainer>
     </VBox>

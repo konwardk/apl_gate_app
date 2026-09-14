@@ -54,12 +54,16 @@ async function testEntryWiseEdit() {
     // TEST A: MAIN GATE ENTRY EDIT (GateTransactions)
     // =========================================================================
     console.log('\n--- Test A: Editing Main Gate Entry Fields ---');
+    const customInTime = new Date('2026-09-14T08:15:00.000Z');
     await srv.tx({ user: mainGateUser }).run(
         UPDATE(GateTransactions)
             .set({
                 vehicleRegNo: 'AS-01-AB-9999',
                 driverName: 'Updated Driver Name',
-                remarks: 'Corrected vehicle number and driver name at Main Gate'
+                gateInOperator: 'Updated Gate Operator',
+                gateOutOperator: 'Updated Exit Operator',
+                gateInDateTime: customInTime,
+                remarks: 'Corrected vehicle number, operator and driver name at Main Gate'
             })
             .where({ ID: createdTx.ID })
     );
@@ -69,8 +73,10 @@ async function testEntryWiseEdit() {
     );
     assert.strictEqual(updatedTx.vehicleRegNo, 'AS-01-AB-9999', 'Vehicle Reg No updated');
     assert.strictEqual(updatedTx.driverName, 'Updated Driver Name', 'Driver Name updated');
-    assert.strictEqual(updatedTx.remarks, 'Corrected vehicle number and driver name at Main Gate', 'Remarks updated');
-    console.log(`[PASS] Main Gate Entry successfully updated: Vehicle=${updatedTx.vehicleRegNo}, Driver=${updatedTx.driverName}`);
+    assert.strictEqual(updatedTx.gateInOperator, 'Updated Gate Operator', 'Gate IN Operator updated');
+    assert.strictEqual(updatedTx.gateOutOperator, 'Updated Exit Operator', 'Gate OUT Operator updated');
+    assert.strictEqual(updatedTx.remarks, 'Corrected vehicle number, operator and driver name at Main Gate', 'Remarks updated');
+    console.log(`[PASS] Main Gate Entry successfully updated: Vehicle=${updatedTx.vehicleRegNo}, Driver=${updatedTx.driverName}, GateInOperator=${updatedTx.gateInOperator}, GateOutOperator=${updatedTx.gateOutOperator}`);
 
     // Verify Main Gate Audit Log
     const mainAudit = await srv.tx({ user: adminUser }).run(

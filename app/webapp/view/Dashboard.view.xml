@@ -117,6 +117,7 @@
                         header="Main Gate Operations"
                         subheader="Vehicle Stream &amp; Processing"
                         sizeBehavior="Responsive"
+                        visible="{/canViewMainGateOps}"
                         press=".onOpenMainGateOps"
                         class="flp-tile flp-tile-ops">
                         <tileContent>
@@ -132,6 +133,7 @@
                         header="Security Gate Operations"
                         subheader="Vehicle &amp; PO Document Clearance"
                         sizeBehavior="Responsive"
+                        visible="{/canViewSecurityGateOps}"
                         press=".onOpenSecurityGateOps"
                         class="flp-tile flp-tile-ops">
                         <tileContent>
@@ -147,12 +149,29 @@
                         header="Weighbridge Operations"
                         subheader="Gross &amp; Tare Weighment Clearance"
                         sizeBehavior="Responsive"
+                        visible="{/canViewWeighbridgeOps}"
                         press=".onOpenWeighbridgeOps"
                         class="flp-tile flp-tile-ops">
                         <tileContent>
                             <TileContent footer="Digital Scale &amp; Net Weight">
                                 <content>
                                     <NumericContent icon="sap-icon://dimension" valueColor="Neutral" />
+                                </content>
+                            </TileContent>
+                        </tileContent>
+                    </GenericTile>
+
+                    <GenericTile
+                        header="Factory Gate Operations"
+                        subheader="Delivery Unloading &amp; Yard Clearance"
+                        sizeBehavior="Responsive"
+                        visible="{/canViewFactoryGateOps}"
+                        press=".onOpenFactoryGateOps"
+                        class="flp-tile flp-tile-ops">
+                        <tileContent>
+                            <TileContent footer="Plant Unloading &amp; Clearance">
+                                <content>
+                                    <NumericContent icon="sap-icon://factory" valueColor="Neutral" />
                                 </content>
                             </TileContent>
                         </tileContent>

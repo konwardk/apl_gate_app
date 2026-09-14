@@ -1,0 +1,411 @@
+<mvc:View
+    controllerName="factory.gate.controller.FactoryOperations"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:core="sap.ui.core">
+    <Page showHeader="false" enableScrolling="true">
+        <!-- Subtoolbar matching other operational stations -->
+        <OverflowToolbar class="fe-subtoolbar">
+            <Button
+                text="Back to Launchpad"
+                icon="sap-icon://nav-back"
+                type="Emphasized"
+                press=".onNavBack" />
+            <ToolbarSpacer />
+            <Title text="Factory Gate Operations (Unloading &amp; Yard Clearance)" level="H2" titleStyle="H3" />
+            <ToolbarSpacer />
+            <Button
+                text="Main Gate Ops"
+                icon="sap-icon://log-in"
+                type="Transparent"
+                visible="{/canViewMainGateOps}"
+                press=".onNavMainGateOps" />
+            <Button
+                text="Security Gate Ops"
+                icon="sap-icon://shield"
+                type="Transparent"
+                visible="{/canViewSecurityGateOps}"
+                press=".onNavSecurityGateOps" />
+            <Button
+                text="Weighbridge Ops"
+                icon="sap-icon://dimension"
+                type="Transparent"
+                visible="{/canViewWeighbridgeOps}"
+                press=".onNavWeighbridgeOps" />
+            <ToolbarSeparator />
+            <Button
+                text="Refresh Queue"
+                icon="sap-icon://refresh"
+                type="Transparent"
+                press=".onRefreshQueue" />
+        </OverflowToolbar>
+
+        <VBox class="flp-dashboard">
+            <!-- Context Banner -->
+            <MessageStrip
+                text="Factory Gate Station: Delivery consignments can arrive either after Inbound Weighment (Scale Checked) or directly after Security Gate clearance (Direct Delivery / Scale Bypassed). Select or enter a Gate IN Number to auto-populate PO &amp; Invoice details, and record unloading timestamps."
+                type="Information"
+                showIcon="true"
+                class="sapUiSmallMarginBottom" />
+
+            <!-- Factory Operations Entry Form Panel -->
+            <Panel
+                headerText="Record Factory Gate Unloading &amp; Clearance"
+                expandable="false"
+                class="sapUiSmallMarginBottom flp-tile-ops">
+                <content>
+                    <form:SimpleForm
+                        id="factoryEntryForm"
+                        editable="true"
+                        layout="ResponsiveGridLayout"
+                        labelSpanXL="3"
+                        labelSpanL="3"
+                        labelSpanM="4"
+                        labelSpanS="12"
+                        adjustLabelSpan="false"
+                        emptySpanXL="1"
+                        emptySpanL="1"
+                        emptySpanM="0"
+                        emptySpanS="0"
+                        columnsXL="2"
+                        columnsL="2"
+                        columnsM="1">
+                        <form:content>
+                            <!-- Column 1: Gate Pass & Auto-collected Consignment Reference -->
+                            <core:Title text="1. Gate Pass &amp; Consignment Reference" />
+
+                            <Label text="Gate IN Number" required="true" />
+                            <ComboBox
+                                id="facGateInComboBox"
+                                width="100%"
+                                placeholder="Type or select Gate IN #, Vehicle Reg, or PO..."
+                                selectedKey="{facModel>/selectedGateInNumber}"
+                                change=".onGateInSelectChange"
+                                selectionChange=".onGateInSelectChange"
+                                showClearIcon="true"
+                                filterSecondaryValues="true"
+                                showSecondaryValues="true"
+                                items="{
+                                    path: 'facModel>/eligibleVehicles',
+                                    templateShareable: false
+                                }">
+                                <core:ListItem
+                                    key="{facModel>gateInNumber}"
+                                    text="{facModel>gateInNumber}"
+                                    additionalText="{facModel>vehicleRegNo} ({facModel>status}) - {facModel>deliveryFlowDesc}" />
+                            </ComboBox>
+
+                            <Label text="Vehicle Reg No" />
+                            <HBox alignItems="Center">
+                                <Text
+                                    text="{= ${facModel>/selectedVehicle/vehicleRegNo} || 'Select or enter a Gate IN Number' }"
+                                    class="sapUiTinyMarginEnd"
+                                    design="Bold" />
+                                <ObjectStatus
+                                    text="{= ${facModel>/selectedVehicle/status} ? 'Stage: ' + ${facModel>/selectedVehicle/status} : '' }"
+                                    state="{path: 'facModel>/selectedVehicle/status', formatter: '.formatter.getStatusState'}" />
+                            </HBox>
+
+                            <Label text="Process Status" visible="{= Boolean(${facModel>/vehicleStageMessage}) }" />
+                            <MessageStrip
+                                text="{facModel>/vehicleStageMessage}"
+                                type="{facModel>/vehicleStageMessageType}"
+                                visible="{= Boolean(${facModel>/vehicleStageMessage}) }"
+                                showIcon="true" />
+
+                            <Label text="Vehicle &amp; Driver" />
+                            <HBox alignItems="Center">
+                                <Text text="{= ${facModel>/selectedVehicle/vehicleType} || '-' }" class="sapUiTinyMarginEnd" />
+                                <Text text="{= ${facModel>/selectedVehicle/driverName} ? '(' + ${facModel>/selectedVehicle/driverName} + ')' : '' }" />
+                            </HBox>
+
+                            <Label text="Delivery Flow" />
+                            <ObjectStatus
+                                text="{= ${facModel>/selectedVehicle/deliveryFlowDesc} || '-' }"
+                                state="{= ${facModel>/selectedVehicle/deliveryFlowState} || 'None' }" />
+
+                            <Label text="Inbound Weight" />
+                            <Text text="{= ${facModel>/selectedVehicle/inboundWeightText} || 'No Inbound Weight (Direct Delivery)' }" />
+
+                            <Label text="PO Number" />
+                            <Input
+                                id="inputFacPoNumber"
+                                value="{facModel>/form/poNumber}"
+                                placeholder="Auto-collected from Security Gate or enter PO #" />
+
+                            <Label text="Invoice Number" />
+                            <Input
+                                id="inputFacInvoiceNumber"
+                                value="{facModel>/form/invoiceNumber}"
+                                placeholder="Auto-collected from Security Gate or enter Invoice #" />
+
+                            <Label text="Invoice Date" />
+                            <DatePicker
+                                value="{facModel>/form/invoiceDate}"
+                                valueFormat="yyyy-MM-dd"
+                                displayFormat="medium"
+                                placeholder="Invoice Date" />
+
+                            <Label text="Supplier" />
+                            <Input
+                                value="{facModel>/form/supplierName}"
+                                placeholder="Supplier / Consignor Name" />
+
+                            <Label text="Transporter" />
+                            <Input
+                                value="{facModel>/form/transporterName}"
+                                placeholder="Transporter Name" />
+
+                            <!-- Column 2: Factory Yard Timestamps & Unloading Details -->
+                            <core:Title text="2. Factory Yard Timestamps &amp; Unloading" />
+
+                            <Label text="Factory Area / Plant" required="true" />
+                            <Select
+                                id="selectFacArea"
+                                selectedKey="{facModel>/form/factoryArea}"
+                                width="100%">
+                                <core:Item key="Methanol Plant - Unloading Bay" text="Methanol Plant - Unloading Bay" />
+                                <core:Item key="Formalin Plant Area" text="Formalin Plant Area" />
+                                <core:Item key="Chemical Tank Farm" text="Chemical Tank Farm" />
+                                <core:Item key="Raw Material Yard" text="Raw Material Yard" />
+                                <core:Item key="Central Warehouse / Stores" text="Central Warehouse / Stores" />
+                                <core:Item key="Boiler &amp; Utility Section" text="Boiler &amp; Utility Section" />
+                                <core:Item key="General Plant Yard" text="General Plant Yard" />
+                            </Select>
+
+                            <Label text="Unloading Point / Bay" />
+                            <Input
+                                value="{facModel>/form/unloadingPoint}"
+                                placeholder="e.g. Bay 1, Storage Tank T-102, Silo A" />
+
+                            <Label text="Factory Gate IN Time" required="true" />
+                            <DateTimePicker
+                                id="facInDateTimePicker"
+                                value="{facModel>/form/factoryGateInDateTimeStr}"
+                                valueFormat="yyyy-MM-dd'T'HH:mm:ss"
+                                displayFormat="dd/MM/yyyy, HH:mm:ss"
+                                change=".onGateInDateTimeChange"
+                                placeholder="Factory check-in timestamp" />
+
+                            <Label text="Factory IN Operator" required="true" />
+                            <Input
+                                id="inputFacInOperator"
+                                value="{facModel>/form/factoryGateInOperator}"
+                                placeholder="Operator recording Factory IN" />
+
+                            <Label text="Factory Gate OUT Time" />
+                            <DateTimePicker
+                                id="facOutDateTimePicker"
+                                value="{facModel>/form/factoryGateOutDateTimeStr}"
+                                valueFormat="yyyy-MM-dd'T'HH:mm:ss"
+                                displayFormat="dd/MM/yyyy, HH:mm:ss"
+                                change=".onGateOutDateTimeChange"
+                                placeholder="Factory check-out timestamp (when unloading finished)" />
+
+                            <Label text="Factory OUT Operator" />
+                            <Input
+                                id="inputFacOutOperator"
+                                value="{facModel>/form/factoryGateOutOperator}"
+                                placeholder="Operator recording Factory OUT" />
+
+                            <Label text="Material Consignment" />
+                            <Input
+                                value="{facModel>/form/materialDescription}"
+                                placeholder="e.g. Crude Methanol, Catalyst, Packaging Materials" />
+
+                            <Label text="Delivery Note / Challan" />
+                            <Input
+                                value="{facModel>/form/deliveryNoteNo}"
+                                placeholder="Delivery Challan or Consignment Note #" />
+
+                            <Label text="Unloading Status" />
+                            <Select
+                                selectedKey="{facModel>/form/unloadingStatus}"
+                                width="100%">
+                                <core:Item key="COMPLETED" text="COMPLETED - Material Unloaded Successfully" />
+                                <core:Item key="IN_PROGRESS" text="IN_PROGRESS - Unloading In Process" />
+                                <core:Item key="PARTIAL" text="PARTIAL - Partial Unloading Done" />
+                                <core:Item key="REJECTED" text="REJECTED - Material Rejected / Returned" />
+                            </Select>
+
+                            <Label text="Physical Inspection" />
+                            <VBox>
+                                <CheckBox
+                                    text="Material consignment physical inspection verified"
+                                    selected="{facModel>/form/goodsInspected}" />
+                                <CheckBox
+                                    text="Container / Tank seals intact &amp; verified"
+                                    selected="{facModel>/form/sealVerified}" />
+                            </VBox>
+
+                            <Label text="Operational Remarks" />
+                            <TextArea
+                                value="{facModel>/form/remarks}"
+                                rows="3"
+                                maxLength="500"
+                                placeholder="Unloading observations, pump/line details, safety compliance..." />
+                        </form:content>
+                    </form:SimpleForm>
+
+                    <!-- Form Action Buttons -->
+                    <OverflowToolbar class="sapUiTinyMarginTop">
+                        <ToolbarSpacer />
+                        <Button
+                            id="btnRecordFactoryIn"
+                            text="Record Factory Gate IN"
+                            icon="sap-icon://log-in"
+                            type="Emphasized"
+                            press=".onRecordFactoryIn" />
+                        <Button
+                            id="btnRecordFactoryOut"
+                            text="Record Factory Gate OUT"
+                            icon="sap-icon://log-out"
+                            type="Success"
+                            press=".onRecordFactoryOut" />
+                        <Button
+                            id="btnRecordFullClearance"
+                            text="Complete Clearance (IN &amp; OUT)"
+                            icon="sap-icon://accept"
+                            type="Default"
+                            tooltip="Save full factory operation with both check-in and check-out at once"
+                            press=".onRecordFullClearance" />
+                        <Button
+                            text="Reset Form"
+                            icon="sap-icon://reset"
+                            type="Transparent"
+                            press=".onResetForm" />
+                    </OverflowToolbar>
+                </content>
+            </Panel>
+
+            <!-- Factory Yard Operational Queue Table -->
+            <Table
+                id="factoryTxTable"
+                growing="true"
+                growingThreshold="20"
+                items="{facModel>/displayedRecords}"
+                class="sapUiMediumMarginTop">
+                <headerToolbar>
+                    <OverflowToolbar>
+                        <Title text="Factory Yard Delivery Records ({= ${facModel>/displayedRecords} ? ${facModel>/displayedRecords}.length : 0 })" />
+                        <ToolbarSpacer />
+                        <SegmentedButton
+                            id="facFilterSegmentedBtn"
+                            selectedKey="{facModel>/selectedFilter}"
+                            selectionChange=".onFilterCategoryChange">
+                            <items>
+                                <SegmentedButtonItem key="ALL" text="All ({= ${facModel>/allCount} })" />
+                                <SegmentedButtonItem key="WAITING_IN" text="Awaiting Factory IN ({= ${facModel>/waitingInCount} })" />
+                                <SegmentedButtonItem key="INSIDE_YARD" text="Inside Yard ({= ${facModel>/insideYardCount} })" />
+                                <SegmentedButtonItem key="YARD_DONE" text="Yard Completed ({= ${facModel>/yardDoneCount} })" />
+                            </items>
+                        </SegmentedButton>
+                        <SearchField
+                            id="facSearchField"
+                            width="250px"
+                            placeholder="Search Gate IN #, Vehicle, PO..."
+                            liveChange=".onSearchLiveChange"
+                            search=".onSearch" />
+                        <Button
+                            icon="sap-icon://clear-filter"
+                            tooltip="Reset Search &amp; Filters"
+                            press=".onResetSearch" />
+                        <ToolbarSeparator />
+                        <Button
+                            icon="sap-icon://refresh"
+                            tooltip="Refresh Queue"
+                            press=".onRefreshQueue" />
+                    </OverflowToolbar>
+                </headerToolbar>
+                <columns>
+                    <Column><header><Text text="Gate IN # / Vehicle" /></header></Column>
+                    <Column><header><Text text="Driver / Transporter" /></header></Column>
+                    <Column><header><Text text="Delivery Flow" /></header></Column>
+                    <Column><header><Text text="PO &amp; Invoice #" /></header></Column>
+                    <Column><header><Text text="Factory Gate IN" /></header></Column>
+                    <Column><header><Text text="Factory Gate OUT" /></header></Column>
+                    <Column><header><Text text="Factory Area &amp; Status" /></header></Column>
+                    <Column hAlign="End" width="220px"><header><Text text="Actions" /></header></Column>
+                </columns>
+                <items>
+                    <ColumnListItem>
+                        <cells>
+                            <VBox>
+                                <ObjectIdentifier title="{facModel>gateInNumber}" />
+                                <Text text="{facModel>vehicleRegNo}" class="sapUiTinyMarginTop" />
+                            </VBox>
+
+                            <VBox>
+                                <Text text="{= ${facModel>driverName} || '-' }" design="Bold" />
+                                <Text text="{= ${facModel>transporter/transporterName} || ${facModel>factoryEntry/transporterName} || '-' }" class="sapUiTinyMarginTop" />
+                            </VBox>
+
+                            <VBox>
+                                <ObjectStatus
+                                    text="{facModel>deliveryFlowDesc}"
+                                    state="{facModel>deliveryFlowState}" />
+                                <Text
+                                    text="{= ${facModel>inboundWeightFormatted} ? 'Gross: ' + ${facModel>inboundWeightFormatted} : 'Scale Bypassed' }"
+                                    class="sapUiTinyMarginTop" />
+                            </VBox>
+
+                            <VBox>
+                                <Text text="{= 'PO: ' + (${facModel>factoryEntry/poNumber} || ${facModel>securityEntry/poNumber} || 'N/A') }" />
+                                <Text text="{= 'Inv: ' + (${facModel>factoryEntry/invoiceNumber} || ${facModel>securityEntry/invoiceNumber} || 'N/A') }" class="sapUiTinyMarginTop" />
+                            </VBox>
+
+                            <VBox>
+                                <Text text="{path: 'facModel>factoryEntry/factoryGateInDateTime', formatter: '.formatter.formatDateTime'}" />
+                                <Text text="{= ${facModel>factoryEntry/factoryGateInOperator} ? 'By: ' + ${facModel>factoryEntry/factoryGateInOperator} : '-' }" class="sapUiTinyMarginTop" />
+                            </VBox>
+
+                            <VBox>
+                                <Text text="{path: 'facModel>factoryEntry/factoryGateOutDateTime', formatter: '.formatter.formatDateTime'}" />
+                                <Text text="{= ${facModel>factoryEntry/factoryGateOutOperator} ? 'By: ' + ${facModel>factoryEntry/factoryGateOutOperator} : '-' }" class="sapUiTinyMarginTop" />
+                            </VBox>
+
+                            <VBox>
+                                <Text text="{= ${facModel>factoryEntry/factoryArea} || '-' }" design="Bold" />
+                                <ObjectStatus
+                                    text="{facModel>status}"
+                                    state="{path: 'facModel>status', formatter: '.formatter.getStatusState'}"
+                                    class="sapUiTinyMarginTop" />
+                            </VBox>
+
+                            <HBox justifyContent="End" alignItems="Center">
+                                <Button
+                                    icon="sap-icon://edit"
+                                    tooltip="Select and Load into Form"
+                                    type="Transparent"
+                                    press=".onRowSelectPress"
+                                    class="sapUiTinyMarginEnd" />
+                                <Button
+                                    text="IN"
+                                    icon="sap-icon://log-in"
+                                    type="Emphasized"
+                                    tooltip="Perform Factory Gate IN"
+                                    visible="{facModel>canRowFactoryIn}"
+                                    press=".onRowFactoryInPress"
+                                    class="sapUiTinyMarginEnd" />
+                                <Button
+                                    text="OUT"
+                                    icon="sap-icon://log-out"
+                                    type="Success"
+                                    tooltip="Perform Factory Gate OUT"
+                                    visible="{facModel>canRowFactoryOut}"
+                                    press=".onRowFactoryOutPress"
+                                    class="sapUiTinyMarginEnd" />
+                                <Button
+                                    icon="sap-icon://print"
+                                    tooltip="Print Pass"
+                                    type="Transparent"
+                                    press=".onRowPrintPress" />
+                            </HBox>
+                        </cells>
+                    </ColumnListItem>
+                </items>
+            </Table>
+        </VBox>
+    </Page>
+</mvc:View>

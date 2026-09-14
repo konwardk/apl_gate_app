@@ -57,8 +57,12 @@ service GateService {
      * ============================================================
      */
 
+    @cds.redirection.target
+    entity FactoryGateEntries
+        as projection on db.FactoryGateEntries;
+
     entity FactoryGateEvents
-        as projection on db.FactoryGateEvents;
+        as projection on db.FactoryGateEntries;
 
 
     /*
@@ -144,12 +148,56 @@ service GateService {
 
 
     action FactoryGateIn(
-        gateInNumber : String
+        gateInNumber            : String,
+        factoryGateInDateTime   : Timestamp,
+        factoryGateInOperator   : String,
+        factoryArea             : String,
+        unloadingPoint          : String,
+        poNumber                : String,
+        invoiceNumber           : String,
+        invoiceDate             : Date,
+        supplierName            : String,
+        transporterName         : String,
+        materialDescription     : String,
+        deliveryNoteNo          : String,
+        remarks                 : String
     ) returns GateTransactions;
 
 
     action FactoryGateOut(
-        gateInNumber : String
+        gateInNumber            : String,
+        factoryGateOutDateTime  : Timestamp,
+        factoryGateOutOperator  : String,
+        unloadingStatus         : String,
+        unloadedQuantity        : Decimal(15,3),
+        quantityUnit            : String,
+        goodsInspected          : Boolean,
+        sealVerified            : Boolean,
+        remarks                 : String
+    ) returns GateTransactions;
+
+
+    action RecordFactoryOperation(
+        gateInNumber            : String,
+        factoryGateInDateTime   : Timestamp,
+        factoryGateInOperator   : String,
+        factoryGateOutDateTime  : Timestamp,
+        factoryGateOutOperator  : String,
+        factoryArea             : String,
+        unloadingPoint          : String,
+        poNumber                : String,
+        invoiceNumber           : String,
+        invoiceDate             : Date,
+        supplierName            : String,
+        transporterName         : String,
+        materialDescription     : String,
+        unloadingStatus         : String,
+        unloadedQuantity        : Decimal(15,3),
+        quantityUnit            : String,
+        deliveryNoteNo          : String,
+        goodsInspected          : Boolean,
+        sealVerified            : Boolean,
+        remarks                 : String
     ) returns GateTransactions;
 
 

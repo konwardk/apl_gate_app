@@ -19,12 +19,20 @@
                 text="Main Gate Ops"
                 icon="sap-icon://log-in"
                 type="Transparent"
+                visible="{/canViewMainGateOps}"
                 press=".onNavMainGateOps" />
             <Button
                 text="Security Gate Ops"
                 icon="sap-icon://shield"
                 type="Transparent"
+                visible="{/canViewSecurityGateOps}"
                 press=".onNavSecurityGateOps" />
+            <Button
+                text="Factory Gate Ops"
+                icon="sap-icon://factory"
+                type="Transparent"
+                visible="{/canViewFactoryGateOps}"
+                press=".onNavFactoryGateOps" />
             <Button
                 text="Refresh Queue"
                 icon="sap-icon://refresh"

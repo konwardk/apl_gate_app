@@ -43,9 +43,17 @@
         </content>
         <beginButton>
             <Button
-                text="Done"
+                id="btnPrintGateInSuccess"
+                text="Print Pass"
+                icon="sap-icon://print"
                 type="Emphasized"
-                press=".onGateInSuccessDone" />
+                tooltip="Print Official Gate IN Entry Pass"
+                press=".onPrintGateInSuccessPass" />
         </beginButton>
+        <endButton>
+            <Button
+                text="Close"
+                press=".onGateInSuccessDone" />
+        </endButton>
     </Dialog>
 </core:FragmentDefinition>

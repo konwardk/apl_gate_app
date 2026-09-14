@@ -58,6 +58,8 @@ sap.ui.define([
                         oCtrl.loadSecurityData();
                     } else if (sPageId === "weighbridgeOpsPage" && oCtrl && oCtrl.loadScaleQueue) {
                         oCtrl.loadScaleQueue();
+                    } else if (sPageId === "factoryGateOpsPage" && oCtrl && oCtrl.loadFactoryData) {
+                        oCtrl.loadFactoryData();
                     }
                 } else {
                     this._oNavContainer.to(sPageId, sTransition || "slide");
@@ -144,13 +146,26 @@ sap.ui.define([
                 const activeUser = oModel.getProperty("/activeUser");
                 const perms = models.getPermissionsForUser(currentRoles, activeUser);
 
-                oModel.setProperty("/userRolesText", currentRoles.length ? currentRoles.join(", ") : (activeUser.includes("superadmin") ? "Superadmin" : (activeUser.includes("weighbridge") ? "WeighbridgeUser" : "MainGateUser")));
+                const sRoleText = currentRoles.length ? currentRoles.join(", ") : 
+                    (activeUser === "superadmin_user" ? "Superadmin" : 
+                    (activeUser === "maingate_user" ? "MainGateUser" : 
+                    (activeUser === "security_user" ? "SecurityGateUser" : 
+                    (activeUser === "weighbridge_user" ? "WeighbridgeUser" : 
+                    (activeUser === "factory_user" ? "FactoryGateUser" : 
+                    (activeUser === "admin_user" ? "Admin" : 
+                    (activeUser === "auditor_user" ? "Auditor" : "Authenticated")))))));
+                oModel.setProperty("/userRolesText", sRoleText);
                 oModel.setProperty("/canCreateGateIn", perms.canCreateGateIn);
                 oModel.setProperty("/canMainGateOut", perms.canMainGateOut);
                 oModel.setProperty("/canViewLiveOps", perms.canViewLiveOps);
                 oModel.setProperty("/canViewGateOps", perms.canViewGateOps);
+                oModel.setProperty("/canViewMainGateOps", perms.canViewMainGateOps);
+                oModel.setProperty("/canViewSecurityGateOps", perms.canViewSecurityGateOps);
                 oModel.setProperty("/canRecordWeighment", perms.canRecordWeighment);
                 oModel.setProperty("/canViewWeighbridgeOps", perms.canViewWeighbridgeOps);
+                oModel.setProperty("/canRecordFactoryOps", perms.canRecordFactoryOps);
+                oModel.setProperty("/canViewFactoryGateOps", perms.canViewFactoryGateOps);
+                oModel.setProperty("/canViewFactoryOps", perms.canViewFactoryOps);
                 oModel.setProperty("/canViewMasterData", perms.canViewMasterData);
                 oModel.setProperty("/canViewAuditTrail", perms.canViewAuditTrail);
                 oModel.setProperty("/canViewAudit", perms.canViewAuditTrail);
@@ -205,8 +220,13 @@ sap.ui.define([
             oModel.setProperty("/canMainGateOut", perms.canMainGateOut);
             oModel.setProperty("/canViewLiveOps", perms.canViewLiveOps);
             oModel.setProperty("/canViewGateOps", perms.canViewGateOps);
+            oModel.setProperty("/canViewMainGateOps", perms.canViewMainGateOps);
+            oModel.setProperty("/canViewSecurityGateOps", perms.canViewSecurityGateOps);
             oModel.setProperty("/canRecordWeighment", perms.canRecordWeighment);
             oModel.setProperty("/canViewWeighbridgeOps", perms.canViewWeighbridgeOps);
+            oModel.setProperty("/canRecordFactoryOps", perms.canRecordFactoryOps);
+            oModel.setProperty("/canViewFactoryGateOps", perms.canViewFactoryGateOps);
+            oModel.setProperty("/canViewFactoryOps", perms.canViewFactoryOps);
             oModel.setProperty("/canViewMasterData", perms.canViewMasterData);
             oModel.setProperty("/canViewAuditTrail", perms.canViewAuditTrail);
             oModel.setProperty("/canViewAudit", perms.canViewAuditTrail);
@@ -227,6 +247,13 @@ sap.ui.define([
                 const oSecPage = aPages.find(p => p.getId().endsWith("securityGateOpsPage"));
                 if (oSecPage && oSecPage.getController && oSecPage.getController().loadSecurityData) {
                     oSecPage.getController().loadSecurityData();
+                }
+            } else if (newKey === "factory_user") {
+                this.navigateTo("factoryGateOpsPage", "slide");
+                const aPages = this._oNavContainer ? this._oNavContainer.getPages() : [];
+                const oFacPage = aPages.find(p => p.getId().endsWith("factoryGateOpsPage"));
+                if (oFacPage && oFacPage.getController && oFacPage.getController().loadFactoryData) {
+                    oFacPage.getController().loadFactoryData();
                 }
             } else if (newKey === "maingate_user") {
                 this.navigateTo("mainGateOpsPage", "slide");
@@ -262,6 +289,13 @@ sap.ui.define([
             oModel.setProperty("/canMainGateOut", false);
             oModel.setProperty("/canViewLiveOps", false);
             oModel.setProperty("/canViewGateOps", false);
+            oModel.setProperty("/canViewMainGateOps", false);
+            oModel.setProperty("/canViewSecurityGateOps", false);
+            oModel.setProperty("/canRecordWeighment", false);
+            oModel.setProperty("/canViewWeighbridgeOps", false);
+            oModel.setProperty("/canRecordFactoryOps", false);
+            oModel.setProperty("/canViewFactoryGateOps", false);
+            oModel.setProperty("/canViewFactoryOps", false);
             oModel.setProperty("/canViewMasterData", false);
             oModel.setProperty("/canViewAuditTrail", false);
             oModel.setProperty("/canViewAudit", false);
@@ -559,6 +593,7 @@ sap.ui.define([
         // Dialog: Gate IN Success Badge
         // ============================================================
         openGateInSuccessDialog: function (data) {
+            this._lastCreatedGateIn = data;
             const sId = this.createId("gateInSuccessFrag");
             const oSuccessModel = new JSONModel(data);
 
@@ -582,6 +617,21 @@ sap.ui.define([
         onGateInSuccessDone: function () {
             if (this._pGateInSuccessDialog) {
                 this._pGateInSuccessDialog.then(oDialog => oDialog.close());
+            }
+        },
+
+        onPrintGateInSuccessPass: function () {
+            let d = this._lastCreatedGateIn;
+            if (this._pGateInSuccessDialog) {
+                this._pGateInSuccessDialog.then(oDialog => {
+                    const m = oDialog.getModel("gateInSuccess");
+                    if (m && m.getData()) {
+                        d = m.getData();
+                    }
+                    this.printGateInPass(d);
+                });
+            } else {
+                this.printGateInPass(d);
             }
         },
 
@@ -876,6 +926,260 @@ sap.ui.define([
             } catch (err) {
                 MessageBox.error(err.message);
             }
+        },
+
+        onDetailPrint: function () {
+            let d = this._currentDetailTx;
+            if (this._pDetailDialog) {
+                this._pDetailDialog.then(oDialog => {
+                    const m = oDialog.getModel("detailModel");
+                    if (m && m.getData()) {
+                        d = m.getData();
+                    }
+                    this.printGateInPass(d);
+                });
+            } else {
+                this.printGateInPass(d);
+            }
+        },
+
+        // ============================================================
+        // Print Operation: Gate IN Pass Document
+        // ============================================================
+        printGateInPass: function (tx) {
+            if (!tx || !tx.gateInNumber) {
+                MessageToast.show("No Gate IN record available to print.");
+                return;
+            }
+
+            let iframe = document.getElementById("gateInPrintIframe");
+            if (!iframe) {
+                iframe = document.createElement("iframe");
+                iframe.id = "gateInPrintIframe";
+                iframe.style.position = "fixed";
+                iframe.style.right = "0";
+                iframe.style.bottom = "0";
+                iframe.style.width = "0";
+                iframe.style.height = "0";
+                iframe.style.border = "0";
+                iframe.style.visibility = "hidden";
+                document.body.appendChild(iframe);
+            }
+
+            const sGateInNo = tx.gateInNumber;
+            const sVehicleReg = tx.vehicleRegNo || "-";
+            const sDriver = tx.driverName || (tx.driver && tx.driver.driverName) || "-";
+            const sPurpose = tx.purpose || "DELIVERY";
+            const sOperator = tx.gateInOperator || "Gate Operator";
+            const sFormattedDate = formatter.formatDateTime(tx.gateInDateTime || new Date());
+            const barcodeSvg = this._generateBarcodeSvg(sGateInNo);
+
+            const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>APL Gate IN Pass - ${sGateInNo}</title>
+                <style>
+                    @page {
+                        size: auto;
+                        margin: 10mm;
+                    }
+                    * {
+                        box-sizing: border-box;
+                        margin: 0;
+                        padding: 0;
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                    }
+                    body {
+                        background: #ffffff;
+                        color: #111827;
+                        padding: 10px;
+                        font-size: 13px;
+                    }
+                    .slip-card {
+                        max-width: 520px;
+                        margin: 0 auto;
+                        border: 2px solid #111827;
+                        border-radius: 6px;
+                        padding: 20px 24px;
+                    }
+                    .header-box {
+                        text-align: center;
+                        border-bottom: 2px solid #111827;
+                        padding-bottom: 12px;
+                        margin-bottom: 14px;
+                    }
+                    .company-name {
+                        font-size: 18px;
+                        font-weight: 800;
+                        color: #111827;
+                        letter-spacing: 0.5px;
+                        text-transform: uppercase;
+                    }
+                    .company-sub {
+                        font-size: 12px;
+                        font-weight: 700;
+                        color: #0284c7;
+                        letter-spacing: 1px;
+                        margin-top: 3px;
+                    }
+                    .barcode-box {
+                        text-align: center;
+                        margin: 12px 0 16px 0;
+                        padding: 8px 0;
+                        background: #f8fafc;
+                        border-radius: 4px;
+                    }
+                    .barcode-text {
+                        font-family: "Courier New", Courier, monospace;
+                        font-size: 13px;
+                        font-weight: 700;
+                        letter-spacing: 3px;
+                        color: #1e293b;
+                        margin-top: 4px;
+                    }
+                    .details-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin-bottom: 18px;
+                    }
+                    .details-table td {
+                        padding: 8px 10px;
+                        border-bottom: 1px solid #e5e7eb;
+                        font-size: 13px;
+                    }
+                    .label-col {
+                        width: 42%;
+                        font-weight: 600;
+                        color: #4b5563;
+                        text-transform: uppercase;
+                        font-size: 11.5px;
+                    }
+                    .val-col {
+                        width: 58%;
+                        font-weight: 700;
+                        color: #111827;
+                    }
+                    .highlight-num {
+                        font-size: 16px;
+                        color: #0284c7;
+                        font-family: "Courier New", Courier, monospace;
+                    }
+                    .highlight-reg {
+                        font-size: 15px;
+                    }
+                    .purpose-tag {
+                        display: inline-block;
+                        padding: 2px 8px;
+                        border-radius: 4px;
+                        font-size: 11px;
+                        font-weight: 700;
+                        background: ${sPurpose === "DELIVERY" ? "#e0f2fe" : "#fef3c7"};
+                        color: ${sPurpose === "DELIVERY" ? "#0369a1" : "#92400e"};
+                    }
+                    .signatures-box {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-top: 30px;
+                        padding-top: 8px;
+                    }
+                    .sig-item {
+                        width: 45%;
+                        text-align: center;
+                    }
+                    .sig-line {
+                        border-top: 1px dashed #6b7280;
+                        margin-top: 35px;
+                        margin-bottom: 5px;
+                    }
+                    .sig-label {
+                        font-size: 11px;
+                        font-weight: 600;
+                        color: #374151;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="slip-card">
+                    <div class="header-box">
+                        <div class="company-name">Assam Petro-chemicals Ltd (APL)</div>
+                        <div class="company-sub">GATE IN ENTRY PASS</div>
+                    </div>
+
+                    <div class="barcode-box">
+                        ${barcodeSvg}
+                        <div class="barcode-text">* ${sGateInNo} *</div>
+                    </div>
+
+                    <table class="details-table">
+                        <tr>
+                            <td class="label-col">Gate IN Number</td>
+                            <td class="val-col highlight-num">${sGateInNo}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">Vehicle Registration No</td>
+                            <td class="val-col highlight-reg">${sVehicleReg}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">Driver Name</td>
+                            <td class="val-col">${sDriver}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">Visit Purpose</td>
+                            <td class="val-col"><span class="purpose-tag">${sPurpose}</span></td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">Gate IN Date &amp; Time</td>
+                            <td class="val-col">${sFormattedDate}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">Gate Operator</td>
+                            <td class="val-col">${sOperator}</td>
+                        </tr>
+                    </table>
+
+                    <div class="signatures-box">
+                        <div class="sig-item">
+                            <div class="sig-line"></div>
+                            <div class="sig-label">Driver Signature</div>
+                        </div>
+                        <div class="sig-item">
+                            <div class="sig-line"></div>
+                            <div class="sig-label">Gate Operator Signature</div>
+                        </div>
+                    </div>
+                </div>
+            </body>
+            </html>
+            `;
+
+            const frameDoc = iframe.contentWindow.document;
+            frameDoc.open();
+            frameDoc.write(htmlContent);
+            frameDoc.close();
+
+            setTimeout(() => {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+            }, 300);
+        },
+
+        _generateBarcodeSvg: function (text) {
+            if (!text) text = "GATE-PASS";
+            let x = 10;
+            let rects = "";
+            for (let i = 0; i < text.length; i++) {
+                const code = text.charCodeAt(i);
+                const barWidth = (code % 2 === 0) ? 3 : 1.5;
+                const gap = (code % 3 === 0) ? 2.5 : 1.5;
+                rects += `<rect x="${x}" y="0" width="${barWidth}" height="42" fill="#0f172a" />`;
+                x += barWidth + gap;
+                const bar2 = (code % 4 === 0) ? 3.5 : 1.5;
+                rects += `<rect x="${x}" y="0" width="${bar2}" height="42" fill="#0f172a" />`;
+                x += bar2 + 2;
+            }
+            return `<svg width="${x + 10}" height="42" viewBox="0 0 ${x + 10} 42" xmlns="http://www.w3.org/2000/svg" style="display: block; margin: 0 auto;">${rects}</svg>`;
         }
     });
 });

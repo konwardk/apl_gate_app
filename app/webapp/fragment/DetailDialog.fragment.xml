@@ -47,17 +47,21 @@
                 </form:content>
             </form:SimpleForm>
         </content>
-        <beginButton>
+        <buttons>
+            <Button
+                text="Print Pass"
+                icon="sap-icon://print"
+                type="Default"
+                tooltip="Print Official Gate Entry Pass"
+                press=".onDetailPrint" />
             <Button
                 text="Edit"
                 icon="sap-icon://edit"
                 type="Emphasized"
                 press=".onDetailEdit" />
-        </beginButton>
-        <endButton>
             <Button
                 text="Close"
                 press=".onDetailClose" />
-        </endButton>
+        </buttons>
     </Dialog>
 </core:FragmentDefinition>

@@ -18,12 +18,20 @@
                 text="Main Gate"
                 icon="sap-icon://log-in"
                 type="Default"
+                visible="{/canViewMainGateOps}"
                 press=".onNavMainGateOps" />
             <Button
                 text="Weighbridge"
                 icon="sap-icon://dimension"
                 type="Default"
+                visible="{/canViewWeighbridgeOps}"
                 press=".onNavWeighbridgeOps" />
+            <Button
+                text="Factory Gate"
+                icon="sap-icon://factory"
+                type="Default"
+                visible="{/canViewFactoryGateOps}"
+                press=".onNavFactoryGateOps" />
             <Button
                 id="btnTopSecGateIn"
                 text="Security Gate IN"
@@ -97,7 +105,7 @@
                     <Column><header><Text text="Security Gate OUT" /></header></Column>
                     <Column><header><Text text="Docs / Gate Pass" /></header></Column>
                     <Column><header><Text text="Stage / Status" /></header></Column>
-                    <Column hAlign="End"><header><Text text="Actions" /></header></Column>
+                    <Column hAlign="End" width="230px"><header><Text text="Actions" /></header></Column>
                 </columns>
                 <items>
                     <ColumnListItem type="Navigation" press=".onTxRowPress">
@@ -186,14 +194,14 @@
                             <!-- 8. Actions -->
                             <HBox justifyContent="End"
                                     alignItems="Center"
-                                    wrap="Wrap"
+                                    wrap="NoWrap"
                                     class="sapUiTinyMarginBeginEnd">
                                 <Button
                                     text="Gate IN"
                                     icon="sap-icon://shield"
                                     type="Emphasized"
                                     tooltip="Process Security Gate IN"
-                                    visible="{= ${secModel>status} === 'GATE_IN' }"
+                                    visible="{= ${secModel>status} === 'GATE_IN' &amp;&amp; !${secModel>securityEntry/securityInDateTime} }"
                                     press=".onRowGateInPress"
                                     class="sapUiTinyMarginEnd" />
                                 <Button
@@ -217,9 +225,14 @@
                                     icon="sap-icon://log-out"
                                     type="Success"
                                     tooltip="Process Security Gate OUT"
-                                    visible="{= ${secModel>status} === 'WEIGHBRIDGE_OUT' || ${secModel>status} === 'FACTORY_OUT' || ${secModel>status} === 'SECURITY_IN' }"
+                                    visible="{= (${secModel>status} === 'WEIGHBRIDGE_OUT' || ${secModel>status} === 'FACTORY_OUT') &amp;&amp; !${secModel>securityEntry/securityOutDateTime} }"
                                     press=".onRowGateOutPress"
                                     class="sapUiTinyMarginEnd" />
+                                <Button
+                                    icon="sap-icon://print"
+                                    type="Transparent"
+                                    tooltip="Print Gate IN Pass"
+                                    press=".onRowPrintPress" />
                                 <Button
                                     icon="sap-icon://detail-view"
                                     type="Transparent"

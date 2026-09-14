@@ -52,6 +52,9 @@ entity GateTransactions : cuid, managed {
     securityEntry           : Association to one SecurityGateEntries
                                 on securityEntry.gateTransaction = $self;
 
+    factoryEntry            : Association to one FactoryGateEntries
+                                on factoryEntry.gateTransaction = $self;
+
     deliveryDetails         : Composition of one DeliveryDetails
                                 on deliveryDetails.gateTransaction = $self;
 
@@ -61,7 +64,7 @@ entity GateTransactions : cuid, managed {
     weighments              : Composition of many WeighbridgeTransactions
                                 on weighments.gateTransaction = $self;
 
-    factoryGateEvents       : Composition of many FactoryGateEvents
+    factoryGateEvents       : Composition of many FactoryGateEntries
                                 on factoryGateEvents.gateTransaction = $self;
 
     securityExit            : Association to SecurityGateEntries
@@ -229,29 +232,48 @@ entity WeighbridgeTransactions : cuid, managed {
 
 
 /* ============================================================
-   6. FACTORY GATE EVENTS
+   6. FACTORY GATE OPERATIONS (ENTRY & EXIT CONSOLIDATED)
    ============================================================ */
 
-entity FactoryGateEvents : cuid, managed {
+entity FactoryGateEntries : cuid, managed {
 
     gateTransaction         : Association to GateTransactions
                                 not null;
 
+    gateInNumber            : String(30);
+
     /* Factory Gate IN */
     factoryGateInDateTime   : Timestamp;
-
     factoryGateInOperator   : String(100);
 
     /* Factory Gate OUT */
     factoryGateOutDateTime  : Timestamp;
-
     factoryGateOutOperator  : String(100);
 
-    /* Factory Information */
-    factoryArea             : String(100);
+    /* Delivery Consignment Details (Collected from Security Gate or operator) */
+    poNumber                : String(30);
+    invoiceNumber           : String(50);
+    invoiceDate             : Date;
+    supplierName            : String(100);
+    transporterName         : String(100);
+    deliveryNoteNo          : String(50);
+
+    /* Factory Yard & Unloading Details */
+    factoryArea             : String(100); // e.g. Methanol Plant, Formalin Plant, Tank Farm, Raw Material Yard
+    unloadingPoint          : String(100); // e.g. Bay 1, Silo 3, Storage Yard
+    materialDescription     : String(200);
+    unloadingStatus         : String(30) default 'COMPLETED'; // IN_PROGRESS, COMPLETED, PARTIAL, REJECTED
+    unloadedQuantity        : Decimal(15,3);
+    quantityUnit            : String(10) default 'KG';
+
+    /* Physical Inspection */
+    goodsInspected          : Boolean default true;
+    sealVerified            : Boolean default true;
 
     remarks                 : String(500);
 }
+
+entity FactoryGateEvents as projection on FactoryGateEntries;
 
 
 

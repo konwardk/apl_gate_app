@@ -33,11 +33,13 @@
                 text="Main Gate Ops"
                 icon="sap-icon://log-in"
                 type="Transparent"
+                visible="{/canViewMainGateOps}"
                 press=".onNavMainGateOps" />
             <Button
                 text="Weighbridge Ops"
                 icon="sap-icon://dimension"
                 type="Transparent"
+                visible="{/canViewWeighbridgeOps}"
                 press=".onNavWeighbridgeOps" />
             <ToolbarSeparator />
             <Button

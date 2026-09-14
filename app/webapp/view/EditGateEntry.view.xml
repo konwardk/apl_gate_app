@@ -32,11 +32,13 @@
                 text="Security Ops"
                 icon="sap-icon://shield"
                 type="Transparent"
+                visible="{/canViewSecurityGateOps}"
                 press=".onNavSecurityOps" />
             <Button
                 text="Weighbridge Ops"
                 icon="sap-icon://dimension"
                 type="Transparent"
+                visible="{/canViewWeighbridgeOps}"
                 press=".onNavWeighbridgeOps" />
             <ToolbarSeparator />
             <Button
@@ -214,15 +216,31 @@
                                     <core:Item key="COMPLETED" text="COMPLETED" />
                                 </Select>
 
-                                <Label text="Gate IN Operator" />
+                                <Label text="Gate IN Operator" required="true" />
                                 <Input
+                                    id="inputEditGateInOperator"
                                     value="{editModel>/gateInOperator}"
                                     placeholder="Operator who recorded Gate IN" />
 
+                                <Label text="Gate IN Date &amp; Time" required="true" />
+                                <DateTimePicker
+                                    id="inputEditGateInDateTime"
+                                    value="{path: 'editModel>/gateInDateTime', formatter: '.formatter.formatDateTime'}"
+                                    change=".onGateInDateTimeChange"
+                                    placeholder="Select or verify Gate IN Timestamp" />
+
                                 <Label text="Gate OUT Operator" />
                                 <Input
+                                    id="inputEditGateOutOperator"
                                     value="{editModel>/gateOutOperator}"
                                     placeholder="Operator who recorded Gate OUT" />
+
+                                <Label text="Gate OUT Date &amp; Time" />
+                                <DateTimePicker
+                                    id="inputEditGateOutDateTime"
+                                    value="{path: 'editModel>/gateOutDateTime', formatter: '.formatter.formatDateTime'}"
+                                    change=".onGateOutDateTimeChange"
+                                    placeholder="Gate OUT Timestamp (if exited)" />
 
                                 <Label text="Operational Remarks" />
                                 <TextArea
@@ -331,10 +349,7 @@
                         </form:SimpleForm>
                     </IconTabFilter> -->
 
-                
-                    
-
-                    <!-- TAB 5: Weighbridge Records -->
+                    <!-- TAB 3: Weighbridge Records -->
                     <!-- <IconTabFilter
                         key="weighbridgeTab"
                         text="Weighbridge"
@@ -372,7 +387,7 @@
                         </Table>
                     </IconTabFilter> -->
 
-                    <!-- TAB 6: Audit History -->
+                    <!-- TAB 4: Audit History -->
                     <!-- <IconTabFilter
                         key="auditTab"
                         text="Audit Trail"
