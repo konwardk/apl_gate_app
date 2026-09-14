@@ -54,6 +54,8 @@
             <Label text="Select Role:" design="Bold" class="sapUiTinyMarginBegin sapUiTinyMarginEnd" />
             <Select
                 id="personaSelect"
+                width="270px"
+                autoAdjustWidth="true"
                 selectedKey="{/activeUser}"
                 change=".onPersonaChange"
                 class="sapUiTinyMarginEnd">

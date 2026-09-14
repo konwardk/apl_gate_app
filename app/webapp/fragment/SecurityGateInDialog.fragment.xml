@@ -5,7 +5,13 @@
     <Dialog
         id="securityGateInDialog"
         title="Security Gate IN - Vehicle &amp; Driver Check-In"
-        contentWidth="720px">
+        icon="sap-icon://shield"
+        contentWidth="720px"
+        contentHeight="70vh"
+        verticalScrolling="true"
+        resizable="true"
+        draggable="true"
+        class="sapUiContentPadding security-gate-dialog">
         <content>
             <form:SimpleForm
                 id="secGateInDialogForm"
@@ -77,7 +83,10 @@
                     <Input
                         id="dialogSecDriverPhone"
                         value="{secModel>/driverPhoneNo}"
-                        placeholder="e.g. +91 9876543210" />
+                        type="Tel"
+                        maxLength="10"
+                        placeholder="10-digit mobile number (numbers only)"
+                        liveChange=".onDriverPhoneLiveChange" />
 
                     <Label text="Helper Name" />
                     <Input
@@ -173,8 +182,17 @@
                         text="Empty container / vehicle bed physically inspected for pickup"
                         selected="{secModel>/emptyInspectionVerified}" />
 
-                    <!-- Section 4: Security Remarks -->
-                    <core:Title text="4. Security Clearance Remarks" />
+                    <!-- Section 4: Routing & Security Clearance Remarks -->
+                    <core:Title text="4. Routing &amp; Security Clearance Remarks" />
+
+                    <Label text="Assign Route" required="true" />
+                    <Select
+                        id="dialogSecAssignedRoute"
+                        selectedKey="{secModel>/assignedRoute}"
+                        width="100%">
+                        <core:Item key="WEIGHBRIDGE" text="To Weighbridge (Gross / Tare Scale Weighment)" />
+                        <core:Item key="FACTORY" text="To Factory Gate (Direct Delivery / Bypass Weighbridge)" />
+                    </Select>
 
                     <Label text="Remarks" />
                     <TextArea

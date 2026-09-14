@@ -17,8 +17,19 @@ html, body {
 /* Fiori Launchpad Shell styling */
 .fiori-shellbar {
     position: relative !important;
-    z-index: 100;
+    z-index: 1;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Security Gate Operations Dialogs - Header Visibility & Viewport Fit */
+.security-gate-dialog {
+    max-height: calc(100vh - 64px) !important;
+    max-width: 95vw !important;
+}
+
+.security-gate-dialog .sapMDialogSection {
+    overflow-y: auto !important;
+    max-height: calc(100vh - 160px) !important;
 }
 
 /* App root container */

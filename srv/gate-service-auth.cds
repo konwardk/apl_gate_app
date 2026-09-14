@@ -10,12 +10,13 @@ using { GateService } from './gate-service';
 annotate GateService with @(requires: 'authenticated-user');
 
 // 2. Action Level Authorization
-annotate GateService.CreateGateIn     with @(requires: ['MainGateUser', 'Superadmin']);
-annotate GateService.SecurityGateIn   with @(requires: ['SecurityGateUser', 'Superadmin']);
-annotate GateService.RecordWeighment  with @(requires: ['WeighbridgeUser', 'Superadmin']);
-annotate GateService.FactoryGateIn           with @(requires: ['FactoryGateUser', 'Superadmin']);
-annotate GateService.FactoryGateOut          with @(requires: ['FactoryGateUser', 'Superadmin']);
-annotate GateService.RecordFactoryOperation  with @(requires: ['FactoryGateUser', 'Superadmin']);
+annotate GateService.CreateGateIn            with @(requires: ['MainGateUser', 'Superadmin']);
+annotate GateService.SecurityGateIn          with @(requires: ['SecurityGateUser', 'Superadmin']);
+annotate GateService.AssignRoute             with @(requires: ['SecurityGateUser', 'Superadmin']);
+annotate GateService.RecordWeighment         with @(requires: ['WeighbridgeUser', 'Superadmin']);
+annotate GateService.FactoryGateIn           with @(requires: ['SecurityGateUser', 'FactoryGateUser', 'Superadmin']);
+annotate GateService.FactoryGateOut          with @(requires: ['SecurityGateUser', 'FactoryGateUser', 'Superadmin']);
+annotate GateService.RecordFactoryOperation  with @(requires: ['SecurityGateUser', 'FactoryGateUser', 'Superadmin']);
 annotate GateService.SecurityGateOut         with @(requires: ['SecurityGateUser', 'Superadmin']);
 annotate GateService.MainGateOut             with @(requires: ['MainGateUser', 'Superadmin']);
 annotate GateService.userInfo                with @(requires: 'authenticated-user');

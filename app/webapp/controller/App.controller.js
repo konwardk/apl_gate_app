@@ -34,8 +34,11 @@ sap.ui.define([
         },
 
         onPersonaChange: function (oEvt) {
-            const sKey = oEvt.getParameter("selectedItem").getKey();
-            this.getOwnerComponent().handlePersonaChange(sKey);
+            const oSelectedItem = oEvt.getParameter("selectedItem");
+            const sKey = oSelectedItem ? oSelectedItem.getKey() : oEvt.getSource().getSelectedKey();
+            if (sKey) {
+                this.getOwnerComponent().handlePersonaChange(sKey);
+            }
         },
 
         onProfilePressed: function (oEvt) {

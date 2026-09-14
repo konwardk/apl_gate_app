@@ -148,8 +148,12 @@
 
                                 <Label text="Driver Contact Phone" />
                                 <Input
+                                    id="inputSecDriverPhone"
                                     value="{secEditModel>/driverPhoneNo}"
-                                    placeholder="e.g. +91 9876543210" />
+                                    type="Tel"
+                                    maxLength="10"
+                                    placeholder="10-digit mobile number (numbers only)"
+                                    liveChange=".onDriverPhoneLiveChange" />
 
                                 <Label text="Helper / Attendant Name" />
                                 <Input

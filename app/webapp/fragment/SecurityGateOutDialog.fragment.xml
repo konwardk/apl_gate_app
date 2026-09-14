@@ -5,7 +5,13 @@
     <Dialog
         id="securityGateOutDialog"
         title="Security Gate OUT - Exit Inspection &amp; Pass Authorization"
-        contentWidth="720px">
+        icon="sap-icon://log-out"
+        contentWidth="720px"
+        contentHeight="70vh"
+        verticalScrolling="true"
+        resizable="true"
+        draggable="true"
+        class="sapUiContentPadding security-gate-dialog">
         <content>
             <form:SimpleForm
                 id="secGateOutDialogForm"

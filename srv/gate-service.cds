@@ -131,7 +131,15 @@ service GateService {
         rgpDocumentNo            : String,
         nrgpDocumentNo           : String,
         gatePassType             : String,
+        assignedRoute            : String,
         remarks                  : String
+    ) returns GateTransactions;
+
+
+    action AssignRoute(
+        gateInNumber : String,
+        route        : String,
+        remarks      : String
     ) returns GateTransactions;
 
 

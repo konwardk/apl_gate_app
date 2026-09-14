@@ -238,6 +238,7 @@ sap.ui.define([
             oSecModel.setProperty("/rgpDocumentNo", "");
             oSecModel.setProperty("/nrgpDocumentNo", "");
             oSecModel.setProperty("/gatePassType", "");
+            oSecModel.setProperty("/assignedRoute", "WEIGHBRIDGE");
             oSecModel.setProperty("/gatePassVerified", false);
             oSecModel.setProperty("/emptyInspectionVerified", true);
             oSecModel.setProperty("/remarks", "");
@@ -274,6 +275,7 @@ sap.ui.define([
                 }
 
                 this._resetDialogInputStates(sId, [
+                    "dialogSecDriverPhone",
                     "dialogSecDriverLicense",
                     "dialogSecPersonnel",
                     "dialogSecPoNumber",
@@ -341,7 +343,10 @@ sap.ui.define([
                 // Auto-fill driver license if driver profile linked
                 if (matched.driver && matched.driver.drivingLicenseNo) {
                     oSecModel.setProperty("/driverLicenseNo", matched.driver.drivingLicenseNo);
-                    if (matched.driver.phoneNo) oSecModel.setProperty("/driverPhoneNo", matched.driver.phoneNo);
+                    if (matched.driver.phoneNo) {
+                        const sClean = matched.driver.phoneNo.replace(/\D/g, "").slice(-10);
+                        oSecModel.setProperty("/driverPhoneNo", sClean);
+                    }
                 } else if (matched.driver_ID) {
                     try {
                         const headers = {
@@ -352,10 +357,36 @@ sap.ui.define([
                         if (resDrv.ok) {
                             const drv = await resDrv.json();
                             if (drv.drivingLicenseNo) oSecModel.setProperty("/driverLicenseNo", drv.drivingLicenseNo);
-                            if (drv.phoneNo) oSecModel.setProperty("/driverPhoneNo", drv.phoneNo);
+                            if (drv.phoneNo) {
+                                const sClean = drv.phoneNo.replace(/\D/g, "").slice(-10);
+                                oSecModel.setProperty("/driverPhoneNo", sClean);
+                            }
                         }
                     } catch (e) {}
                 }
+            }
+        },
+
+        onDriverPhoneLiveChange: function (oEvt) {
+            const oInput = oEvt.getSource();
+            let sVal = oEvt.getParameter("value") || "";
+            // Keep only numbers and max 10 digits
+            const sDigits = sVal.replace(/\D/g, "").slice(0, 10);
+
+            if (sVal !== sDigits) {
+                oInput.setValue(sDigits);
+                this.getView().getModel("secModel").setProperty("/driverPhoneNo", sDigits);
+            }
+
+            if (sDigits.length === 0) {
+                oInput.setValueState(ValueState.None);
+                oInput.setValueStateText("");
+            } else if (sDigits.length < 10) {
+                oInput.setValueState(ValueState.Warning);
+                oInput.setValueStateText(`Enter 10 numeric digits (${sDigits.length}/10)`);
+            } else {
+                oInput.setValueState(ValueState.Success);
+                oInput.setValueStateText("Valid 10-digit phone number");
             }
         },
 
@@ -399,6 +430,36 @@ sap.ui.define([
                 return;
             }
             if (oSecInput) oSecInput.setValueState(ValueState.None);
+
+            const oPhoneInput = Fragment.byId(sId, "dialogSecDriverPhone");
+            if (m.driverPhoneNo && m.driverPhoneNo.trim()) {
+                const sPhone = m.driverPhoneNo.trim();
+                if (!/^\d+$/.test(sPhone)) {
+                    if (oPhoneInput) {
+                        oPhoneInput.setValueState(ValueState.Error);
+                        oPhoneInput.setValueStateText("Driver Phone No must contain only numbers (0-9).");
+                    }
+                    MessageBox.error("Invalid Driver Phone No:\nOnly numbers (0-9) are allowed.");
+                    return;
+                }
+                if (sPhone.length > 10) {
+                    if (oPhoneInput) {
+                        oPhoneInput.setValueState(ValueState.Error);
+                        oPhoneInput.setValueStateText("Driver Phone No cannot exceed 10 digits.");
+                    }
+                    MessageBox.error("Invalid Driver Phone No:\nMaximum 10 digits allowed.");
+                    return;
+                }
+                if (sPhone.length < 10) {
+                    if (oPhoneInput) {
+                        oPhoneInput.setValueState(ValueState.Error);
+                        oPhoneInput.setValueStateText("Driver Phone No must be exactly 10 digits.");
+                    }
+                    MessageBox.error("Invalid Driver Phone No:\nPlease enter a complete 10-digit mobile number.");
+                    return;
+                }
+                if (oPhoneInput) oPhoneInput.setValueState(ValueState.None);
+            }
 
             const oPoInput = Fragment.byId(sId, "dialogSecPoNumber");
             const oInvInput = Fragment.byId(sId, "dialogSecInvoiceNumber");
@@ -447,6 +508,7 @@ sap.ui.define([
                 rgpDocumentNo: m.isPickup ? (m.rgpDocumentNo ? m.rgpDocumentNo.trim() : "") : "",
                 nrgpDocumentNo: m.isPickup ? (m.nrgpDocumentNo ? m.nrgpDocumentNo.trim() : "") : "",
                 gatePassType: m.isPickup ? (m.gatePassType || "") : "",
+                assignedRoute: m.assignedRoute || "WEIGHBRIDGE",
                 remarks: m.remarks ? m.remarks.trim() : ""
             };
 
@@ -484,7 +546,9 @@ sap.ui.define([
                     statusText = "Cleared Security Gate IN";
                 }
 
-                MessageBox.success(`Security Gate IN successfully authorized for ${m.selectedGateInNumber}!\n\nStatus: SECURITY_IN\nCurrent Stage: SECURITY_GATE_IN\nDocumentation: ${statusText}`, {
+                const sRouteDesc = (m.assignedRoute === "FACTORY") ? "To Factory Gate (Direct Delivery)" : "To Weighbridge (Gross/Tare Scale)";
+
+                MessageBox.success(`Security Gate IN successfully authorized for ${m.selectedGateInNumber}!\n\nStatus: ${m.assignedRoute === "FACTORY" ? "FACTORY_IN" : "SECURITY_IN"}\nAssigned Route: ${sRouteDesc}\nDocumentation: ${statusText}`, {
                     title: "Security Clearance Complete",
                     onClose: () => {
                         this.loadSecurityData();
@@ -769,14 +833,14 @@ sap.ui.define([
             this.onOpenSecurityGateInDialog(oTx);
         },
 
-        onRowSendToFactoryPress: function (oEvt) {
+        onRowSendToWeighbridgePress: function (oEvt) {
             const oTx = oEvt.getSource().getBindingContext("secModel").getObject();
             if (!oTx || !oTx.gateInNumber) return;
 
             MessageBox.confirm(
-                `Direct Factory Entry:\n\nSend vehicle ${oTx.vehicleRegNo} (${oTx.gateInNumber}) directly to Factory Gate without Weighbridge?`,
+                `Assign Route to Weighbridge:\n\nSend vehicle ${oTx.vehicleRegNo} (${oTx.gateInNumber}) to Weighbridge for Gross/Tare weighment?`,
                 {
-                    title: "Direct Factory Gate IN",
+                    title: "Route to Weighbridge",
                     actions: [MessageBox.Action.YES, MessageBox.Action.NO],
                     emphasizedAction: MessageBox.Action.YES,
                     onClose: async (sAction) => {
@@ -790,23 +854,77 @@ sap.ui.define([
                                 "Authorization": models.getAuthHeaderValue(),
                                 "Content-Type": "application/json"
                             };
-                            const res = await fetch(`${ODATA_BASE}/FactoryGateIn`, {
+                            const res = await fetch(`${ODATA_BASE}/AssignRoute`, {
                                 method: "POST",
                                 headers: headers,
-                                body: JSON.stringify({ gateInNumber: oTx.gateInNumber })
+                                body: JSON.stringify({
+                                    gateInNumber: oTx.gateInNumber,
+                                    route: "WEIGHBRIDGE",
+                                    remarks: "Route assigned to Weighbridge by Security Gate"
+                                })
                             });
 
                             if (!res.ok) {
                                 const errData = await res.json();
-                                const sErrMsg = errData.error && errData.error.message ? errData.error.message : "Failed to record Factory Gate IN";
+                                const sErrMsg = errData.error && errData.error.message ? errData.error.message : "Failed to assign route to Weighbridge";
                                 throw new Error(sErrMsg);
                             }
 
-                            MessageToast.show(`Vehicle ${oTx.vehicleRegNo} successfully arrived at Factory Gate (Weighbridge Bypassed).`);
+                            MessageToast.show(`Vehicle ${oTx.vehicleRegNo} successfully routed to Weighbridge.`);
                             await this.loadSecurityData();
                             this.getOwnerComponent().loadOverviewData();
                         } catch (err) {
-                            MessageBox.error("Factory Gate IN Error: " + err.message);
+                            MessageBox.error("Route Assignment Error: " + err.message);
+                        } finally {
+                            if (oTable) oTable.setBusy(false);
+                        }
+                    }
+                }
+            );
+        },
+
+        onRowSendToFactoryPress: function (oEvt) {
+            const oTx = oEvt.getSource().getBindingContext("secModel").getObject();
+            if (!oTx || !oTx.gateInNumber) return;
+
+            MessageBox.confirm(
+                `Direct Factory Entry:\n\nSend vehicle ${oTx.vehicleRegNo} (${oTx.gateInNumber}) directly to Factory Gate without Weighbridge?`,
+                {
+                    title: "Route to Factory Gate",
+                    actions: [MessageBox.Action.YES, MessageBox.Action.NO],
+                    emphasizedAction: MessageBox.Action.YES,
+                    onClose: async (sAction) => {
+                        if (sAction !== MessageBox.Action.YES) return;
+
+                        const oTable = this.byId("secTxTable");
+                        if (oTable) oTable.setBusy(true);
+
+                        try {
+                            const headers = {
+                                "Authorization": models.getAuthHeaderValue(),
+                                "Content-Type": "application/json"
+                            };
+                            const res = await fetch(`${ODATA_BASE}/AssignRoute`, {
+                                method: "POST",
+                                headers: headers,
+                                body: JSON.stringify({
+                                    gateInNumber: oTx.gateInNumber,
+                                    route: "FACTORY",
+                                    remarks: "Direct Factory Entry assigned by Security Gate"
+                                })
+                            });
+
+                            if (!res.ok) {
+                                const errData = await res.json();
+                                const sErrMsg = errData.error && errData.error.message ? errData.error.message : "Failed to assign route to Factory Gate";
+                                throw new Error(sErrMsg);
+                            }
+
+                            MessageToast.show(`Vehicle ${oTx.vehicleRegNo} successfully routed to Factory Gate (Weighbridge Bypassed).`);
+                            await this.loadSecurityData();
+                            this.getOwnerComponent().loadOverviewData();
+                        } catch (err) {
+                            MessageBox.error("Route Assignment Error: " + err.message);
                         } finally {
                             if (oTable) oTable.setBusy(false);
                         }

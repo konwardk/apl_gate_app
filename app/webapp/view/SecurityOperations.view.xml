@@ -105,7 +105,7 @@
                     <Column><header><Text text="Security Gate OUT" /></header></Column>
                     <Column><header><Text text="Docs / Gate Pass" /></header></Column>
                     <Column><header><Text text="Stage / Status" /></header></Column>
-                    <Column hAlign="End" width="230px"><header><Text text="Actions" /></header></Column>
+                    <Column hAlign="End" width="420px"><header><Text text="Actions" /></header></Column>
                 </columns>
                 <items>
                     <ColumnListItem type="Navigation" press=".onTxRowPress">
@@ -189,13 +189,18 @@
                                 <Text
                                     text="{secModel>currentStage}"
                                     class="sapUiTinyMarginTop" />
+                                <ObjectStatus
+                                    visible="{= !!${secModel>assignedRoute} }"
+                                    text="{= ${secModel>assignedRoute} === 'WEIGHBRIDGE' ? 'Route: Weighbridge' : (${secModel>assignedRoute} === 'FACTORY' ? 'Route: Factory Gate' : ${secModel>assignedRoute}) }"
+                                    state="{= ${secModel>assignedRoute} === 'WEIGHBRIDGE' ? 'Information' : 'Success' }"
+                                    class="sapUiTinyMarginTop" />
                             </VBox>
 
                             <!-- 8. Actions -->
                             <HBox justifyContent="End"
                                     alignItems="Center"
                                     wrap="NoWrap"
-                                    class="sapUiTinyMarginBeginEnd">
+                                    class="sapUiNoMargin">
                                 <Button
                                     text="Gate IN"
                                     icon="sap-icon://shield"
@@ -205,10 +210,18 @@
                                     press=".onRowGateInPress"
                                     class="sapUiTinyMarginEnd" />
                                 <Button
+                                    text="To Weighbridge"
+                                    icon="sap-icon://dimension"
+                                    type="Default"
+                                    tooltip="Assign Route: Send vehicle to Weighbridge for gross/tare weighment"
+                                    visible="{= ${secModel>status} === 'SECURITY_IN' }"
+                                    press=".onRowSendToWeighbridgePress"
+                                    class="sapUiTinyMarginEnd" />
+                                <Button
                                     text="To Factory"
                                     icon="sap-icon://factory"
                                     type="Emphasized"
-                                    tooltip="Proceed directly to Factory Gate (Bypass Weighbridge)"
+                                    tooltip="Assign Route: Send vehicle directly to Factory Gate (Bypass Weighbridge)"
                                     visible="{= ${secModel>status} === 'SECURITY_IN' }"
                                     press=".onRowSendToFactoryPress"
                                     class="sapUiTinyMarginEnd" />

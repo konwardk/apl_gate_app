@@ -38,6 +38,9 @@ entity GateTransactions : cuid, managed {
     /* General Information */
     remarks                 : String(500);
 
+    /* Assigned Route (WEIGHBRIDGE or FACTORY) */
+    assignedRoute           : String(50);
+
     /* Master Data References */
     vehicle                 : Association to Vehicles
                                 on vehicle.vehicleRegNo = vehicleRegNo;
@@ -112,6 +115,9 @@ entity SecurityGateEntries : cuid, managed {
     rgpDocumentNo           : String(30);
     nrgpDocumentNo          : String(30);
     gatePassType            : GatePassType;
+
+    /* Assigned Route (WEIGHBRIDGE or FACTORY) */
+    assignedRoute           : String(50);
 
     securityInRemarks       : String(500);
 

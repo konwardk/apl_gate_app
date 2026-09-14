@@ -534,6 +534,7 @@ export default cds.service.impl(async function () {
             rgpDocumentNo,
             nrgpDocumentNo,
             gatePassType,
+            assignedRoute,
             remarks
         } = req.data;
 
@@ -604,6 +605,7 @@ export default cds.service.impl(async function () {
             rgpDocumentNo: isPickup ? (rgpDocumentNo || null) : null,
             nrgpDocumentNo: isPickup ? (nrgpDocumentNo || null) : null,
             gatePassType: isPickup ? determinedPassType : null,
+            assignedRoute: assignedRoute || null,
             securityInDateTime: new Date(),
             remarks: remarks || (isDelivery && bWithoutPO ? 'Delivery without PO authorized by Security' : '')
         });
@@ -638,16 +640,38 @@ export default cds.service.impl(async function () {
         }
 
         // 6. Update main transaction stage and status
+        const determinedRoute = assignedRoute ? assignedRoute.toUpperCase().trim() : '';
+        const targetStage = determinedRoute === 'WEIGHBRIDGE' ? 'WEIGHBRIDGE_IN' : (determinedRoute === 'FACTORY' ? 'FACTORY' : 'SECURITY_GATE_IN');
+        const targetStatus = determinedRoute === 'FACTORY' ? 'FACTORY_IN' : 'SECURITY_IN';
+
         await UPDATE(GateTransactions)
             .set({
-                status: 'SECURITY_IN',
-                currentStage: 'SECURITY_GATE_IN',
+                status: targetStatus,
+                currentStage: targetStage,
+                assignedRoute: determinedRoute || null,
                 driverLicenseNo: driverLicenseNo || transaction.driverLicenseNo,
                 driverPhoneNo: driverPhoneNo || transaction.driverPhoneNo
             })
             .where({
                 ID: transaction.ID
             });
+
+        // If directly routed to factory at entry, initialize FactoryGateEntries
+        if (determinedRoute === 'FACTORY') {
+            await INSERT.into(FactoryGateEntries).entries({
+                ID: cds.utils.uuid(),
+                gateTransaction_ID: transaction.ID,
+                gateInNumber: transaction.gateInNumber,
+                factoryGateInDateTime: new Date(),
+                factoryGateInOperator: securityPersonnel,
+                factoryArea: 'Raw Material Yard',
+                poNumber: isDelivery ? (bWithoutPO ? '' : (poNumber || '')) : '',
+                invoiceNumber: isDelivery ? (bWithoutPO ? '' : (invoiceNumber || '')) : '',
+                invoiceDate: isDelivery ? (bWithoutPO ? null : (invoiceDate || null)) : null,
+                unloadingStatus: 'IN_PROGRESS',
+                remarks: 'Direct Factory Entry assigned at Security Gate IN'
+            });
+        }
 
         // 7. Create immutable Audit Log
         let auditRemarks;
@@ -660,14 +684,18 @@ export default cds.service.impl(async function () {
             auditRemarks = `Security Check-In (Pickup) completed by ${securityPersonnel} (${docInfo})`;
         }
 
+        if (determinedRoute) {
+            auditRemarks += ` [Assigned Route: To ${determinedRoute === 'FACTORY' ? 'Factory Gate' : 'Weighbridge'}]`;
+        }
+
         await INSERT.into(GateAuditLogs).entries({
             ID: cds.utils.uuid(),
             gateTransaction_ID: transaction.ID,
-            action: 'SECURITY_GATE_IN',
+            action: determinedRoute === 'FACTORY' ? 'FACTORY_GATE_IN' : 'SECURITY_GATE_IN',
             oldStatus: 'GATE_IN',
-            newStatus: 'SECURITY_IN',
+            newStatus: targetStatus,
             oldStage: 'MAIN_GATE_IN',
-            newStage: 'SECURITY_GATE_IN',
+            newStage: targetStage,
             actionDateTime: new Date(),
             userId: req.user?.id || 'SYSTEM',
             userName: securityPersonnel,
@@ -679,6 +707,127 @@ export default cds.service.impl(async function () {
             .where({
                 ID: transaction.ID
             });
+    });
+
+
+    /*
+     * ============================================================
+     * ASSIGN ROUTE (TO WEIGHBRIDGE / TO FACTORY)
+     * ============================================================
+     */
+    this.on('AssignRoute', async (req) => {
+        const { gateInNumber, route, remarks } = req.data;
+
+        if (!gateInNumber) {
+            return req.error(400, 'Gate IN Number is mandatory.', 'in/gateInNumber');
+        }
+
+        if (!route) {
+            return req.error(400, 'Route is mandatory (WEIGHBRIDGE or FACTORY).', 'in/route');
+        }
+
+        const sRoute = route.toUpperCase().trim();
+        if (sRoute !== 'WEIGHBRIDGE' && sRoute !== 'FACTORY') {
+            return req.error(400, "Invalid route. Allowed values: 'WEIGHBRIDGE' or 'FACTORY'.", 'in/route');
+        }
+
+        const transaction = await getTransaction(gateInNumber, req);
+
+        if (transaction.status !== 'SECURITY_IN') {
+            return req.error(400, `Vehicle ${gateInNumber} is not at Security Gate. Current status: ${transaction.status}`);
+        }
+
+        const sOperator = req.user?.id || 'SecurityOfficer';
+
+        if (sRoute === 'WEIGHBRIDGE') {
+            await UPDATE(GateTransactions)
+                .set({
+                    currentStage: 'WEIGHBRIDGE_IN',
+                    assignedRoute: 'WEIGHBRIDGE'
+                })
+                .where({ ID: transaction.ID });
+
+            await UPDATE(SecurityGateEntries)
+                .set({ assignedRoute: 'WEIGHBRIDGE' })
+                .where({ gateTransaction_ID: transaction.ID });
+
+            await INSERT.into(GateAuditLogs).entries({
+                ID: cds.utils.uuid(),
+                gateTransaction_ID: transaction.ID,
+                action: 'ROUTE_ASSIGNED',
+                oldStatus: transaction.status,
+                newStatus: 'SECURITY_IN',
+                oldStage: transaction.currentStage,
+                newStage: 'WEIGHBRIDGE_IN',
+                actionDateTime: new Date(),
+                userId: req.user?.id || 'SYSTEM',
+                userName: sOperator,
+                remarks: remarks || `Security Gate: Route assigned to Weighbridge for gross/tare weighment by ${sOperator}`
+            });
+        } else if (sRoute === 'FACTORY') {
+            await UPDATE(GateTransactions)
+                .set({
+                    status: 'FACTORY_IN',
+                    currentStage: 'FACTORY',
+                    assignedRoute: 'FACTORY'
+                })
+                .where({ ID: transaction.ID });
+
+            await UPDATE(SecurityGateEntries)
+                .set({ assignedRoute: 'FACTORY' })
+                .where({ gateTransaction_ID: transaction.ID });
+
+            const secEntry = await SELECT.one.from(SecurityGateEntries).where({ gateTransaction_ID: transaction.ID });
+            const existingFac = await SELECT.one.from(FactoryGateEntries).where({ gateTransaction_ID: transaction.ID });
+
+            const poNumber = secEntry?.poNumber || '';
+            const invoiceNumber = secEntry?.invoiceNumber || '';
+            const invoiceDate = secEntry?.invoiceDate || null;
+
+            if (existingFac) {
+                await UPDATE(FactoryGateEntries)
+                    .set({
+                        factoryGateInDateTime: new Date(),
+                        factoryGateInOperator: sOperator,
+                        poNumber: poNumber,
+                        invoiceNumber: invoiceNumber,
+                        invoiceDate: invoiceDate,
+                        unloadingStatus: 'IN_PROGRESS',
+                        remarks: remarks || 'Direct Factory Entry assigned by Security Gate'
+                    })
+                    .where({ ID: existingFac.ID });
+            } else {
+                await INSERT.into(FactoryGateEntries).entries({
+                    ID: cds.utils.uuid(),
+                    gateTransaction_ID: transaction.ID,
+                    gateInNumber: transaction.gateInNumber,
+                    factoryGateInDateTime: new Date(),
+                    factoryGateInOperator: sOperator,
+                    factoryArea: 'Raw Material Yard',
+                    poNumber: poNumber,
+                    invoiceNumber: invoiceNumber,
+                    invoiceDate: invoiceDate,
+                    unloadingStatus: 'IN_PROGRESS',
+                    remarks: remarks || 'Direct Factory Entry assigned by Security Gate'
+                });
+            }
+
+            await INSERT.into(GateAuditLogs).entries({
+                ID: cds.utils.uuid(),
+                gateTransaction_ID: transaction.ID,
+                action: 'FACTORY_GATE_IN',
+                oldStatus: transaction.status,
+                newStatus: 'FACTORY_IN',
+                oldStage: transaction.currentStage,
+                newStage: 'FACTORY',
+                actionDateTime: new Date(),
+                userId: req.user?.id || 'SYSTEM',
+                userName: sOperator,
+                remarks: remarks || `Direct Factory Entry assigned by Security Gate: ${sOperator} (Weighbridge bypassed)`
+            });
+        }
+
+        return SELECT.one.from(GateTransactions).where({ ID: transaction.ID });
     });
 
 
@@ -870,7 +1019,10 @@ export default cds.service.impl(async function () {
                     newStatus,
 
                 currentStage:
-                    newStage
+                    newStage,
+
+                assignedRoute:
+                    newStatus === 'WEIGHBRIDGE_IN' ? 'WEIGHBRIDGE' : transaction.assignedRoute
 
             })
             .where({
@@ -1032,7 +1184,8 @@ export default cds.service.impl(async function () {
         await UPDATE(GateTransactions)
             .set({
                 status: 'FACTORY_IN',
-                currentStage: 'FACTORY'
+                currentStage: 'FACTORY',
+                assignedRoute: 'FACTORY'
             })
             .where({
                 ID: transaction.ID

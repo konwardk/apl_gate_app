@@ -255,6 +255,29 @@ sap.ui.define([
             return fields.some(f => current[f] !== orig[f]);
         },
 
+        onDriverPhoneLiveChange: function (oEvt) {
+            const oInput = oEvt.getSource();
+            let sVal = oEvt.getParameter("value") || "";
+            // Keep only numbers and max 10 digits
+            const sDigits = sVal.replace(/\D/g, "").slice(0, 10);
+
+            if (sVal !== sDigits) {
+                oInput.setValue(sDigits);
+                this._oSecEditModel.setProperty("/driverPhoneNo", sDigits);
+            }
+
+            if (sDigits.length === 0) {
+                oInput.setValueState(ValueState.None);
+                oInput.setValueStateText("");
+            } else if (sDigits.length < 10) {
+                oInput.setValueState(ValueState.Warning);
+                oInput.setValueStateText(`Enter 10 numeric digits (${sDigits.length}/10)`);
+            } else {
+                oInput.setValueState(ValueState.Success);
+                oInput.setValueStateText("Valid 10-digit phone number");
+            }
+        },
+
         onSave: async function () {
             const m = this._oSecEditModel.getData();
 
@@ -266,6 +289,36 @@ sap.ui.define([
                 return;
             }
             if (oLicInput) oLicInput.setValueState(ValueState.None);
+
+            const oPhoneInput = this.byId("inputSecDriverPhone");
+            if (m.driverPhoneNo && m.driverPhoneNo.trim()) {
+                const sPhone = m.driverPhoneNo.trim();
+                if (!/^\d+$/.test(sPhone)) {
+                    if (oPhoneInput) {
+                        oPhoneInput.setValueState(ValueState.Error);
+                        oPhoneInput.setValueStateText("Driver Phone No must contain only numbers (0-9).");
+                    }
+                    MessageBox.error("Invalid Driver Phone No:\nOnly numbers (0-9) are allowed.");
+                    return;
+                }
+                if (sPhone.length > 10) {
+                    if (oPhoneInput) {
+                        oPhoneInput.setValueState(ValueState.Error);
+                        oPhoneInput.setValueStateText("Driver Phone No cannot exceed 10 digits.");
+                    }
+                    MessageBox.error("Invalid Driver Phone No:\nMaximum 10 digits allowed.");
+                    return;
+                }
+                if (sPhone.length < 10) {
+                    if (oPhoneInput) {
+                        oPhoneInput.setValueState(ValueState.Error);
+                        oPhoneInput.setValueStateText("Driver Phone No must be exactly 10 digits.");
+                    }
+                    MessageBox.error("Invalid Driver Phone No:\nPlease enter a complete 10-digit mobile number.");
+                    return;
+                }
+                if (oPhoneInput) oPhoneInput.setValueState(ValueState.None);
+            }
 
             const oSecInput = this.byId("inputSecPersonnel");
             if (!m.securityPersonnel || !m.securityPersonnel.trim()) {
