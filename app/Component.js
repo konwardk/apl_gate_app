@@ -53,6 +53,12 @@ sap.ui.define([
                 });
                 if (oTarget) {
                     this._oNavContainer.to(oTarget, sTransition || "slide");
+                    const oCtrl = oTarget.getController && oTarget.getController();
+                    if (sPageId === "securityGateOpsPage" && oCtrl && oCtrl.loadSecurityData) {
+                        oCtrl.loadSecurityData();
+                    } else if (sPageId === "weighbridgeOpsPage" && oCtrl && oCtrl.loadScaleQueue) {
+                        oCtrl.loadScaleQueue();
+                    }
                 } else {
                     this._oNavContainer.to(sPageId, sTransition || "slide");
                 }
@@ -751,6 +757,7 @@ sap.ui.define([
         // Dialog: Transaction Detail View
         // ============================================================
         openDetailDialog: function (tx) {
+            this._currentDetailTx = tx;
             const sId = this.createId("detailFrag");
             const oDetailModel = new JSONModel(tx);
 
@@ -777,11 +784,53 @@ sap.ui.define([
             }
         },
 
-        onDetailEditInFE: function (oEvt) {
-            if (this._pDetailDialog) {
-                this._pDetailDialog.then(oDialog => oDialog.close());
+        openEditGateEntryPage: function (tx) {
+            this.navigateTo("editGateEntryPage", "slide");
+            const aPages = this._oNavContainer ? this._oNavContainer.getPages() : [];
+            const oEditPage = aPages.find(p => p.getId().endsWith("editGateEntryPage"));
+            if (oEditPage) {
+                const oCtrl = oEditPage.getController();
+                if (oCtrl && oCtrl.loadTransaction) {
+                    oCtrl.loadTransaction(tx);
+                }
             }
-            this.openFioriElementsApp("GateTransactions", "Gate Entries & Exits (SAP Fiori Elements)");
+        },
+
+        openEditSecurityGateEntryPage: function (tx) {
+            this.navigateTo("editSecurityGateEntryPage", "slide");
+            const aPages = this._oNavContainer ? this._oNavContainer.getPages() : [];
+            const oEditSecPage = aPages.find(p => p.getId().endsWith("editSecurityGateEntryPage"));
+            if (oEditSecPage) {
+                const oCtrl = oEditSecPage.getController();
+                if (oCtrl && oCtrl.loadTransaction) {
+                    oCtrl.loadTransaction(tx);
+                }
+            }
+        },
+
+        onDetailEdit: function (oEvt) {
+            if (this._pDetailDialog) {
+                this._pDetailDialog.then(oDialog => {
+                    const oDetailModel = oDialog.getModel("detailModel");
+                    const oTx = (oDetailModel && oDetailModel.getData()) || this._currentDetailTx;
+                    oDialog.close();
+                    if (oTx) {
+                        const oCurrentPage = this._oNavContainer ? this._oNavContainer.getCurrentPage() : null;
+                        const sPageId = oCurrentPage ? oCurrentPage.getId() : "";
+                        if (sPageId.includes("securityGateOpsPage")) {
+                            this.openEditSecurityGateEntryPage(oTx);
+                        } else {
+                            this.openEditGateEntryPage(oTx);
+                        }
+                    }
+                });
+            } else if (this._currentDetailTx) {
+                this.openEditGateEntryPage(this._currentDetailTx);
+            }
+        },
+
+        onDetailEditInFE: function (oEvt) {
+            this.onDetailEdit(oEvt);
         },
 
         deleteTransaction: async function (tx) {

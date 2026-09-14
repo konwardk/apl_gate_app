@@ -49,10 +49,10 @@
         </content>
         <beginButton>
             <Button
-                text="Edit / View in Fiori Elements"
+                text="Edit"
                 icon="sap-icon://edit"
                 type="Emphasized"
-                press=".onDetailEditInFE" />
+                press=".onDetailEdit" />
         </beginButton>
         <endButton>
             <Button

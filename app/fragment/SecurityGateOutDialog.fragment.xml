@@ -1,0 +1,174 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:core="sap.ui.core">
+    <Dialog
+        id="securityGateOutDialog"
+        title="Security Gate OUT - Exit Inspection &amp; Pass Authorization"
+        contentWidth="720px">
+        <content>
+            <form:SimpleForm
+                id="secGateOutDialogForm"
+                editable="true"
+                layout="ResponsiveGridLayout"
+                labelSpanXL="4"
+                labelSpanL="4"
+                labelSpanM="4"
+                labelSpanS="12"
+                columnsXL="1"
+                columnsL="1"
+                columnsM="1">
+                <form:content>
+                    <!-- Section 1: Outbound Vehicle Selection -->
+                    <core:Title text="1. Outbound Vehicle &amp; Stage" />
+
+                    <Label text="Select Vehicle" required="true" />
+                    <ComboBox
+                        id="dialogSecOutGateInComboBox"
+                        width="100%"
+                        placeholder="Select vehicle awaiting Security Gate OUT..."
+                        selectedKey="{secModel>/outSelectedGateInNumber}"
+                        change=".onGateOutSelectChange"
+                        filterSecondaryValues="true"
+                        showSecondaryValues="true"
+                        items="{
+                            path: 'secModel>/waitingOutVehicles',
+                            templateShareable: false
+                        }">
+                        <core:ListItem
+                            key="{secModel>gateInNumber}"
+                            text="{secModel>gateInNumber}"
+                            additionalText="{secModel>vehicleRegNo} ({secModel>purpose}) - Stage: {secModel>currentStage}" />
+                    </ComboBox>
+
+                    <Label text="Vehicle Reg No" />
+                    <Label text="{= ${secModel>/outSelectedVehicle/vehicleRegNo} || 'Select an outbound vehicle above' }" design="Bold" />
+
+                    <Label text="Visit Purpose" />
+                    <HBox alignItems="Center">
+                        <ObjectStatus
+                            text="{= ${secModel>/outSelectedVehicle/purpose} || '-' }"
+                            state="{= ${secModel>/outSelectedVehicle/purpose} === 'DELIVERY' ? 'Information' : 'Warning' }"
+                            class="sapUiTinyMarginEnd" />
+                        <Text text="{= ${secModel>/outSelectedVehicle/vehicleType} ? '(' + ${secModel>/outSelectedVehicle/vehicleType} + ')' : '' }" />
+                    </HBox>
+
+                    <Label text="Driver Name" />
+                    <Text text="{= ${secModel>/outSelectedVehicle/driverName} || '-' }" />
+
+                    <Label text="Security Exit Officer" required="true" />
+                    <Input
+                        id="dialogSecOutPersonnel"
+                        value="{secModel>/outSecurityPersonnel}"
+                        placeholder="Security Officer authorizing Exit"
+                        required="true" />
+
+                    <!-- Section 2: Prior Clearance Summary -->
+                    <core:Title text="2. Inbound &amp; Scale Clearance Verification" />
+
+                    <Label text="Gate IN Clearance" />
+                    <ObjectStatus
+                        text="{= ${secModel>/outInboundRecord} ? ('IN Checked: ' + ${secModel>/outInboundRecord/securityPersonnel} + ' (' + ${path: 'secModel>/outInboundRecord/securityInDateTime', formatter: '.formatter.formatDateTime'} + ')') : 'Initial check-in verified' }"
+                        state="Success" />
+
+                    <Label text="Driver License on Record" />
+                    <Text text="{= ${secModel>/outInboundRecord/driverLicenseNo} || 'Verified at Inbound Gate' }" />
+
+                    <Label text="Current Stage / Status" />
+                    <ObjectStatus
+                        text="{= 'Stage: ' + (${secModel>/outSelectedVehicle/currentStage} || '-') + ' | Status: ' + (${secModel>/outSelectedVehicle/status} || '-') }"
+                        state="Information" />
+
+                    <Label text="Weighment Summary" />
+                    <Text text="{= ${secModel>/outWeighmentSummary} || 'Outbound scale clearance verified' }" />
+
+                    <!-- Section 3: Exit Physical & Cargo Inspection -->
+                    <core:Title text="3. Exit Physical &amp; Cargo Inspection" />
+
+                    <Label text="Inspection Checklist" />
+                    <VBox>
+                        <CheckBox
+                            id="dialogSecOutCbDriverVerified"
+                            text="Driver Identity re-verified against Gate Pass &amp; License"
+                            selected="{secModel>/outDriverVerified}" />
+                        <CheckBox
+                            id="dialogSecOutCbVehicleVerified"
+                            text="Vehicle Exterior, Cabin, and Undercarriage inspected"
+                            selected="{secModel>/outVehicleVerified}" />
+                        <CheckBox
+                            id="dialogSecOutCbEmptyInspected"
+                            text="Empty Bed / Container inspected (Mandatory for Delivery exits)"
+                            selected="{secModel>/outEmptyInspectionVerified}" />
+                        <CheckBox
+                            id="dialogSecOutCbMaterialInspected"
+                            text="Cargo / Material reconciled with Gate Pass (For Pickup exits)"
+                            selected="{secModel>/outMaterialInspected}" />
+                        <CheckBox
+                            id="dialogSecOutCbDocsVerified"
+                            text="All shipping papers &amp; delivery receipts validated"
+                            selected="{secModel>/outDocumentsVerified}" />
+                    </VBox>
+
+                    <!-- Section 4: Gate Pass & Authorization -->
+                    <core:Title text="4. Gate Pass &amp; Authorization" />
+
+                    <Label text="Gate Pass Type" />
+                    <Select
+                        id="dialogSecOutPassType"
+                        selectedKey="{secModel>/outGatePassType}"
+                        width="100%">
+                        <core:Item key="RGP" text="RGP - Returnable Gate Pass" />
+                        <core:Item key="NRGP" text="NRGP - Non-Returnable Gate Pass" />
+                        <core:Item key="DELIVERY_NOTE" text="DELIVERY_NOTE - Delivery Note / Consignment Completed" />
+                        <core:Item key="OTHER" text="OTHER - Standard Outbound Gate Pass" />
+                    </Select>
+
+                    <Label
+                        text="Gate Pass Doc Number"
+                        required="{= ${secModel>/outSelectedVehicle/purpose} === 'PICKUP' }" />
+                    <Input
+                        id="dialogSecOutDocNo"
+                        value="{secModel>/outGatePassDocumentNo}"
+                        placeholder="e.g. RGP-2026-0042 or NRGP-2026-0089"
+                        required="{= ${secModel>/outSelectedVehicle/purpose} === 'PICKUP' }" />
+
+                    <Label text="Pass Verification Checks" />
+                    <VBox>
+                        <CheckBox
+                            id="dialogSecOutCbPassVerified"
+                            text="Gate Pass (RGP/NRGP) physically stamped and signed"
+                            selected="{secModel>/outGatePassVerified}" />
+                        <CheckBox
+                            id="dialogSecOutCbDelivVerified"
+                            text="Delivery acknowledgment &amp; invoice stamped by receiver"
+                            selected="{secModel>/outDeliveryDetailsVerified}" />
+                    </VBox>
+
+                    <!-- Section 5: Security Exit Remarks -->
+                    <core:Title text="5. Exit Clearance Remarks" />
+
+                    <Label text="Exit Remarks" />
+                    <TextArea
+                        id="dialogSecOutRemarks"
+                        value="{secModel>/outRemarks}"
+                        rows="3"
+                        placeholder="Security exit notes, seal verification number, physical inspection comments..." />
+                </form:content>
+            </form:SimpleForm>
+        </content>
+        <beginButton>
+            <Button
+                id="btnConfirmSecGateOut"
+                text="Authorize Security Gate OUT"
+                icon="sap-icon://accept"
+                type="Success"
+                press=".onConfirmSecurityGateOut" />
+        </beginButton>
+        <endButton>
+            <Button
+                id="btnCancelSecGateOut"
+                text="Cancel"
+                press=".onCancelSecurityGateOut" />
+        </endButton>
+    </Dialog>
+</core:FragmentDefinition>

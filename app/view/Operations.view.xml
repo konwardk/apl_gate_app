@@ -141,11 +141,17 @@
                             <Text text="{path: 'gateInDateTime', formatter: '.formatter.formatDateTime'}" />
                             <Text text="{path: 'gateOutDateTime', formatter: '.formatter.formatDateTime'}" />
                             <HBox justifyContent="End" class="sapUiTinyMarginBeginEnd">
-                                <Button
+                                <!-- <Button
                                     text="Details"
                                     icon="sap-icon://detail-view"
                                     type="Transparent"
-                                    press=".onTxDetailPress" />
+                                    press=".onTxDetailPress" /> -->
+                                <Button
+                                    text="Edit"
+                                    icon="sap-icon://edit"
+                                    type="Transparent"
+                                    tooltip="Edit Gate Entry"
+                                    press=".onTxEditPress" />
                                 <Button
                                     icon="sap-icon://delete"
                                     type="Transparent"

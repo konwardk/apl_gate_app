@@ -1,0 +1,436 @@
+<mvc:View
+    controllerName="factory.gate.controller.EditGateEntry"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:core="sap.ui.core"
+    xmlns:layout="sap.ui.layout">
+    <Page id="editGateEntryPageControl" showHeader="false" enableScrolling="true" showFooter="true">
+        <!-- Top Subtoolbar matching other operational pages -->
+        <OverflowToolbar class="fe-subtoolbar">
+            <Button
+                text="Back to Main Gate"
+                icon="sap-icon://nav-back"
+                type="Emphasized"
+                press=".onNavBack" />
+            <ToolbarSpacer />
+            <Title
+                text="{= 'Edit Main Gate Entry: ' + (${editModel>/gateInNumber} || '') }"
+                level="H2"
+                titleStyle="H3" />
+            <ObjectStatus
+                text="{editModel>/status}"
+                state="{path: 'editModel>/status', formatter: '.formatter.getStatusState'}"
+                class="sapUiTinyMarginBegin" />
+            <ToolbarSpacer />
+            <Button
+                text="Main Gate Ops"
+                icon="sap-icon://log-in"
+                type="Transparent"
+                press=".onNavMainGateOps" />
+            <Button
+                text="Security Ops"
+                icon="sap-icon://shield"
+                type="Transparent"
+                press=".onNavSecurityOps" />
+            <Button
+                text="Weighbridge Ops"
+                icon="sap-icon://dimension"
+                type="Transparent"
+                press=".onNavWeighbridgeOps" />
+            <ToolbarSeparator />
+            <Button
+                icon="sap-icon://refresh"
+                tooltip="Reload Gate Entry"
+                type="Transparent"
+                press=".onRefresh" />
+        </OverflowToolbar>
+
+        <!-- Main Content Area -->
+        <VBox class="flp-dashboard">
+            <!-- Context Banners -->
+            <MessageStrip
+                text="{= 'Editing Gate Entry #' + ${editModel>/gateInNumber} + ' (' + ${editModel>/vehicleRegNo} + '). Modify the required fields below and click \'Save Changes\' to update the gate transaction record.' }"
+                type="Information"
+                showIcon="true"
+                class="sapUiSmallMarginBottom" />
+
+            <MessageStrip
+                visible="{= ${editModel>/status} === 'COMPLETED' || ${editModel>/status} === 'CANCELLED' }"
+                text="{= 'Notice: This transaction is in ' + ${editModel>/status} + ' status. Modifications require Admin or Superadmin privileges.' }"
+                type="Warning"
+                showIcon="true"
+                class="sapUiSmallMarginBottom" />
+
+            <!-- Transaction Summary Card -->
+            <Panel
+                headerText="Gate Pass Identification &amp; Process State"
+                expandable="false"
+                class="sapUiSmallMarginBottom flp-tile-ops">
+                <content>
+                    <layout:Grid defaultSpan="XL3 L3 M6 S12" class="sapUiTinyMarginTopBottom">
+                        <VBox>
+                            <Label text="Gate IN Number" design="Bold" />
+                            <Text text="{editModel>/gateInNumber}" />
+                        </VBox>
+                        <VBox>
+                            <Label text="Vehicle Reg No" design="Bold" />
+                            <Text text="{editModel>/vehicleRegNo}" />
+                        </VBox>
+                        <VBox>
+                            <Label text="Visit Purpose" design="Bold" />
+                            <ObjectStatus
+                                text="{editModel>/purpose}"
+                                state="{path: 'editModel>/purpose', formatter: '.formatter.getPurposeState'}" />
+                        </VBox>
+                        <VBox>
+                            <Label text="Current Status" design="Bold" />
+                            <ObjectStatus
+                                text="{editModel>/status}"
+                                state="{path: 'editModel>/status', formatter: '.formatter.getStatusState'}" />
+                        </VBox>
+                        <VBox>
+                            <Label text="Current Stage" design="Bold" />
+                            <Text text="{editModel>/currentStage}" />
+                        </VBox>
+                        <VBox>
+                            <Label text="Gate IN Time" design="Bold" />
+                            <Text text="{path: 'editModel>/gateInDateTime', formatter: '.formatter.formatDateTime'}" />
+                        </VBox>
+                        <VBox>
+                            <Label text="Gate IN Operator" design="Bold" />
+                            <Text text="{= ${editModel>/gateInOperator} || '-' }" />
+                        </VBox>
+                        <VBox>
+                            <Label text="Gate OUT Time" design="Bold" />
+                            <Text text="{path: 'editModel>/gateOutDateTime', formatter: '.formatter.formatDateTime'}" />
+                        </VBox>
+                    </layout:Grid>
+                </content>
+            </Panel>
+
+            <!-- Tabbed Edit & Inspection Sections -->
+            <IconTabBar
+                id="editTabBar"
+                selectedKey="generalTab"
+                class="sapUiSmallMarginBottom"
+                expandable="false">
+                <items>
+                    <!-- TAB 1: General & Vehicle Info -->
+                    <IconTabFilter
+                        key="generalTab"
+                        text="Vehicle &amp; Gate Pass"
+                        icon="sap-icon://shipping-status">
+                        <form:SimpleForm
+                            editable="true"
+                            layout="ResponsiveGridLayout"
+                            labelSpanXL="3"
+                            labelSpanL="3"
+                            labelSpanM="4"
+                            labelSpanS="12"
+                            adjustLabelSpan="false"
+                            emptySpanXL="1"
+                            emptySpanL="1"
+                            emptySpanM="0"
+                            emptySpanS="0"
+                            columnsXL="2"
+                            columnsL="2"
+                            columnsM="1">
+                            <form:content>
+                                <!-- Column 1: Vehicle & Driver -->
+                                <core:Title text="Vehicle &amp; Driver Details" />
+
+                                <Label text="Gate IN Number" />
+                                <Input
+                                    value="{editModel>/gateInNumber}"
+                                    editable="false"
+                                    description="(Immutable identifier)" />
+
+                                <Label text="Vehicle Reg No" required="true" />
+                                <Input
+                                    id="inputEditVehicleReg"
+                                    value="{editModel>/vehicleRegNo}"
+                                    placeholder="e.g. MH-04-JK-1234 or AS-02-1234"
+                                    liveChange=".onVehicleRegLiveChange"
+                                    change=".onVehicleRegChange"
+                                    valueState="{editModel>/vehicleRegNoState}"
+                                    valueStateText="{editModel>/vehicleRegNoStateText}" />
+
+                                <Label text="Vehicle Type" required="true" />
+                                <Select
+                                    selectedKey="{editModel>/vehicleType}"
+                                    width="100%">
+                                    <core:Item key="TRUCK" text="TRUCK - Standard Truck / Lorry" />
+                                    <core:Item key="TANKER" text="TANKER - Liquid Cargo Tanker" />
+                                    <core:Item key="TRAILER" text="TRAILER - Multi-axle Heavy Trailer" />
+                                    <core:Item key="CONTAINER" text="CONTAINER - ISO Freight Container" />
+                                    <core:Item key="LCV" text="LCV - Light Commercial Vehicle" />
+                                    <core:Item key="OTHER" text="OTHER - Miscellaneous / Special Vehicle" />
+                                </Select>
+
+                                <Label text="Driver Name" required="true" />
+                                <Input
+                                    value="{editModel>/driverName}"
+                                    placeholder="Enter full driver name" />
+
+                                <Label text="Visit Purpose" required="true" />
+                                <Select
+                                    selectedKey="{editModel>/purpose}"
+                                    width="100%">
+                                    <core:Item key="DELIVERY" text="DELIVERY - Inbound Material Consignment" />
+                                    <core:Item key="PICKUP" text="PICKUP - Outbound Material Dispatch" />
+                                </Select>
+
+                                <!-- Column 2: Status, Stages & Operators -->
+                                <core:Title text="Status, Stages &amp; Timestamps" />
+
+                                <Label text="Transaction Status" required="true" />
+                                <Select
+                                    selectedKey="{editModel>/status}"
+                                    width="100%">
+                                    <core:Item key="GATE_IN" text="GATE_IN (Main Gate Check-In Completed)" />
+                                    <core:Item key="SECURITY_IN" text="SECURITY_IN (Security Gate Inbound Verified)" />
+                                    <core:Item key="WEIGHBRIDGE_IN" text="WEIGHBRIDGE_IN (Inbound Weight Recorded)" />
+                                    <core:Item key="FACTORY_IN" text="FACTORY_IN (Inside Factory Yard / Unloading)" />
+                                    <core:Item key="FACTORY_OUT" text="FACTORY_OUT (Yard Operations Finished)" />
+                                    <core:Item key="WEIGHBRIDGE_OUT" text="WEIGHBRIDGE_OUT (Outbound Weight Recorded)" />
+                                    <core:Item key="SECURITY_OUT" text="SECURITY_OUT (Security Clearance Completed - Ready for Exit)" />
+                                    <core:Item key="COMPLETED" text="COMPLETED (Exited Main Gate - Closed)" />
+                                    <core:Item key="HOLD" text="HOLD (Transaction Put on Hold)" />
+                                    <core:Item key="CANCELLED" text="CANCELLED (Transaction Cancelled)" />
+                                </Select>
+
+                                <Label text="Current Stage" required="true" />
+                                <Select
+                                    selectedKey="{editModel>/currentStage}"
+                                    width="100%">
+                                    <core:Item key="MAIN_GATE_IN" text="MAIN_GATE_IN" />
+                                    <core:Item key="SECURITY_GATE_IN" text="SECURITY_GATE_IN" />
+                                    <core:Item key="WEIGHBRIDGE_IN" text="WEIGHBRIDGE_IN" />
+                                    <core:Item key="FACTORY" text="FACTORY" />
+                                    <core:Item key="WEIGHBRIDGE_OUT" text="WEIGHBRIDGE_OUT" />
+                                    <core:Item key="SECURITY_GATE_OUT" text="SECURITY_GATE_OUT" />
+                                    <core:Item key="MAIN_GATE_OUT" text="MAIN_GATE_OUT" />
+                                    <core:Item key="COMPLETED" text="COMPLETED" />
+                                </Select>
+
+                                <Label text="Gate IN Operator" />
+                                <Input
+                                    value="{editModel>/gateInOperator}"
+                                    placeholder="Operator who recorded Gate IN" />
+
+                                <Label text="Gate OUT Operator" />
+                                <Input
+                                    value="{editModel>/gateOutOperator}"
+                                    placeholder="Operator who recorded Gate OUT" />
+
+                                <Label text="Operational Remarks" />
+                                <TextArea
+                                    value="{editModel>/remarks}"
+                                    rows="3"
+                                    maxLength="500"
+                                    placeholder="Operational notes, special instructions, or reason for modifications..." />
+                            </form:content>
+                        </form:SimpleForm>
+                    </IconTabFilter>
+
+                    <!-- TAB 2: Logistics & Master Data Links -->
+                    <!-- <IconTabFilter
+                        key="masterTab"
+                        text="Logistics &amp; Master Data"
+                        icon="sap-icon://database">
+                        <form:SimpleForm
+                            editable="true"
+                            layout="ResponsiveGridLayout"
+                            labelSpanXL="3"
+                            labelSpanL="3"
+                            labelSpanM="4"
+                            labelSpanS="12"
+                            adjustLabelSpan="false"
+                            emptySpanXL="1"
+                            emptySpanL="1"
+                            emptySpanM="0"
+                            emptySpanS="0"
+                            columnsXL="2"
+                            columnsL="2"
+                            columnsM="1">
+                            <form:content>
+                                <core:Title text="Business Partner &amp; Master Data Associations" />
+
+                                <Label text="Transporter" />
+                                <ComboBox
+                                    width="100%"
+                                    placeholder="Select or search transporter..."
+                                    selectedKey="{editModel>/transporter_ID}"
+                                    filterSecondaryValues="true"
+                                    showSecondaryValues="true"
+                                    items="{
+                                        path: 'masterModel>/transporters',
+                                        templateShareable: false
+                                    }">
+                                    <core:ListItem
+                                        key="{masterModel>ID}"
+                                        text="{masterModel>transporterName}"
+                                        additionalText="{masterModel>transporterCode}" />
+                                </ComboBox>
+
+                                <Label text="Supplier" />
+                                <ComboBox
+                                    width="100%"
+                                    placeholder="Select or search supplier..."
+                                    selectedKey="{editModel>/supplier_ID}"
+                                    filterSecondaryValues="true"
+                                    showSecondaryValues="true"
+                                    items="{
+                                        path: 'masterModel>/suppliers',
+                                        templateShareable: false
+                                    }">
+                                    <core:ListItem
+                                        key="{masterModel>ID}"
+                                        text="{masterModel>supplierName}"
+                                        additionalText="{masterModel>supplierCode} ({masterModel>sapBusinessPartner})" />
+                                </ComboBox>
+
+                                <Label text="Driver Master Profile" />
+                                <ComboBox
+                                    width="100%"
+                                    placeholder="Select or link driver record..."
+                                    selectedKey="{editModel>/driver_ID}"
+                                    filterSecondaryValues="true"
+                                    showSecondaryValues="true"
+                                    items="{
+                                        path: 'masterModel>/drivers',
+                                        templateShareable: false
+                                    }">
+                                    <core:ListItem
+                                        key="{masterModel>ID}"
+                                        text="{masterModel>driverName}"
+                                        additionalText="{masterModel>drivingLicenseNo} - {masterModel>phoneNo}" />
+                                </ComboBox>
+
+                                <core:Title text="Linked Vehicle Master Record" />
+
+                                <Label text="Vehicle Make / Model" />
+                                <Text text="{= ${editModel>/vehicle/make} ? (${editModel>/vehicle/make} + ' ' + ${editModel>/vehicle/model}) : 'No vehicle master record linked' }" />
+
+                                <Label text="Carrying Capacity" />
+                                <Text text="{= ${editModel>/vehicle/capacity} ? (${editModel>/vehicle/capacity} + ' ' + ${editModel>/vehicle/capacityUnit}) : '-' }" />
+
+                                <Label text="Insurance No &amp; Expiry" />
+                                <Text text="{= ${editModel>/vehicle/insuranceNo} ? (${editModel>/vehicle/insuranceNo} + ' (Expires: ' + ${editModel>/vehicle/insuranceExpiry} + ')') : '-' }" />
+
+                                <Label text="Fitness Expiry Date" />
+                                <Text text="{= ${editModel>/vehicle/fitnessExpiry} || '-' }" />
+
+                                <Label text="PUC Expiry Date" />
+                                <Text text="{= ${editModel>/vehicle/pollutionExpiry} || '-' }" />
+
+                                <Label text="Permit No &amp; Expiry" />
+                                <Text text="{= ${editModel>/vehicle/permitNo} ? (${editModel>/vehicle/permitNo} + ' (Expires: ' + ${editModel>/vehicle/permitExpiry} + ')') : '-' }" />
+                            </form:content>
+                        </form:SimpleForm>
+                    </IconTabFilter> -->
+
+                
+                    
+
+                    <!-- TAB 5: Weighbridge Records -->
+                    <!-- <IconTabFilter
+                        key="weighbridgeTab"
+                        text="Weighbridge"
+                        icon="sap-icon://dimension">
+                        <Table
+                            items="{editModel>/weighments}"
+                            noDataText="No weighbridge measurements recorded for this vehicle.">
+                            <headerToolbar>
+                                <OverflowToolbar>
+                                    <Title text="Weighbridge Measurements ({= ${editModel>/weighments} ? ${editModel>/weighments}.length : 0 })" />
+                                </OverflowToolbar>
+                            </headerToolbar>
+                            <columns>
+                                <Column><header><Text text="Weighbridge #" /></header></Column>
+                                <Column><header><Text text="Weighment Type" /></header></Column>
+                                <Column><header><Text text="Weight" /></header></Column>
+                                <Column><header><Text text="Weighing Timestamp" /></header></Column>
+                                <Column><header><Text text="Scale Operator" /></header></Column>
+                                <Column><header><Text text="Remarks" /></header></Column>
+                            </columns>
+                            <items>
+                                <ColumnListItem>
+                                    <cells>
+                                        <Text text="{editModel>weighbridgeNumber}" />
+                                        <ObjectStatus
+                                            text="{path: 'editModel>weighmentType', formatter: '.formatter.getWeighmentTypeDesc'}"
+                                            state="{path: 'editModel>weighmentType', formatter: '.formatter.getWeighmentTypeState'}" />
+                                        <Text text="{parts: [{path: 'editModel>weight'}, {path: 'editModel>weightUnit'}], formatter: '.formatter.formatWeight'}" />
+                                        <Text text="{path: 'editModel>weighbridgeDateTime', formatter: '.formatter.formatDateTime'}" />
+                                        <Text text="{editModel>operator}" />
+                                        <Text text="{= ${editModel>remarks} || '-' }" />
+                                    </cells>
+                                </ColumnListItem>
+                            </items>
+                        </Table>
+                    </IconTabFilter> -->
+
+                    <!-- TAB 6: Audit History -->
+                    <!-- <IconTabFilter
+                        key="auditTab"
+                        text="Audit Trail"
+                        icon="sap-icon://history">
+                        <Table
+                            items="{editModel>/auditLogs}"
+                            noDataText="No audit entries logged for this transaction.">
+                            <headerToolbar>
+                                <OverflowToolbar>
+                                    <Title text="Audit History Logs ({= ${editModel>/auditLogs} ? ${editModel>/auditLogs}.length : 0 })" />
+                                </OverflowToolbar>
+                            </headerToolbar>
+                            <columns>
+                                <Column><header><Text text="Action" /></header></Column>
+                                <Column><header><Text text="Status Transition" /></header></Column>
+                                <Column><header><Text text="Stage Transition" /></header></Column>
+                                <Column><header><Text text="Date &amp; Time" /></header></Column>
+                                <Column><header><Text text="User ID" /></header></Column>
+                                <Column><header><Text text="Remarks" /></header></Column>
+                            </columns>
+                            <items>
+                                <ColumnListItem>
+                                    <cells>
+                                        <ObjectIdentifier title="{editModel>action}" />
+                                        <Text text="{= (${editModel>oldStatus} || '-') + '  ➔  ' + (${editModel>newStatus} || '-') }" />
+                                        <Text text="{= (${editModel>oldStage} || '-') + '  ➔  ' + (${editModel>newStage} || '-') }" />
+                                        <Text text="{path: 'editModel>actionDateTime', formatter: '.formatter.formatDateTime'}" />
+                                        <Text text="{editModel>userId}" />
+                                        <Text text="{= ${editModel>remarks} || '-' }" />
+                                    </cells>
+                                </ColumnListItem>
+                            </items>
+                        </Table>
+                    </IconTabFilter> -->
+                </items>
+            </IconTabBar>
+        </VBox>
+
+        <!-- Footer Actions Toolbar -->
+        <footer>
+            <OverflowToolbar>
+                <ToolbarSpacer />
+                <Button
+                    text="Save Changes"
+                    icon="sap-icon://save"
+                    type="Emphasized"
+                    press=".onSave" />
+                <Button
+                    text="Reset"
+                    icon="sap-icon://reset"
+                    type="Default"
+                    press=".onReset" />
+                <Button
+                    text="Cancel"
+                    icon="sap-icon://cancel"
+                    type="Transparent"
+                    press=".onCancel" />
+            </OverflowToolbar>
+        </footer>
+    </Page>
+</mvc:View>

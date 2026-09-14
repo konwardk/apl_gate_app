@@ -1,0 +1,439 @@
+<mvc:View
+    controllerName="factory.gate.controller.EditSecurityGateEntry"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:core="sap.ui.core"
+    xmlns:layout="sap.ui.layout"
+    xmlns:data="http://schemas.sap.com/sapui5/extension/sap.ui.core.CustomData/1">
+    <Page id="editSecGateEntryPageControl" showHeader="false" enableScrolling="true" showFooter="true">
+        <!-- Subtoolbar -->
+        <OverflowToolbar class="fe-subtoolbar">
+            <Button
+                text="Back to Security Gate"
+                icon="sap-icon://nav-back"
+                type="Emphasized"
+                press=".onNavBack" />
+            <ToolbarSpacer />
+            <Title
+                text="{= 'Edit Security Gate Entry: ' + (${secEditModel>/gateInNumber} || '') }"
+                level="H2"
+                titleStyle="H3" />
+            <ObjectStatus
+                text="{secEditModel>/transactionStatus}"
+                state="{path: 'secEditModel>/transactionStatus', formatter: '.formatter.getStatusState'}"
+                class="sapUiTinyMarginBegin" />
+            <ToolbarSpacer />
+            <Button
+                text="Security Gate Ops"
+                icon="sap-icon://shield"
+                type="Transparent"
+                press=".onNavSecurityOps" />
+            <Button
+                text="Main Gate Ops"
+                icon="sap-icon://log-in"
+                type="Transparent"
+                press=".onNavMainGateOps" />
+            <Button
+                text="Weighbridge Ops"
+                icon="sap-icon://dimension"
+                type="Transparent"
+                press=".onNavWeighbridgeOps" />
+            <ToolbarSeparator />
+            <Button
+                icon="sap-icon://refresh"
+                tooltip="Reload Security Gate Entry"
+                type="Transparent"
+                press=".onRefresh" />
+        </OverflowToolbar>
+
+        <!-- Main Content -->
+        <VBox class="flp-dashboard">
+            <!-- Context Banner -->
+            <MessageStrip
+                text="{= 'Security Gate Entry Inspection &amp; Pass Modification for Gate Pass #' + (${secEditModel>/gateInNumber} || '') + ' (' + (${secEditModel>/vehicleRegNo} || '') + '). Manage driver credentials, physical verification checks, consignment PO/invoice documentation, and exit pass authorization.' }"
+                type="Information"
+                showIcon="true"
+                class="sapUiSmallMarginBottom" />
+
+            <!-- Transaction Reference Summary Card -->
+            <Panel
+                headerText="Gate Pass Reference &amp; Vehicle Status"
+                expandable="false"
+                class="sapUiSmallMarginBottom flp-tile-ops">
+                <content>
+                    <layout:Grid defaultSpan="XL3 L3 M6 S12" class="sapUiTinyMarginTopBottom">
+                        <VBox>
+                            <Label text="Gate IN Number" design="Bold" />
+                            <Text text="{secEditModel>/gateInNumber}" />
+                        </VBox>
+                        <VBox>
+                            <Label text="Vehicle Reg No" design="Bold" />
+                            <Text text="{secEditModel>/vehicleRegNo}" />
+                        </VBox>
+                        <VBox>
+                            <Label text="Driver Name" design="Bold" />
+                            <Text text="{= ${secEditModel>/driverName} || '-' }" />
+                        </VBox>
+                        <VBox>
+                            <Label text="Visit Purpose" design="Bold" />
+                            <ObjectStatus
+                                text="{secEditModel>/purpose}"
+                                state="{path: 'secEditModel>/purpose', formatter: '.formatter.getPurposeState'}" />
+                        </VBox>
+                        <VBox>
+                            <Label text="Process Status" design="Bold" />
+                            <ObjectStatus
+                                text="{secEditModel>/transactionStatus}"
+                                state="{path: 'secEditModel>/transactionStatus', formatter: '.formatter.getStatusState'}" />
+                        </VBox>
+                        <VBox>
+                            <Label text="Current Stage" design="Bold" />
+                            <Text text="{= ${secEditModel>/currentStage} || '-' }" />
+                        </VBox>
+                        <VBox>
+                            <Label text="Inbound Security Status" design="Bold" />
+                            <ObjectStatus
+                                text="{= ${secEditModel>/securityInDateTime} ? 'Security IN Cleared' : 'Pending Security Check-IN' }"
+                                state="{= ${secEditModel>/securityInDateTime} ? 'Success' : 'Warning' }" />
+                        </VBox>
+                        <VBox>
+                            <Label text="Outbound Security Status" design="Bold" />
+                            <ObjectStatus
+                                text="{= ${secEditModel>/securityOutDateTime} ? 'Security OUT Cleared' : 'Pending Security Exit' }"
+                                state="{= ${secEditModel>/securityOutDateTime} ? 'Success' : 'None' }" />
+                        </VBox>
+                    </layout:Grid>
+                </content>
+            </Panel>
+
+            <!-- Tabbed Security Entry Edit Sections -->
+            <IconTabBar
+                id="secEditTabBar"
+                selectedKey="secInTab"
+                class="sapUiSmallMarginBottom"
+                expandable="false">
+                <items>
+                    <!-- TAB 1: Inbound Check-IN & Physical Verification -->
+                    <IconTabFilter
+                        key="secInTab"
+                        text="Security IN: Driver &amp; Vehicle"
+                        icon="sap-icon://shield">
+                        <form:SimpleForm
+                            editable="true"
+                            layout="ResponsiveGridLayout"
+                            labelSpanXL="3"
+                            labelSpanL="3"
+                            labelSpanM="4"
+                            labelSpanS="12"
+                            adjustLabelSpan="false"
+                            emptySpanXL="1"
+                            emptySpanL="1"
+                            emptySpanM="0"
+                            emptySpanS="0"
+                            columnsXL="2"
+                            columnsL="2"
+                            columnsM="1">
+                            <form:content>
+                                <!-- Column 1: Driver Identification -->
+                                <core:Title text="Driver &amp; Attendant Identification" />
+
+                                <Label text="Driver License No" required="true" />
+                                <Input
+                                    id="inputSecDriverLicense"
+                                    value="{secEditModel>/driverLicenseNo}"
+                                    placeholder="e.g. DL-04-2020-0012345" />
+
+                                <Label text="Driver Contact Phone" />
+                                <Input
+                                    value="{secEditModel>/driverPhoneNo}"
+                                    placeholder="e.g. +91 9876543210" />
+
+                                <Label text="Helper / Attendant Name" />
+                                <Input
+                                    value="{secEditModel>/helperName}"
+                                    placeholder="Optional helper or cleaner name" />
+
+                                <Label text="Security IN Officer" required="true" />
+                                <Input
+                                    id="inputSecPersonnel"
+                                    value="{secEditModel>/securityPersonnel}"
+                                    placeholder="Security officer conducting check-in" />
+
+                                <!-- Column 2: Timestamps & Inbound Checks -->
+                                <core:Title text="Inbound Reporting &amp; Verification Checks" />
+
+                                <Label text="Vehicle Reporting Time" />
+                                <DateTimePicker
+                                    value="{path: 'secEditModel>/vehicleReportingDateTime', formatter: '.formatter.formatDateTime'}"
+                                    change=".onDateTimeChange"
+                                    data:field="vehicleReportingDateTime"
+                                    placeholder="Reporting timestamp" />
+
+                                <Label text="Security Gate IN Time" />
+                                <DateTimePicker
+                                    value="{path: 'secEditModel>/securityInDateTime', formatter: '.formatter.formatDateTime'}"
+                                    change=".onDateTimeChange"
+                                    data:field="securityInDateTime"
+                                    placeholder="Security check-in timestamp" />
+
+                                <Label text="Physical Inspection Checks" />
+                                <VBox>
+                                    <CheckBox
+                                        text="Driver identity, license &amp; photo verified"
+                                        selected="{secEditModel>/driverVerified}" />
+                                    <CheckBox
+                                        text="Vehicle cabin, chassis, mirrors &amp; undercarriage inspected"
+                                        selected="{secEditModel>/vehicleVerified}" />
+                                    <CheckBox
+                                        text="Consignment physical shipping documents verified"
+                                        selected="{secEditModel>/documentsVerified}" />
+                                </VBox>
+                            </form:content>
+                        </form:SimpleForm>
+                    </IconTabFilter>
+
+                    <!-- TAB 2: Inbound Documentation (Delivery PO/Inv or Pickup Gate Pass) -->
+                    <IconTabFilter
+                        key="secDocsTab"
+                        text="Inbound Documentation"
+                        icon="sap-icon://documents">
+                        <form:SimpleForm
+                            editable="true"
+                            layout="ResponsiveGridLayout"
+                            labelSpanXL="3"
+                            labelSpanL="3"
+                            labelSpanM="4"
+                            labelSpanS="12"
+                            adjustLabelSpan="false"
+                            emptySpanXL="1"
+                            emptySpanL="1"
+                            emptySpanM="0"
+                            emptySpanS="0"
+                            columnsXL="2"
+                            columnsL="2"
+                            columnsM="1">
+                            <form:content>
+                                <!-- Delivery Documentation Group -->
+                                <core:Title text="Inbound Consignment Details (Delivery)" />
+
+                                <Label text="Without PO Allowed" />
+                                <HBox alignItems="Center">
+                                    <Switch
+                                        state="{secEditModel>/withoutPO}"
+                                        change=".onWithoutPOToggle"
+                                        customTextOn="Yes"
+                                        customTextOff="No" />
+                                    <Text
+                                        text="{= ${secEditModel>/withoutPO} ? 'PO / Invoice requirement waived for this entry' : 'Standard PO &amp; Invoice validation active' }"
+                                        class="sapUiSmallMarginBegin" />
+                                </HBox>
+
+                                <Label
+                                    text="Purchase Order (PO) #"
+                                    required="{= ${secEditModel>/purpose} === 'DELIVERY' &amp;&amp; !${secEditModel>/withoutPO} }" />
+                                <Input
+                                    id="inputSecPoNumber"
+                                    value="{secEditModel>/poNumber}"
+                                    placeholder="e.g. PO-4500123456" />
+
+                                <Label text="Sales Order (SO) #" />
+                                <Input
+                                    value="{secEditModel>/soNumber}"
+                                    placeholder="Optional SO number" />
+
+                                <Label
+                                    text="Tax Invoice #"
+                                    required="{= ${secEditModel>/purpose} === 'DELIVERY' &amp;&amp; !${secEditModel>/withoutPO} }" />
+                                <Input
+                                    id="inputSecInvoiceNumber"
+                                    value="{secEditModel>/invoiceNumber}"
+                                    placeholder="e.g. INV-2026-004455" />
+
+                                <Label text="Invoice Date" />
+                                <DatePicker
+                                    value="{secEditModel>/invoiceDate}"
+                                    valueFormat="yyyy-MM-dd"
+                                    displayFormat="medium"
+                                    placeholder="Select invoice date" />
+
+                                <!-- Pickup Documentation Group -->
+                                <core:Title text="Outbound Material Dispatch Documentation (Pickup)" />
+
+                                <Label text="Inbound Gate Pass Type" />
+                                <Select
+                                    selectedKey="{secEditModel>/gatePassType}"
+                                    width="100%">
+                                    <core:Item key="" text="-- None / Not Applicable --" />
+                                    <core:Item key="RGP" text="RGP - Returnable Gate Pass" />
+                                    <core:Item key="NRGP" text="NRGP - Non-Returnable Gate Pass" />
+                                    <core:Item key="DELIVERY_NOTE" text="DELIVERY_NOTE - Consignment Note" />
+                                    <core:Item key="CHALLAN" text="CHALLAN - Delivery Challan" />
+                                    <core:Item key="INVOICE" text="INVOICE - Tax Invoice" />
+                                    <core:Item key="OTHER" text="OTHER - Standard Gate Pass" />
+                                </Select>
+
+                                <Label text="RGP Document #" />
+                                <Input
+                                    value="{secEditModel>/rgpDocumentNo}"
+                                    placeholder="e.g. RGP-2026-0089" />
+
+                                <Label text="NRGP Document #" />
+                                <Input
+                                    value="{secEditModel>/nrgpDocumentNo}"
+                                    placeholder="e.g. NRGP-2026-0034" />
+
+                                <Label text="Inbound Security Remarks" />
+                                <TextArea
+                                    value="{secEditModel>/securityInRemarks}"
+                                    rows="3"
+                                    maxLength="500"
+                                    placeholder="Inbound inspection notes, discrepancy observations, or seal conditions..." />
+                            </form:content>
+                        </form:SimpleForm>
+                    </IconTabFilter>
+
+                    <!-- TAB 3: Security OUT: Exit Clearance & Verification -->
+                    <IconTabFilter
+                        key="secOutTab"
+                        text="Security OUT: Exit Clearance"
+                        icon="sap-icon://log-out">
+                        <form:SimpleForm
+                            editable="true"
+                            layout="ResponsiveGridLayout"
+                            labelSpanXL="3"
+                            labelSpanL="3"
+                            labelSpanM="4"
+                            labelSpanS="12"
+                            adjustLabelSpan="false"
+                            emptySpanXL="1"
+                            emptySpanL="1"
+                            emptySpanM="0"
+                            emptySpanS="0"
+                            columnsXL="2"
+                            columnsL="2"
+                            columnsM="1">
+                            <form:content>
+                                <!-- Column 1: Exit Authorization & Gate Pass -->
+                                <core:Title text="Exit Pass Authorization" />
+
+                                <Label text="Security OUT Officer" />
+                                <Input
+                                    value="{secEditModel>/securityOutPersonnel}"
+                                    placeholder="Officer authorizing exit clearance" />
+
+                                <Label text="Security OUT Time" />
+                                <DateTimePicker
+                                    value="{path: 'secEditModel>/securityOutDateTime', formatter: '.formatter.formatDateTime'}"
+                                    change=".onDateTimeChange"
+                                    data:field="securityOutDateTime"
+                                    placeholder="Exit timestamp" />
+
+                                <Label text="Exit Gate Pass Type" />
+                                <Select
+                                    selectedKey="{secEditModel>/exitGatePassType}"
+                                    width="100%">
+                                    <core:Item key="" text="-- None / Standard --" />
+                                    <core:Item key="RGP" text="RGP - Returnable Gate Pass" />
+                                    <core:Item key="NRGP" text="NRGP - Non-Returnable Gate Pass" />
+                                    <core:Item key="DELIVERY_NOTE" text="DELIVERY_NOTE - Delivery Note / Consignment Completed" />
+                                    <core:Item key="OTHER" text="OTHER - Outbound Gate Pass" />
+                                </Select>
+
+                                <Label text="Exit Gate Pass Doc #" />
+                                <Input
+                                    value="{secEditModel>/exitGatePassDocumentNo}"
+                                    placeholder="e.g. RGP-2026-0042 or NRGP-2026-0089" />
+
+                                <Label text="Exit Clearance Remarks" />
+                                <TextArea
+                                    value="{secEditModel>/securityOutRemarks}"
+                                    rows="3"
+                                    maxLength="500"
+                                    placeholder="Outbound clearance notes, inspection remarks, or pass numbers..." />
+
+                                <!-- Column 2: Exit Physical & Cargo Inspection -->
+                                <core:Title text="Exit Physical &amp; Material Inspection Checks" />
+
+                                <Label text="Outbound Checkpoints" />
+                                <VBox>
+                                    <CheckBox
+                                        text="Driver identity re-verified against Gate Pass &amp; License"
+                                        selected="{secEditModel>/exitDriverVerified}" />
+                                    <CheckBox
+                                        text="Vehicle exterior, cabin &amp; seals checked at exit"
+                                        selected="{secEditModel>/exitVehicleVerified}" />
+                                    <CheckBox
+                                        text="Exit shipping papers &amp; delivery receipts validated"
+                                        selected="{secEditModel>/exitDocumentsVerified}" />
+                                    <CheckBox
+                                        text="Empty Bed / Container inspected (Mandatory for Delivery exits)"
+                                        selected="{secEditModel>/emptyInspectionVerified}" />
+                                    <CheckBox
+                                        text="Cargo / Material reconciled with Gate Pass (For Pickup exits)"
+                                        selected="{secEditModel>/materialInspected}" />
+                                    <CheckBox
+                                        text="Gate Pass (RGP/NRGP) physically stamped and signed"
+                                        selected="{secEditModel>/gatePassVerified}" />
+                                    <CheckBox
+                                        text="Delivery acknowledgment &amp; invoice stamped by receiver"
+                                        selected="{secEditModel>/deliveryDetailsVerified}" />
+                                </VBox>
+                            </form:content>
+                        </form:SimpleForm>
+                    </IconTabFilter>
+
+                    <!-- TAB 4: General Remarks -->
+                    <IconTabFilter
+                        key="secGeneralTab"
+                        text="General Security Notes"
+                        icon="sap-icon://notes">
+                        <form:SimpleForm
+                            editable="true"
+                            layout="ResponsiveGridLayout"
+                            labelSpanXL="3"
+                            labelSpanL="3"
+                            labelSpanM="4"
+                            labelSpanS="12"
+                            columnsXL="1"
+                            columnsL="1"
+                            columnsM="1">
+                            <form:content>
+                                <core:Title text="Combined Operational Remarks" />
+
+                                <Label text="General Security Remarks" />
+                                <TextArea
+                                    value="{secEditModel>/remarks}"
+                                    rows="4"
+                                    maxLength="500"
+                                    placeholder="Historical security remarks, special permits, escort notes, or incident observations..." />
+                            </form:content>
+                        </form:SimpleForm>
+                    </IconTabFilter>
+                </items>
+            </IconTabBar>
+        </VBox>
+
+        <!-- Footer Actions Toolbar -->
+        <footer>
+            <OverflowToolbar>
+                <ToolbarSpacer />
+                <Button
+                    text="Save Security Entry"
+                    icon="sap-icon://save"
+                    type="Emphasized"
+                    press=".onSave" />
+                <Button
+                    text="Reset"
+                    icon="sap-icon://reset"
+                    type="Default"
+                    press=".onReset" />
+                <Button
+                    text="Cancel"
+                    icon="sap-icon://cancel"
+                    type="Transparent"
+                    press=".onCancel" />
+            </OverflowToolbar>
+        </footer>
+    </Page>
+</mvc:View>

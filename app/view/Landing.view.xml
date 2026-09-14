@@ -25,11 +25,11 @@
                     state="Disabled"
                     class="vehicle-select-tile sapUiMediumMargin">
                     <tileContent>
-                        <TileContent footer="External S/4HANA System (In Development)">
+                        <TileContent footer="">
                             <content>
                                 <NumericContent
                                     icon="sap-icon://mileage"
-                                    value="Tankers"
+                                    value="TMS"
                                     valueColor="Neutral" />
                             </content>
                         </TileContent>
@@ -43,11 +43,11 @@
                     press=".onOtherVehiclePress"
                     class="vehicle-select-tile sapUiMediumMargin">
                     <tileContent>
-                        <TileContent footer="Trucks, Containers, Trailers, LCV (Active)">
+                        <TileContent footer="Trucks, Containers, Trailers, LCV &amp; Other Cargo">
                             <content>
                                 <NumericContent
                                     icon="sap-icon://shipping-status"
-                                    value="Main Gate"
+                                    value="GATE IN/OUT"
                                     valueColor="Good" />
                             </content>
                         </TileContent>

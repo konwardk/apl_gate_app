@@ -231,7 +231,7 @@
             </VBox>
 
             <!-- Group 3: Compliance & Audit (Hidden for Main Gate User) -->
-            <VBox class="flp-section" visible="{/canViewAuditTrail}">
+            <!-- <VBox class="flp-section" visible="{/canViewAuditTrail}">
                 <Title
                     text="Governance &amp; Audit Trail (SAP Fiori Elements)"
                     level="H2"
@@ -253,7 +253,7 @@
                         </tileContent>
                     </GenericTile>
                 </HBox>
-            </VBox>
+            </VBox> -->
         </VBox>
     </Page>
 </mvc:View>

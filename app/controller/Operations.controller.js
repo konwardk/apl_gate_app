@@ -63,6 +63,11 @@ sap.ui.define([
             this.getOwnerComponent().openDetailDialog(oTx);
         },
 
+        onTxEditPress: function (oEvt) {
+            const oTx = oEvt.getSource().getBindingContext().getObject();
+            this.getOwnerComponent().openEditGateEntryPage(oTx);
+        },
+
         onTxDeletePress: function (oEvt) {
             const oTx = oEvt.getSource().getBindingContext().getObject();
             this.getOwnerComponent().deleteTransaction(oTx);

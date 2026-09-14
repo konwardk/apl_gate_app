@@ -78,11 +78,11 @@
                 tooltip="Toggle Horizon Light / Dark Theme"
                 type="Transparent"
                 press=".onToggleTheme" />
-            <Button
+            <!-- <Button
                 icon="sap-icon://refresh"
                 tooltip="Refresh Data"
                 type="Transparent"
-                press=".onRefreshPress" />
+                press=".onRefreshPress" /> -->
             <f:Avatar
                 id="shellAvatar"
                 initials="{/userInitials}"
@@ -108,6 +108,8 @@
                 <mvc:XMLView id="mainGateOpsPage" viewName="factory.gate.view.Operations" />
                 <mvc:XMLView id="securityGateOpsPage" viewName="factory.gate.view.SecurityOperations" />
                 <mvc:XMLView id="weighbridgeOpsPage" viewName="factory.gate.view.WeighbridgeOperations" />
+                <mvc:XMLView id="editGateEntryPage" viewName="factory.gate.view.EditGateEntry" />
+                <mvc:XMLView id="editSecurityGateEntryPage" viewName="factory.gate.view.EditSecurityGateEntry" />
             </pages>
         </NavContainer>
     </VBox>

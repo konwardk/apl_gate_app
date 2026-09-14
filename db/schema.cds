@@ -49,7 +49,7 @@ entity GateTransactions : cuid, managed {
     supplier                : Association to Suppliers;
 
     /* Process Data */
-    securityEntry           : Composition of one SecurityGateEntries
+    securityEntry           : Association to one SecurityGateEntries
                                 on securityEntry.gateTransaction = $self;
 
     deliveryDetails         : Composition of one DeliveryDetails
@@ -64,7 +64,7 @@ entity GateTransactions : cuid, managed {
     factoryGateEvents       : Composition of many FactoryGateEvents
                                 on factoryGateEvents.gateTransaction = $self;
 
-    securityExit            : Composition of one SecurityGateExits
+    securityExit            : Association to SecurityGateEntries
                                 on securityExit.gateTransaction = $self;
 
     auditLogs               : Composition of many GateAuditLogs
@@ -73,7 +73,7 @@ entity GateTransactions : cuid, managed {
 
 
 /* ============================================================
-   2. SECURITY GATE - ENTRY
+   2. SECURITY GATE OPERATIONS (ENTRY & EXIT CONSOLIDATED)
    ============================================================ */
 
 entity SecurityGateEntries : cuid, managed {
@@ -83,37 +83,55 @@ entity SecurityGateEntries : cuid, managed {
 
     gateInNumber            : String(30);
 
-    /* Driver Details */
-    driverLicenseNo        : String(30) @mandatory;
+    /* --- Security IN: Driver Details --- */
+    driverLicenseNo        : String(30);
     driverPhoneNo          : String(20);
     helperName              : String(100);
 
-    /* Vehicle Reporting */
-    vehicleReportingDateTime : Timestamp @mandatory;
+    /* --- Security IN: Vehicle Reporting & Inbound Timestamp --- */
+    vehicleReportingDateTime : Timestamp;
+    securityInDateTime      : Timestamp;
+    securityPersonnel       : String(100);
 
-    /* Security Personnel */
-    securityPersonnel       : String(100) @mandatory;
-
-    /* Security Verification */
+    /* --- Security IN: Verification Checklist --- */
     driverVerified          : Boolean default false;
     vehicleVerified         : Boolean default false;
     documentsVerified       : Boolean default false;
 
-    /* Delivery Documentation */
+    /* --- Security IN: Delivery Documentation --- */
     poNumber                : String(30);
     soNumber                : String(30);
     invoiceNumber           : String(50);
     invoiceDate             : Date;
     withoutPO               : Boolean default false;
 
-    /* Pickup Documentation */
+    /* --- Security IN: Pickup Documentation --- */
     rgpDocumentNo           : String(30);
     nrgpDocumentNo          : String(30);
     gatePassType            : GatePassType;
 
-    /* Entry Timestamp */
-    securityInDateTime      : Timestamp @mandatory;
+    securityInRemarks       : String(500);
 
+    /* --- Security OUT: Exit Verification & Clearance --- */
+    securityOutPersonnel    : String(100);
+    securityOutDateTime     : Timestamp;
+
+    /* Security OUT Checklist */
+    exitDriverVerified      : Boolean default false;
+    exitVehicleVerified     : Boolean default false;
+    exitDocumentsVerified   : Boolean default false;
+    gatePassVerified        : Boolean default false;
+    deliveryDetailsVerified : Boolean default false;
+    emptyInspectionVerified : Boolean default false;
+    materialInspected       : Boolean default false;
+
+    /* Security OUT Gate Pass Details */
+    exitGatePassType        : GatePassType;
+    exitGatePassDocumentNo  : String(30);
+
+    securityOutRemarks      : String(500);
+
+    /* General / Combined Remarks */
     remarks                 : String(500);
 }
 
@@ -236,33 +254,7 @@ entity FactoryGateEvents : cuid, managed {
 }
 
 
-/* ============================================================
-   7. SECURITY GATE - EXIT
-   ============================================================ */
 
-entity SecurityGateExits : cuid, managed {
-
-    gateTransaction         : Association to GateTransactions
-                                not null;
-
-    /* Security Personnel */
-    securityPersonnel       : String(100) @mandatory;
-
-    /* Pickup Document Verification */
-    gatePassType            : GatePassType;
-
-    gatePassDocumentNo      : String(30);
-
-    gatePassVerified        : Boolean default false;
-
-    /* Delivery Verification */
-    deliveryDetailsVerified : Boolean default false;
-
-    /* Exit Timestamp */
-    securityOutDateTime     : Timestamp @mandatory;
-
-    remarks                 : String(500);
-}
 
 
 /* ============================================================

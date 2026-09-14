@@ -86,7 +86,7 @@
                             </ComboBox>
 
                             <Label text="Vehicle Reg No" />
-                            <Text text="{= ${wbModel>/selectedVehicle/vehicleRegNo} || 'Select a Gate IN Number' }" design="Bold" />
+                            <Label text="{= ${wbModel>/selectedVehicle/vehicleRegNo} || 'Select a Gate IN Number' }" design="Bold" />
 
                             <Label text="Vehicle Details" />
                             <HBox alignItems="Center">
@@ -173,7 +173,7 @@
                             <!-- Inbound Reference Weight (Visible if Outbound Stage) -->
                             <Label text="First Weighment Ref" visible="{wbModel>/isOutboundStage}" />
                             <VBox visible="{wbModel>/isOutboundStage}">
-                                <Text
+                                <Label
                                     text="{path: 'wbModel>/inboundWeightRecord/weight', formatter: '.formatter.formatWeight'} ({wbModel>/inboundWeightRecord/weighmentType}) on Scale {wbModel>/inboundWeightRecord/weighbridgeNumber}"
                                     design="Bold" />
                                 <Text
@@ -190,7 +190,7 @@
                                         level="H3"
                                         titleStyle="H3"
                                         class="net-cargo-weight-text" />
-                                    <Text text="({wbModel>/calculatedNetWeightMT} Metric Tonnes)" design="Bold" />
+                                    <Label text="({wbModel>/calculatedNetWeightMT} Metric Tonnes)" design="Bold" />
                                 </VBox>
                                 <ObjectStatus
                                     text="{wbModel>/netWeightStatusText}"
@@ -251,7 +251,7 @@
                                 <ColumnListItem>
                                     <cells>
                                         <ObjectIdentifier title="{wbModel>gateInNumber}" />
-                                        <Text text="{wbModel>vehicleRegNo}" design="Bold" />
+                                        <Label text="{wbModel>vehicleRegNo}" design="Bold" />
                                         <Text text="{wbModel>vehicleType}" />
                                         <ObjectStatus
                                             text="{wbModel>purpose}"
@@ -296,14 +296,14 @@
                                 <ColumnListItem>
                                     <cells>
                                         <ObjectIdentifier title="{wbModel>gateInNumber}" />
-                                        <Text text="{wbModel>vehicleRegNo}" design="Bold" />
+                                        <Label text="{wbModel>vehicleRegNo}" design="Bold" />
                                         <ObjectStatus
                                             text="{wbModel>purpose}"
                                             state="{path: 'wbModel>purpose', formatter: '.formatter.getPurposeState'}" />
                                         <ObjectStatus
                                             text="{= ${wbModel>purpose} === 'DELIVERY' ? 'TARE_OUT - Tare Outbound (Empty Truck)' : 'GROSS_OUT - Gross Outbound (Loaded Truck)' }"
                                             state="{= ${wbModel>purpose} === 'DELIVERY' ? 'Information' : 'Success' }" />
-                                        <Text text="{path: 'wbModel>inboundWeight', formatter: '.formatter.formatWeight'}" design="Bold" />
+                                        <Label text="{path: 'wbModel>inboundWeight', formatter: '.formatter.formatWeight'}" design="Bold" />
                                         <Text text="{= ${wbModel>driverName} || '-' }" />
                                         <ObjectStatus text="FACTORY_OUT" state="Warning" />
                                         <Button
@@ -341,13 +341,13 @@
                             <items>
                                 <ColumnListItem>
                                     <cells>
-                                        <Text text="{wbModel>weighbridgeNumber}" design="Bold" />
+                                        <Label text="{wbModel>weighbridgeNumber}" design="Bold" />
                                         <ObjectIdentifier title="{= ${wbModel>gateTransaction} ? ${wbModel>gateTransaction/gateInNumber} : (${wbModel>gateInNumber} || '-') }" />
-                                        <Text text="{= ${wbModel>gateTransaction} ? ${wbModel>gateTransaction/vehicleRegNo} : (${wbModel>vehicleRegNo} || '-') }" design="Bold" />
+                                        <Label text="{= ${wbModel>gateTransaction} ? ${wbModel>gateTransaction/vehicleRegNo} : (${wbModel>vehicleRegNo} || '-') }" design="Bold" />
                                         <ObjectStatus
                                             text="{path: 'wbModel>weighmentType', formatter: '.formatter.getWeighmentTypeDesc'}"
                                             state="{path: 'wbModel>weighmentType', formatter: '.formatter.getWeighmentTypeState'}" />
-                                        <Text text="{path: 'wbModel>weight', formatter: '.formatter.formatWeight'} {= ${wbModel>weightUnit} || 'KG' }" design="Bold" />
+                                        <Label text="{path: 'wbModel>weight', formatter: '.formatter.formatWeight'} {= ${wbModel>weightUnit} || 'KG' }" design="Bold" />
                                         <Text text="{path: 'wbModel>weighbridgeDateTime', formatter: '.formatter.formatDateTime' }" />
                                         <Text text="{wbModel>operator}" />
                                         <Text text="{= ${wbModel>remarks} || '-' }" />

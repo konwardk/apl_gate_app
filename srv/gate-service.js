@@ -277,6 +277,34 @@ export default cds.service.impl(async function () {
         }
     });
 
+    this.after('UPDATE', 'SecurityGateEntries', async (data, req) => {
+        const secId = (data && data.ID) || req.data?.ID;
+        let gateTxId = (data && data.gateTransaction_ID) || req.data?.gateTransaction_ID;
+
+        if (!gateTxId && secId) {
+            const secRecord = await SELECT.one.from(SecurityGateEntries).where({ ID: secId });
+            if (secRecord) {
+                gateTxId = secRecord.gateTransaction_ID;
+            }
+        }
+
+        if (gateTxId) {
+            await INSERT.into(GateAuditLogs).entries({
+                ID: cds.utils.uuid(),
+                gateTransaction_ID: gateTxId,
+                action: 'SECURITY_ENTRY_UPDATED',
+                oldStatus: null,
+                newStatus: null,
+                oldStage: null,
+                newStage: null,
+                actionDateTime: new Date(),
+                userId: req.user?.id || 'SYSTEM',
+                userName: req.user?.id || 'SYSTEM',
+                remarks: `Security Gate Entry details updated by ${req.user?.id || 'SYSTEM'}`
+            });
+        }
+    });
+
     // 6. DELETE: Business Integrity & Protection
     this.before('DELETE', 'GateTransactions', async (req) => {
         const txId = getTransactionId(req);
@@ -317,7 +345,6 @@ export default cds.service.impl(async function () {
             await DELETE.from(PickupDetails).where({ gateTransaction_ID: id });
             await DELETE.from(WeighbridgeTransactions).where({ gateTransaction_ID: id });
             await DELETE.from(FactoryGateEvents).where({ gateTransaction_ID: id });
-            await DELETE.from(SecurityGateExits).where({ gateTransaction_ID: id });
             await DELETE.from(GateAuditLogs).where({ gateTransaction_ID: id });
         }
     });
@@ -923,9 +950,10 @@ export default cds.service.impl(async function () {
         );
 
 
+        // Allow both SECURITY_IN (direct entry without scale) and WEIGHBRIDGE_IN (entry after scale)
         validateStage(
             transaction,
-            'WEIGHBRIDGE_IN',
+            ['SECURITY_IN', 'WEIGHBRIDGE_IN'],
             req
         );
 
@@ -959,6 +987,22 @@ export default cds.service.impl(async function () {
             .where({
                 ID: transaction.ID
             });
+
+        await INSERT.into(GateAuditLogs).entries({
+            ID: cds.utils.uuid(),
+            gateTransaction_ID: transaction.ID,
+            action: 'FACTORY_GATE_IN',
+            oldStatus: transaction.status,
+            newStatus: 'FACTORY_IN',
+            oldStage: transaction.currentStage,
+            newStage: 'FACTORY',
+            actionDateTime: new Date(),
+            userId: req.user?.id || 'SYSTEM',
+            userName: req.user?.id || 'SYSTEM',
+            remarks: transaction.status === 'SECURITY_IN'
+                ? 'Vehicle proceeded directly to Factory Gate (Weighbridge bypassed)'
+                : 'Vehicle entered Factory Gate after Inbound Weighment'
+        });
 
 
         return SELECT.one
@@ -1028,6 +1072,20 @@ export default cds.service.impl(async function () {
                 ID: transaction.ID
             });
 
+        await INSERT.into(GateAuditLogs).entries({
+            ID: cds.utils.uuid(),
+            gateTransaction_ID: transaction.ID,
+            action: 'FACTORY_GATE_OUT',
+            oldStatus: 'FACTORY_IN',
+            newStatus: 'FACTORY_OUT',
+            oldStage: 'FACTORY',
+            newStage: 'FACTORY',
+            actionDateTime: new Date(),
+            userId: req.user?.id || 'SYSTEM',
+            userName: req.user?.id || 'SYSTEM',
+            remarks: 'Factory yard operations completed. Vehicle released for exit clearance.'
+        });
+
 
         return SELECT.one
             .from(GateTransactions)
@@ -1044,101 +1102,145 @@ export default cds.service.impl(async function () {
      */
 
     this.on('SecurityGateOut', async (req) => {
-
         const {
             gateInNumber,
             securityPersonnel,
             gatePassType,
-            gatePassDocumentNo
+            gatePassDocumentNo,
+            driverVerified,
+            vehicleVerified,
+            documentsVerified,
+            gatePassVerified,
+            deliveryDetailsVerified,
+            emptyInspectionVerified,
+            materialInspected,
+            remarks
         } = req.data;
 
+        const transaction = await getTransaction(gateInNumber, req);
 
-        const transaction =
-            await getTransaction(
-                gateInNumber,
-                req
+        // Allow WEIGHBRIDGE_OUT, FACTORY_OUT, SECURITY_IN, and FACTORY_IN (direct exit without scale)
+        const allowedOutStatuses = ['WEIGHBRIDGE_OUT', 'FACTORY_OUT', 'SECURITY_IN', 'FACTORY_IN'];
+        if (!allowedOutStatuses.includes(transaction.status)) {
+            return req.reject(
+                400,
+                `Invalid process stage for Security Gate OUT. Expected ${allowedOutStatuses.join(', ')}, current status is '${transaction.status}'.`
             );
+        }
 
+        const isPickup = (transaction.purpose === 'PICKUP');
+        const isDelivery = (transaction.purpose === 'DELIVERY');
 
-        validateStage(
-            transaction,
-            'WEIGHBRIDGE_OUT',
-            req
-        );
+        // Locate existing consolidated Security record for this transaction
+        const existingSec = await SELECT.one
+            .from(SecurityGateEntries)
+            .where({ gateTransaction_ID: transaction.ID });
 
+        let determinedPassType = gatePassType;
+        let determinedDocNo = gatePassDocumentNo;
 
-        /*
-         * Pickup requires RGP / NRGP
-         */
-
-        if (
-            transaction.purpose ===
-            'PICKUP'
-        ) {
-
-            if (!gatePassType) {
-
-                return req.error(
-                    400,
-                    'RGP / NRGP is mandatory for pickup.'
-                );
+        if (isPickup) {
+            if (!determinedPassType && existingSec && existingSec.gatePassType) {
+                determinedPassType = existingSec.gatePassType;
             }
-
-            if (!gatePassDocumentNo) {
-
-                return req.error(
-                    400,
-                    'Gate Pass Document Number is mandatory for pickup.'
-                );
+            if (!determinedDocNo && existingSec) {
+                determinedDocNo = existingSec.rgpDocumentNo || existingSec.nrgpDocumentNo || existingSec.exitGatePassDocumentNo;
+            }
+            if (!determinedPassType && !determinedDocNo) {
+                return req.error(400, 'Gate Pass Type (RGP / NRGP) or Document Number is mandatory for material pickup.');
             }
         }
 
+        const outTime = new Date();
+        const secOutPerson = securityPersonnel || req.user?.id || 'security_user';
 
-        await INSERT.into(
-            SecurityGateExits
-        ).entries({
+        if (existingSec) {
+            // Update the single consolidated record with exit attributes
+            await UPDATE(SecurityGateEntries)
+                .set({
+                    securityOutPersonnel: secOutPerson,
+                    securityOutDateTime: outTime,
+                    exitDriverVerified: driverVerified !== undefined ? Boolean(driverVerified) : true,
+                    exitVehicleVerified: vehicleVerified !== undefined ? Boolean(vehicleVerified) : true,
+                    exitDocumentsVerified: documentsVerified !== undefined ? Boolean(documentsVerified) : true,
+                    gatePassVerified: gatePassVerified !== undefined ? Boolean(gatePassVerified) : isPickup,
+                    deliveryDetailsVerified: deliveryDetailsVerified !== undefined ? Boolean(deliveryDetailsVerified) : isDelivery,
+                    emptyInspectionVerified: emptyInspectionVerified !== undefined ? Boolean(emptyInspectionVerified) : true,
+                    materialInspected: materialInspected !== undefined ? Boolean(materialInspected) : true,
+                    exitGatePassType: determinedPassType || existingSec.gatePassType || null,
+                    exitGatePassDocumentNo: determinedDocNo || existingSec.exitGatePassDocumentNo || null,
+                    securityOutRemarks: remarks || null,
+                    remarks: remarks || existingSec.remarks || null
+                })
+                .where({ ID: existingSec.ID });
+        } else {
+            // Create single consolidated record with both IN and OUT data
+            await INSERT.into(SecurityGateEntries).entries({
+                ID: cds.utils.uuid(),
+                gateTransaction_ID: transaction.ID,
+                gateInNumber: transaction.gateInNumber,
+                securityPersonnel: secOutPerson,
+                securityInDateTime: transaction.gateInDateTime || outTime,
+                securityOutPersonnel: secOutPerson,
+                securityOutDateTime: outTime,
+                exitDriverVerified: driverVerified !== false,
+                exitVehicleVerified: vehicleVerified !== false,
+                exitDocumentsVerified: documentsVerified !== false,
+                gatePassVerified: isPickup,
+                deliveryDetailsVerified: isDelivery,
+                emptyInspectionVerified: true,
+                materialInspected: true,
+                exitGatePassType: determinedPassType || null,
+                exitGatePassDocumentNo: determinedDocNo || null,
+                securityOutRemarks: remarks || null,
+                remarks: remarks || null
+            });
+        }
 
-            ID: cds.utils.uuid(),
-
-            gateTransaction_ID:
-                transaction.ID,
-
-            securityPersonnel:
-                securityPersonnel,
-
-            gatePassType:
-                gatePassType,
-
-            gatePassDocumentNo:
-                gatePassDocumentNo,
-
-            gatePassVerified:
-                transaction.purpose ===
-                'PICKUP',
-
-            deliveryDetailsVerified:
-                transaction.purpose ===
-                'DELIVERY',
-
-            securityOutDateTime:
-                new Date()
-        });
-
-
+        // Update GateTransactions status & stage
         await UPDATE(GateTransactions)
             .set({
-
-                status:
-                    'SECURITY_OUT',
-
-                currentStage:
-                    'SECURITY_GATE_OUT'
-
+                status: 'SECURITY_OUT',
+                currentStage: 'SECURITY_GATE_OUT'
             })
             .where({
                 ID: transaction.ID
             });
 
+        let stageContext = '';
+        if (transaction.status === 'SECURITY_IN') {
+            stageContext = '[Direct Exit - Weighbridge bypassed]';
+        } else if (transaction.status === 'FACTORY_OUT') {
+            stageContext = '[Factory Exit - Outbound scale bypassed]';
+        } else if (transaction.status === 'FACTORY_IN') {
+            stageContext = '[Factory Yard Exit]';
+        } else {
+            stageContext = '[Scale Clearance]';
+        }
+
+        let auditRemarks = remarks ? `${stageContext} ${remarks}` : (
+            transaction.status === 'SECURITY_IN'
+                ? `Security Exit Clearance completed directly after Security IN (Weighbridge not required) by ${secOutPerson}`
+                : transaction.status === 'FACTORY_OUT'
+                ? `Security Exit Clearance completed after Factory operations (Weighbridge not required) by ${secOutPerson}`
+                : transaction.status === 'FACTORY_IN'
+                ? `Security Exit Clearance completed from Factory Yard by ${secOutPerson}`
+                : `Security Exit Clearance completed after Outbound Scale Weighment by ${secOutPerson}`
+        );
+
+        await INSERT.into(GateAuditLogs).entries({
+            ID: cds.utils.uuid(),
+            gateTransaction_ID: transaction.ID,
+            action: 'SECURITY_GATE_OUT',
+            oldStatus: transaction.status,
+            newStatus: 'SECURITY_OUT',
+            oldStage: transaction.currentStage,
+            newStage: 'SECURITY_GATE_OUT',
+            actionDateTime: outTime,
+            userId: secOutPerson,
+            userName: secOutPerson,
+            remarks: auditRemarks
+        });
 
         return SELECT.one
             .from(GateTransactions)
@@ -1329,15 +1431,11 @@ export default cds.service.impl(async function () {
         expectedStatus,
         req
     ) {
-
-        if (
-            transaction.status !==
-            expectedStatus
-        ) {
-
+        const allowed = Array.isArray(expectedStatus) ? expectedStatus : [expectedStatus];
+        if (!allowed.includes(transaction.status)) {
             return req.reject(
                 400,
-                `Invalid process stage. Expected ${expectedStatus}, current status is ${transaction.status}.`
+                `Invalid process stage. Expected ${allowed.join(' or ')}, current status is ${transaction.status}.`
             );
         }
     }

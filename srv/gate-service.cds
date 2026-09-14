@@ -20,11 +20,12 @@ service GateService {
      * ============================================================
      */
 
+    @cds.redirection.target
     entity SecurityGateEntries
         as projection on db.SecurityGateEntries;
 
     entity SecurityGateExits
-        as projection on db.SecurityGateExits;
+        as projection on db.SecurityGateEntries;
 
 
     /*
@@ -153,10 +154,18 @@ service GateService {
 
 
     action SecurityGateOut(
-        gateInNumber : String,
-        securityPersonnel : String,
-        gatePassType : String,
-        gatePassDocumentNo : String
+        gateInNumber             : String,
+        securityPersonnel        : String,
+        gatePassType             : String,
+        gatePassDocumentNo       : String,
+        driverVerified           : Boolean,
+        vehicleVerified          : Boolean,
+        documentsVerified        : Boolean,
+        gatePassVerified         : Boolean,
+        deliveryDetailsVerified  : Boolean,
+        emptyInspectionVerified  : Boolean,
+        materialInspected        : Boolean,
+        remarks                  : String
     ) returns GateTransactions;
 
 

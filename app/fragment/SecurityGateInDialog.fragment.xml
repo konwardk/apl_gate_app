@@ -1,0 +1,203 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:core="sap.ui.core">
+    <Dialog
+        id="securityGateInDialog"
+        title="Security Gate IN - Vehicle &amp; Driver Check-In"
+        contentWidth="720px">
+        <content>
+            <form:SimpleForm
+                id="secGateInDialogForm"
+                editable="true"
+                layout="ResponsiveGridLayout"
+                labelSpanXL="4"
+                labelSpanL="4"
+                labelSpanM="4"
+                labelSpanS="12"
+                columnsXL="1"
+                columnsL="1"
+                columnsM="1">
+                <form:content>
+                    <!-- Section 1: Gate Pass & Vehicle Selection -->
+                    <core:Title text="1. Gate Pass &amp; Vehicle Identification" />
+
+                    <Label text="Select Vehicle" required="true" />
+                    <ComboBox
+                        id="dialogSecGateInComboBox"
+                        width="100%"
+                        placeholder="Select Gate IN #, Vehicle Reg No, or Driver..."
+                        selectedKey="{secModel>/selectedGateInNumber}"
+                        change=".onGateInSelectChange"
+                        filterSecondaryValues="true"
+                        showSecondaryValues="true"
+                        items="{
+                            path: 'secModel>/waitingVehicles',
+                            templateShareable: false
+                        }">
+                        <core:ListItem
+                            key="{secModel>gateInNumber}"
+                            text="{secModel>gateInNumber}"
+                            additionalText="{secModel>vehicleRegNo} ({secModel>purpose}) - {secModel>driverName}" />
+                    </ComboBox>
+
+                    <Label text="Vehicle Reg No" />
+                    <Label text="{= ${secModel>/selectedVehicle/vehicleRegNo} || 'Select a Gate IN Number above' }" design="Bold" />
+
+                    <Label text="Visit Purpose" />
+                    <HBox alignItems="Center">
+                        <ObjectStatus
+                            text="{= ${secModel>/selectedVehicle/purpose} || '-' }"
+                            state="{= ${secModel>/selectedVehicle/purpose} === 'DELIVERY' ? 'Information' : 'Warning' }"
+                            class="sapUiTinyMarginEnd" />
+                        <Text text="{= ${secModel>/selectedVehicle/vehicleType} ? '(' + ${secModel>/selectedVehicle/vehicleType} + ')' : '' }" />
+                    </HBox>
+
+                    <Label text="Driver Name" />
+                    <Text text="{= ${secModel>/selectedVehicle/driverName} || '-' }" />
+
+                    <Label text="Security Officer" required="true" />
+                    <Input
+                        id="dialogSecPersonnel"
+                        value="{secModel>/securityPersonnel}"
+                        placeholder="Officer Name / ID authorizing Entry"
+                        required="true" />
+
+                    <!-- Section 2: Driver Clearance & Inspection Checklist -->
+                    <core:Title text="2. Driver Clearance &amp; Physical Checklist" />
+
+                    <Label text="Driver License No" required="true" />
+                    <Input
+                        id="dialogSecDriverLicense"
+                        value="{secModel>/driverLicenseNo}"
+                        placeholder="e.g. DL-0420110012345"
+                        required="true" />
+
+                    <Label text="Driver Phone No" />
+                    <Input
+                        id="dialogSecDriverPhone"
+                        value="{secModel>/driverPhoneNo}"
+                        placeholder="e.g. +91 9876543210" />
+
+                    <Label text="Helper Name" />
+                    <Input
+                        id="dialogSecHelper"
+                        value="{secModel>/helperName}"
+                        placeholder="Accompanying cleaner / helper (if any)" />
+
+                    <Label text="Physical Inspection" />
+                    <VBox>
+                        <CheckBox
+                            id="dialogSecCbDriverVerified"
+                            text="Driver Identity &amp; Physical Driving License verified"
+                            selected="{secModel>/driverVerified}" />
+                        <CheckBox
+                            id="dialogSecCbVehicleVerified"
+                            text="Vehicle Exterior, Cabin, and Undercarriage inspected"
+                            selected="{secModel>/vehicleVerified}" />
+                        <CheckBox
+                            id="dialogSecCbDocsVerified"
+                            text="Entry Consignment / Delivery Documents sighted"
+                            selected="{secModel>/documentsVerified}" />
+                    </VBox>
+
+                    <!-- Section 3: Consignment & Inbound Documents -->
+                    <core:Title text="3. Consignment Documents &amp; Inbound Details" />
+
+                    <!-- Delivery Fields -->
+                    <Label text="Without PO Allowed" visible="{secModel>/isDelivery}" />
+                    <CheckBox
+                        id="dialogSecCbWithoutPO"
+                        visible="{secModel>/isDelivery}"
+                        text="Special Authorization: Inbound consignment without PO"
+                        selected="{secModel>/withoutPO}"
+                        select=".onWithoutPOToggle" />
+
+                    <Label text="PO Number" visible="{secModel>/isDelivery}" required="{= ${secModel>/isDelivery} &amp;&amp; !${secModel>/withoutPO} }" />
+                    <Input
+                        id="dialogSecPoNumber"
+                        visible="{secModel>/isDelivery}"
+                        value="{secModel>/poNumber}"
+                        placeholder="e.g. PO-4500012345"
+                        enabled="{= !${secModel>/withoutPO} }"
+                        required="{= ${secModel>/isDelivery} &amp;&amp; !${secModel>/withoutPO} }" />
+
+                    <Label text="Invoice Number" visible="{secModel>/isDelivery}" required="{= ${secModel>/isDelivery} &amp;&amp; !${secModel>/withoutPO} }" />
+                    <Input
+                        id="dialogSecInvoiceNumber"
+                        visible="{secModel>/isDelivery}"
+                        value="{secModel>/invoiceNumber}"
+                        placeholder="e.g. INV-2026-9011"
+                        enabled="{= !${secModel>/withoutPO} }"
+                        required="{= ${secModel>/isDelivery} &amp;&amp; !${secModel>/withoutPO} }" />
+
+                    <Label text="Invoice Date" visible="{secModel>/isDelivery}" />
+                    <DatePicker
+                        id="dialogSecInvoiceDate"
+                        visible="{secModel>/isDelivery}"
+                        value="{secModel>/invoiceDate}"
+                        valueFormat="yyyy-MM-dd"
+                        displayFormat="medium"
+                        enabled="{= !${secModel>/withoutPO} }" />
+
+                    <!-- Pickup Fields -->
+                    <Label text="Pickup Pass Type" visible="{secModel>/isPickup}" />
+                    <Select
+                        id="dialogSecGatePassType"
+                        visible="{secModel>/isPickup}"
+                        selectedKey="{secModel>/gatePassType}"
+                        width="100%">
+                        <core:Item key="" text="-- Not Specified / Pending at Entry --" />
+                        <core:Item key="RGP" text="RGP (Returnable Gate Pass)" />
+                        <core:Item key="NRGP" text="NRGP (Non-Returnable Gate Pass)" />
+                    </Select>
+
+                    <Label text="RGP Document No" visible="{secModel>/isPickup}" />
+                    <Input
+                        id="dialogSecRgpDocNo"
+                        visible="{secModel>/isPickup}"
+                        value="{secModel>/rgpDocumentNo}"
+                        placeholder="e.g. RGP-2026-0042 (Optional at Entry)" />
+
+                    <Label text="NRGP Document No" visible="{secModel>/isPickup}" />
+                    <Input
+                        id="dialogSecNrgpDocNo"
+                        visible="{secModel>/isPickup}"
+                        value="{secModel>/nrgpDocumentNo}"
+                        placeholder="e.g. NRGP-2026-0089 (Optional at Entry)" />
+
+                    <Label text="Empty Inspection" visible="{secModel>/isPickup}" />
+                    <CheckBox
+                        id="dialogSecCbEmptyInspected"
+                        visible="{secModel>/isPickup}"
+                        text="Empty container / vehicle bed physically inspected for pickup"
+                        selected="{secModel>/emptyInspectionVerified}" />
+
+                    <!-- Section 4: Security Remarks -->
+                    <core:Title text="4. Security Clearance Remarks" />
+
+                    <Label text="Remarks" />
+                    <TextArea
+                        id="dialogSecRemarks"
+                        value="{secModel>/remarks}"
+                        rows="3"
+                        placeholder="Enter security notes, container condition, seal numbers, or exceptions..." />
+                </form:content>
+            </form:SimpleForm>
+        </content>
+        <beginButton>
+            <Button
+                id="btnConfirmSecGateIn"
+                text="Clear Security Gate IN"
+                icon="sap-icon://accept"
+                type="Emphasized"
+                press=".onConfirmSecurityGateIn" />
+        </beginButton>
+        <endButton>
+            <Button
+                id="btnCancelSecGateIn"
+                text="Cancel"
+                press=".onCancelSecurityGateIn" />
+        </endButton>
+    </Dialog>
+</core:FragmentDefinition>

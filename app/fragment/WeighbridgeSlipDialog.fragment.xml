@@ -30,7 +30,7 @@
                         <Text text="Plant Weighbridge Station • ISO 9001 / Legal Metrology Certified" class="sapUiTinyMarginTop" />
                     </VBox>
                     <VBox alignItems="End">
-                        <Text text="Slip No: {slipModel>/slipNumber}" design="Bold" />
+                        <Label text="Slip No: {slipModel>/slipNumber}" design="Bold" />
                         <Text text="Date: {path: 'slipModel>/weighbridgeDateTime', formatter: '.formatter.formatDateTime'}" />
                     </VBox>
                 </HBox>
@@ -51,10 +51,10 @@
                         <core:Title text="Vehicle &amp; Consignment Details" />
 
                         <Label text="Gate IN Number" />
-                        <Text text="{slipModel>/gateInNumber}" design="Bold" />
+                        <Label text="{slipModel>/gateInNumber}" design="Bold" />
 
                         <Label text="Vehicle Reg No" />
-                        <Text text="{slipModel>/vehicleRegNo}" design="Bold" />
+                        <Label text="{slipModel>/vehicleRegNo}" design="Bold" />
 
                         <Label text="Vehicle Type" />
                         <Text text="{slipModel>/vehicleType}" />
@@ -70,7 +70,7 @@
                         <core:Title text="Scale &amp; Weighing Metadata" />
 
                         <Label text="Weighbridge Number" />
-                        <Text text="{slipModel>/weighbridgeNumber}" design="Bold" />
+                        <Label text="{slipModel>/weighbridgeNumber}" design="Bold" />
 
                         <Label text="Weighment Type" />
                         <ObjectStatus
@@ -78,7 +78,7 @@
                             state="{path: 'slipModel>/weighmentType', formatter: '.formatter.getWeighmentTypeState'}" />
 
                         <Label text="Recorded Weight" />
-                        <Text text="{path: 'slipModel>/weight', formatter: '.formatter.formatWeight'} {= ${slipModel>/weightUnit} || 'KG' }" design="Bold" />
+                        <Label text="{path: 'slipModel>/weight', formatter: '.formatter.formatWeight'} {= ${slipModel>/weightUnit} || 'KG' }" design="Bold" />
 
                         <Label text="Weighbridge Operator" />
                         <Text text="{slipModel>/operator}" />
@@ -126,7 +126,7 @@
                                     level="H2"
                                     titleStyle="H2"
                                     class="weight-metric net-metric" />
-                                <Text text="({slipModel>/netWeightMT} MT)" class="sapUiTinyMarginTop" design="Bold" />
+                                <Label text="({slipModel>/netWeightMT} MT)" class="sapUiTinyMarginTop" design="Bold" />
                             </VBox>
                         </HBox>
                     </content>

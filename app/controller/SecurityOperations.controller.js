@@ -1,12 +1,13 @@
 sap.ui.define([
     "sap/ui/core/mvc/Controller",
     "sap/ui/model/json/JSONModel",
+    "sap/ui/core/Fragment",
     "sap/m/MessageToast",
     "sap/m/MessageBox",
     "sap/ui/core/library",
     "factory/gate/model/formatter",
     "factory/gate/model/models"
-], function (Controller, JSONModel, MessageToast, MessageBox, coreLibrary, formatter, models) {
+], function (Controller, JSONModel, Fragment, MessageToast, MessageBox, coreLibrary, formatter, models) {
     "use strict";
 
     const ValueState = coreLibrary.ValueState;
@@ -17,13 +18,30 @@ sap.ui.define([
 
         onInit: function () {
             const activeUser = models.getActiveUser();
+            const defaultOfficer = activeUser.includes("security") ? activeUser : (activeUser === "superadmin_user" ? "SecurityChief" : "security_user");
+
             const oSecModel = new JSONModel({
+                // Table and queues
+                records: [],
+                displayedRecords: [],
+                selectedFilter: "ALL",
+                searchQuery: "",
+                allRecordsCount: 0,
+                waitingInCount: 0,
+                inPlantCount: 0,
+                waitingOutCount: 0,
+                clearedCount: 0,
+
+                waitingVehicles: [],
+                waitingOutVehicles: [],
+
+                // Gate IN properties
                 selectedGateInNumber: "",
                 selectedVehicle: null,
                 driverLicenseNo: "",
                 driverPhoneNo: "",
                 helperName: "",
-                securityPersonnel: activeUser.includes("security") ? activeUser : "security_user",
+                securityPersonnel: defaultOfficer,
                 driverVerified: true,
                 vehicleVerified: true,
                 documentsVerified: true,
@@ -40,8 +58,23 @@ sap.ui.define([
                 gatePassVerified: false,
                 emptyInspectionVerified: true,
                 remarks: "",
-                waitingVehicles: [],
-                clearedEntries: []
+
+                // Gate OUT properties
+                outSelectedGateInNumber: "",
+                outSelectedVehicle: null,
+                outSecurityPersonnel: defaultOfficer,
+                outDriverVerified: true,
+                outVehicleVerified: true,
+                outEmptyInspectionVerified: true,
+                outMaterialInspected: true,
+                outDocumentsVerified: true,
+                outGatePassVerified: false,
+                outDeliveryDetailsVerified: false,
+                outGatePassType: "RGP",
+                outGatePassDocumentNo: "",
+                outRemarks: "",
+                outInboundRecord: null,
+                outWeighmentSummary: ""
             });
             this.getView().setModel(oSecModel, "secModel");
 
@@ -50,48 +83,205 @@ sap.ui.define([
 
         loadSecurityData: async function () {
             const oSecModel = this.getView().getModel("secModel");
+            const oTable = this.byId("secTxTable");
+            if (oTable) oTable.setBusy(true);
+
             const headers = {
                 "Authorization": models.getAuthHeaderValue(),
                 "Content-Type": "application/json"
             };
 
             try {
-                // 1. Fetch Waiting Vehicles (status eq 'GATE_IN')
-                const resWaiting = await fetch(`${ODATA_BASE}/GateTransactions?$filter=status eq 'GATE_IN'&$orderby=createdAt desc`, { headers });
-                if (resWaiting.ok) {
-                    const dataWaiting = await resWaiting.json();
-                    const aWaiting = dataWaiting.value || [];
-                    oSecModel.setProperty("/waitingVehicles", aWaiting);
-
-                    // If a vehicle is currently selected, refresh its data
-                    const currentGateIn = oSecModel.getProperty("/selectedGateInNumber");
-                    if (currentGateIn) {
-                        const matched = aWaiting.find(v => v.gateInNumber === currentGateIn);
-                        if (matched) {
-                            oSecModel.setProperty("/selectedVehicle", matched);
-                            oSecModel.setProperty("/isDelivery", matched.purpose === "DELIVERY");
-                            oSecModel.setProperty("/isPickup", matched.purpose === "PICKUP");
-                        }
-                    } else if (aWaiting.length > 0) {
-                        // Auto-select first waiting vehicle for convenience
-                        this.selectVehicleByGateIn(aWaiting[0].gateInNumber);
-                    }
+                // Fetch all GateTransactions expanding unified securityEntry and driver
+                const res = await fetch(`${ODATA_BASE}/GateTransactions?$expand=securityEntry,driver&$orderby=createdAt desc&$top=100`, { headers });
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
                 }
 
-                // 2. Fetch Cleared Security Entries
-                const resCleared = await fetch(`${ODATA_BASE}/SecurityGateEntries?$orderby=createdAt desc&$top=50`, { headers });
-                if (resCleared.ok) {
-                    const dataCleared = await resCleared.json();
-                    oSecModel.setProperty("/clearedEntries", dataCleared.value || []);
-                }
+                const data = await res.json();
+                const aRecords = data.value || [];
+                oSecModel.setProperty("/records", aRecords);
+
+                // Derive waiting queues
+                const aWaitingIn = aRecords.filter(r => r.status === "GATE_IN");
+                // Eligible for Security Gate OUT: Scale outbound, Factory outbound, or Direct exit without scale (SECURITY_IN, FACTORY_IN)
+                const aWaitingOut = aRecords.filter(r => 
+                    r.status === "WEIGHBRIDGE_OUT" || 
+                    r.status === "FACTORY_OUT" || 
+                    r.status === "SECURITY_IN" || 
+                    r.status === "FACTORY_IN"
+                );
+                const aWaitingOutReady = aRecords.filter(r => r.status === "WEIGHBRIDGE_OUT" || r.status === "FACTORY_OUT");
+
+                oSecModel.setProperty("/waitingVehicles", aWaitingIn);
+                oSecModel.setProperty("/waitingOutVehicles", aWaitingOut);
+
+                // Compute counts
+                const inPlantCount = aRecords.filter(r => ["SECURITY_IN", "WEIGHBRIDGE_IN", "FACTORY_IN"].includes(r.status)).length;
+                const clearedCount = aRecords.filter(r => ["SECURITY_OUT", "COMPLETED"].includes(r.status) || (r.securityEntry && r.securityEntry.securityOutDateTime)).length;
+
+                oSecModel.setProperty("/allRecordsCount", aRecords.length);
+                oSecModel.setProperty("/waitingInCount", aWaitingIn.length);
+                oSecModel.setProperty("/inPlantCount", inPlantCount);
+                oSecModel.setProperty("/waitingOutCount", aWaitingOutReady.length);
+                oSecModel.setProperty("/clearedCount", clearedCount);
+
+                this._applyFilters();
             } catch (err) {
-                console.error("Error loading security queue:", err);
+                console.error("Error loading security operations data:", err);
+                MessageToast.show("Failed to load security records: " + err.message);
+            } finally {
+                if (oTable) oTable.setBusy(false);
             }
+        },
+
+        _applyFilters: function () {
+            const oSecModel = this.getView().getModel("secModel");
+            const aRecords = oSecModel.getProperty("/records") || [];
+            const sFilter = oSecModel.getProperty("/selectedFilter") || "ALL";
+            const sQuery = (oSecModel.getProperty("/searchQuery") || "").trim().toLowerCase();
+
+            let aFiltered = aRecords.slice();
+
+            // 1. Filter Category
+            if (sFilter === "WAITING_IN") {
+                aFiltered = aFiltered.filter(r => r.status === "GATE_IN");
+            } else if (sFilter === "IN_PLANT") {
+                aFiltered = aFiltered.filter(r => ["SECURITY_IN", "WEIGHBRIDGE_IN", "FACTORY_IN"].includes(r.status));
+            } else if (sFilter === "WAITING_OUT") {
+                aFiltered = aFiltered.filter(r => r.status === "WEIGHBRIDGE_OUT" || r.status === "FACTORY_OUT");
+            } else if (sFilter === "CLEARED") {
+                aFiltered = aFiltered.filter(r => ["SECURITY_OUT", "COMPLETED"].includes(r.status) || (r.securityEntry && r.securityEntry.securityOutDateTime));
+            }
+
+            // 2. Search Query Filter
+            if (sQuery) {
+                aFiltered = aFiltered.filter(r => {
+                    const matchGateIn = (r.gateInNumber || "").toLowerCase().includes(sQuery);
+                    const matchVehicle = (r.vehicleRegNo || "").toLowerCase().includes(sQuery);
+                    const matchDriver = (r.driverName || (r.driver && r.driver.driverName) || "").toLowerCase().includes(sQuery);
+                    const matchPurpose = (r.purpose || "").toLowerCase().includes(sQuery);
+                    const matchStatus = (r.status || "").toLowerCase().includes(sQuery);
+                    const matchStage = (r.currentStage || "").toLowerCase().includes(sQuery);
+
+                    const sec = r.securityEntry;
+                    const matchPo = sec && (sec.poNumber || "").toLowerCase().includes(sQuery);
+                    const matchInv = sec && (sec.invoiceNumber || "").toLowerCase().includes(sQuery);
+                    const matchRgp = sec && (sec.rgpDocumentNo || "").toLowerCase().includes(sQuery);
+                    const matchNrgp = sec && (sec.nrgpDocumentNo || "").toLowerCase().includes(sQuery);
+                    const matchExitPass = sec && (sec.exitGatePassDocumentNo || "").toLowerCase().includes(sQuery);
+                    const matchInOfficer = sec && (sec.securityPersonnel || "").toLowerCase().includes(sQuery);
+                    const matchOutOfficer = sec && (sec.securityOutPersonnel || "").toLowerCase().includes(sQuery);
+
+                    return matchGateIn || matchVehicle || matchDriver || matchPurpose || matchStatus || matchStage ||
+                        matchPo || matchInv || matchRgp || matchNrgp || matchExitPass || matchInOfficer || matchOutOfficer;
+                });
+            }
+
+            oSecModel.setProperty("/displayedRecords", aFiltered);
+        },
+
+        onFilterCategoryChange: function (oEvt) {
+            const oItem = oEvt.getParameter("item");
+            const sKey = oItem ? oItem.getKey() : oEvt.getSource().getSelectedKey();
+            this.getView().getModel("secModel").setProperty("/selectedFilter", sKey);
+            this._applyFilters();
+        },
+
+        onSearchLiveChange: function (oEvt) {
+            const sQuery = oEvt.getParameter("newValue") || "";
+            this.getView().getModel("secModel").setProperty("/searchQuery", sQuery);
+            this._applyFilters();
+        },
+
+        onSearch: function (oEvt) {
+            const sQuery = oEvt.getParameter("query") || "";
+            this.getView().getModel("secModel").setProperty("/searchQuery", sQuery);
+            this._applyFilters();
+        },
+
+        onResetSearch: function () {
+            const oSearchField = this.byId("secSearchField");
+            if (oSearchField) oSearchField.setValue("");
+            const oSecModel = this.getView().getModel("secModel");
+            oSecModel.setProperty("/searchQuery", "");
+            oSecModel.setProperty("/selectedFilter", "ALL");
+            const oSegBtn = this.byId("secFilterSegmentedBtn");
+            if (oSegBtn) oSegBtn.setSelectedKey("ALL");
+            this._applyFilters();
         },
 
         onRefreshQueue: function () {
             this.loadSecurityData();
-            MessageToast.show("Security queue refreshed");
+            MessageToast.show("Security Gate records refreshed");
+        },
+
+        // ============================================================
+        // DIALOG: Security Gate IN
+        // ============================================================
+        onOpenSecurityGateInDialog: function (oPreselectedTx) {
+            const sId = this.getView().createId("secGateInFrag");
+            const oSecModel = this.getView().getModel("secModel");
+            const activeUser = models.getActiveUser();
+            const defaultOfficer = activeUser.includes("security") ? activeUser : (activeUser === "superadmin_user" ? "SecurityChief" : "security_user");
+
+            // Reset Gate IN fields
+            oSecModel.setProperty("/driverLicenseNo", "");
+            oSecModel.setProperty("/driverPhoneNo", "");
+            oSecModel.setProperty("/helperName", "");
+            oSecModel.setProperty("/securityPersonnel", defaultOfficer);
+            oSecModel.setProperty("/withoutPO", false);
+            oSecModel.setProperty("/poNumber", "");
+            oSecModel.setProperty("/soNumber", "");
+            oSecModel.setProperty("/invoiceNumber", "");
+            oSecModel.setProperty("/invoiceDate", null);
+            oSecModel.setProperty("/rgpDocumentNo", "");
+            oSecModel.setProperty("/nrgpDocumentNo", "");
+            oSecModel.setProperty("/gatePassType", "");
+            oSecModel.setProperty("/gatePassVerified", false);
+            oSecModel.setProperty("/emptyInspectionVerified", true);
+            oSecModel.setProperty("/remarks", "");
+            oSecModel.setProperty("/driverVerified", true);
+            oSecModel.setProperty("/vehicleVerified", true);
+            oSecModel.setProperty("/documentsVerified", true);
+
+            if (!this._pGateInDialog) {
+                this._pGateInDialog = Fragment.load({
+                    id: sId,
+                    name: "factory.gate.fragment.SecurityGateInDialog",
+                    controller: this
+                }).then(function (oDialog) {
+                    this.getView().addDependent(oDialog);
+                    return oDialog;
+                }.bind(this));
+            }
+
+            this._pGateInDialog.then(function (oDialog) {
+                // Determine preselected vehicle
+                let sGateInNo = "";
+                if (oPreselectedTx && oPreselectedTx.gateInNumber) {
+                    sGateInNo = oPreselectedTx.gateInNumber;
+                } else {
+                    const aWaiting = oSecModel.getProperty("/waitingVehicles") || [];
+                    if (aWaiting.length > 0) sGateInNo = aWaiting[0].gateInNumber;
+                }
+
+                if (sGateInNo) {
+                    this.selectVehicleByGateIn(sGateInNo);
+                } else {
+                    oSecModel.setProperty("/selectedGateInNumber", "");
+                    oSecModel.setProperty("/selectedVehicle", null);
+                }
+
+                this._resetDialogInputStates(sId, [
+                    "dialogSecDriverLicense",
+                    "dialogSecPersonnel",
+                    "dialogSecPoNumber",
+                    "dialogSecInvoiceNumber"
+                ]);
+
+                oDialog.open();
+            }.bind(this));
         },
 
         onGateInSelectChange: function (oEvt) {
@@ -101,7 +291,7 @@ sap.ui.define([
                 if (oSelectedItem) {
                     sKey = oSelectedItem.getKey();
                 } else {
-                    const sTypedVal = (oEvt.getParameter("newValue") || (oEvt.getSource && oEvt.getSource().getValue ? oEvt.getSource().getValue() : "")).trim();
+                    const sTypedVal = (oEvt.getParameter("newValue") || "").trim();
                     const aWaiting = this.getView().getModel("secModel").getProperty("/waitingVehicles") || [];
                     const matched = aWaiting.find(v =>
                         v.gateInNumber.toLowerCase() === sTypedVal.toLowerCase() ||
@@ -118,76 +308,53 @@ sap.ui.define([
 
         selectVehicleByGateIn: async function (gateInNumber) {
             const oSecModel = this.getView().getModel("secModel");
-            const aWaiting = oSecModel.getProperty("/waitingVehicles") || [];
-            let vehicle = aWaiting.find(v =>
-                v.gateInNumber.toLowerCase() === (gateInNumber || "").toLowerCase() ||
-                (v.vehicleRegNo && v.vehicleRegNo.toLowerCase() === (gateInNumber || "").toLowerCase())
-            );
+            if (!gateInNumber) return;
 
-            // If not found in loaded waiting list, fetch from server by Gate IN # or Vehicle Reg No
-            if (!vehicle && gateInNumber && gateInNumber.trim()) {
+            oSecModel.setProperty("/selectedGateInNumber", gateInNumber);
+            const aWaiting = oSecModel.getProperty("/waitingVehicles") || [];
+            let matched = aWaiting.find(v => v.gateInNumber === gateInNumber);
+
+            if (!matched) {
+                const aAll = oSecModel.getProperty("/records") || [];
+                matched = aAll.find(v => v.gateInNumber === gateInNumber);
+            }
+
+            if (!matched) {
                 try {
                     const headers = {
                         "Authorization": models.getAuthHeaderValue(),
                         "Content-Type": "application/json"
                     };
-                    const sQuery = encodeURIComponent(gateInNumber.trim());
-                    const res = await fetch(`${ODATA_BASE}/GateTransactions?$filter=gateInNumber eq '${sQuery}' or tolower(vehicleRegNo) eq '${sQuery.toLowerCase()}'`, { headers });
+                    const res = await fetch(`${ODATA_BASE}/GateTransactions?$filter=gateInNumber eq '${gateInNumber}'&$expand=driver`, { headers });
                     if (res.ok) {
-                        const data = await res.json();
-                        if (data.value && data.value.length > 0) {
-                            vehicle = data.value[0];
-                        }
+                        const d = await res.json();
+                        if (d.value && d.value.length > 0) matched = d.value[0];
                     }
-                } catch (e) {
-                    console.warn("Direct gate transaction lookup failed:", e);
-                }
+                } catch (e) {}
             }
 
-            oSecModel.setProperty("/selectedGateInNumber", vehicle ? vehicle.gateInNumber : (gateInNumber || ""));
-            oSecModel.setProperty("/selectedVehicle", vehicle || null);
+            if (matched) {
+                oSecModel.setProperty("/selectedVehicle", matched);
+                oSecModel.setProperty("/isDelivery", matched.purpose === "DELIVERY");
+                oSecModel.setProperty("/isPickup", matched.purpose === "PICKUP");
 
-            if (vehicle) {
-                const isDelivery = (vehicle.purpose === "DELIVERY");
-                const isPickup = (vehicle.purpose === "PICKUP");
-                oSecModel.setProperty("/isDelivery", isDelivery);
-                oSecModel.setProperty("/isPickup", isPickup);
-
-                // Reset purpose-specific fields when switching vehicles
-                if (isDelivery) {
-                    oSecModel.setProperty("/rgpDocumentNo", "");
-                    oSecModel.setProperty("/nrgpDocumentNo", "");
-                    oSecModel.setProperty("/gatePassType", "");
-                } else if (isPickup) {
-                    oSecModel.setProperty("/withoutPO", false);
-                    oSecModel.setProperty("/poNumber", "");
-                    oSecModel.setProperty("/soNumber", "");
-                    oSecModel.setProperty("/invoiceNumber", "");
-                    oSecModel.setProperty("/invoiceDate", null);
-                }
-
-                // Pre-populate driver details if available from gate in
-                if (vehicle.driverLicenseNo && !oSecModel.getProperty("/driverLicenseNo")) {
-                    oSecModel.setProperty("/driverLicenseNo", vehicle.driverLicenseNo);
-                }
-                if (vehicle.driverPhoneNo && !oSecModel.getProperty("/driverPhoneNo")) {
-                    oSecModel.setProperty("/driverPhoneNo", vehicle.driverPhoneNo);
-                }
-
-                MessageToast.show("Selected: " + vehicle.gateInNumber + " (" + vehicle.vehicleRegNo + ") - " + vehicle.purpose);
-            } else if (gateInNumber) {
-                MessageToast.show("Searching for Gate IN: " + gateInNumber);
-            }
-        },
-
-        onSelectWaitingVehicle: function (oEvt) {
-            const oCtx = oEvt.getSource().getBindingContext("secModel");
-            if (oCtx) {
-                const sGateIn = oCtx.getProperty("gateInNumber");
-                this.selectVehicleByGateIn(sGateIn);
-                const oForm = this.byId("securityEntryForm");
-                if (oForm && oForm.getDomRef()) {
-                    oForm.getDomRef().scrollIntoView({ behavior: "smooth", block: "start" });
+                // Auto-fill driver license if driver profile linked
+                if (matched.driver && matched.driver.drivingLicenseNo) {
+                    oSecModel.setProperty("/driverLicenseNo", matched.driver.drivingLicenseNo);
+                    if (matched.driver.phoneNo) oSecModel.setProperty("/driverPhoneNo", matched.driver.phoneNo);
+                } else if (matched.driver_ID) {
+                    try {
+                        const headers = {
+                            "Authorization": models.getAuthHeaderValue(),
+                            "Content-Type": "application/json"
+                        };
+                        const resDrv = await fetch(`${ODATA_BASE}/Drivers(${matched.driver_ID})`, { headers });
+                        if (resDrv.ok) {
+                            const drv = await resDrv.json();
+                            if (drv.drivingLicenseNo) oSecModel.setProperty("/driverLicenseNo", drv.drivingLicenseNo);
+                            if (drv.phoneNo) oSecModel.setProperty("/driverPhoneNo", drv.phoneNo);
+                        }
+                    } catch (e) {}
                 }
             }
         },
@@ -197,61 +364,27 @@ sap.ui.define([
             const oSecModel = this.getView().getModel("secModel");
             oSecModel.setProperty("/withoutPO", bChecked);
 
-            // Clear validation error states when Without PO is checked
+            const sId = this.getView().createId("secGateInFrag");
+            const oPoInput = Fragment.byId(sId, "dialogSecPoNumber");
+            const oInvInput = Fragment.byId(sId, "dialogSecInvoiceNumber");
             if (bChecked) {
-                const oPoInput = this.byId("secPoNumber");
-                const oInvInput = this.byId("secInvoiceNumber");
                 if (oPoInput) oPoInput.setValueState(ValueState.None);
                 if (oInvInput) oInvInput.setValueState(ValueState.None);
-                MessageToast.show("Without PO mode active: PO & Invoice fields are waived.");
+                MessageToast.show("Without PO mode: PO & Invoice requirement waived.");
             }
         },
 
-        onResetForm: function () {
-            const oSecModel = this.getView().getModel("secModel");
-            oSecModel.setProperty("/driverLicenseNo", "");
-            oSecModel.setProperty("/driverPhoneNo", "");
-            oSecModel.setProperty("/helperName", "");
-            oSecModel.setProperty("/withoutPO", false);
-            oSecModel.setProperty("/poNumber", "");
-            oSecModel.setProperty("/soNumber", "");
-            oSecModel.setProperty("/invoiceNumber", "");
-            oSecModel.setProperty("/invoiceDate", null);
-            oSecModel.setProperty("/rgpDocumentNo", "");
-            oSecModel.setProperty("/nrgpDocumentNo", "");
-            oSecModel.setProperty("/gatePassType", "");
-            oSecModel.setProperty("/gatePassVerified", false);
-            oSecModel.setProperty("/emptyInspectionVerified", true);
-            oSecModel.setProperty("/remarks", "");
-            oSecModel.setProperty("/driverVerified", true);
-            oSecModel.setProperty("/vehicleVerified", true);
-            oSecModel.setProperty("/documentsVerified", true);
-
-            const aInputs = [
-                this.byId("secDriverLicense"),
-                this.byId("secPoNumber"),
-                this.byId("secInvoiceNumber"),
-                this.byId("secPersonnel"),
-                this.byId("secRgpDocNo"),
-                this.byId("secNrgpDocNo")
-            ];
-            aInputs.forEach(input => { if (input) input.setValueState(ValueState.None); });
-
-            MessageToast.show("Security inspection form reset");
-        },
-
-        onClearSecurityGateIn: async function () {
+        onConfirmSecurityGateIn: async function () {
             const oSecModel = this.getView().getModel("secModel");
             const m = oSecModel.getData();
+            const sId = this.getView().createId("secGateInFrag");
 
-            // 1. Validate Gate IN selection
             if (!m.selectedGateInNumber) {
                 MessageBox.error("Please select a Gate IN Number to inspect.");
                 return;
             }
 
-            // 2. Validate Driver License
-            const oLicInput = this.byId("secDriverLicense");
+            const oLicInput = Fragment.byId(sId, "dialogSecDriverLicense");
             if (!m.driverLicenseNo || !m.driverLicenseNo.trim()) {
                 if (oLicInput) oLicInput.setValueState(ValueState.Error);
                 MessageBox.error("Driver License Number is mandatory for Security Clearance.");
@@ -259,8 +392,7 @@ sap.ui.define([
             }
             if (oLicInput) oLicInput.setValueState(ValueState.None);
 
-            // 3. Validate Security Personnel
-            const oSecInput = this.byId("secPersonnel");
+            const oSecInput = Fragment.byId(sId, "dialogSecPersonnel");
             if (!m.securityPersonnel || !m.securityPersonnel.trim()) {
                 if (oSecInput) oSecInput.setValueState(ValueState.Error);
                 MessageBox.error("Security Personnel identifier is mandatory.");
@@ -268,9 +400,8 @@ sap.ui.define([
             }
             if (oSecInput) oSecInput.setValueState(ValueState.None);
 
-            // 4. Validate Delivery Documentation (Mandatory if DELIVERY and Without PO is FALSE)
-            const oPoInput = this.byId("secPoNumber");
-            const oInvInput = this.byId("secInvoiceNumber");
+            const oPoInput = Fragment.byId(sId, "dialogSecPoNumber");
+            const oInvInput = Fragment.byId(sId, "dialogSecInvoiceNumber");
 
             if (m.isDelivery && !m.withoutPO) {
                 let bError = false;
@@ -279,7 +410,7 @@ sap.ui.define([
                 if (!m.poNumber || !m.poNumber.trim()) {
                     if (oPoInput) oPoInput.setValueState(ValueState.Error);
                     bError = true;
-                    sMsg = "Purchase Order (PO) Number is mandatory for Delivery vehicles.\n(Or check 'Without PO' if authorized).";
+                    sMsg = "Purchase Order (PO) Number is mandatory for Delivery vehicles.\n(Or check 'Without PO Allowed' if authorized).";
                 } else {
                     if (oPoInput) oPoInput.setValueState(ValueState.None);
                 }
@@ -298,9 +429,6 @@ sap.ui.define([
                 }
             }
 
-            // Note: For Pickup vehicles, RGP and NRGP are optional at Gate Entry (may be provided at Gate Exit)
-
-            // 5. Submit Security Clearance Action to Backend
             const payload = {
                 gateInNumber: m.selectedGateInNumber,
                 driverLicenseNo: m.driverLicenseNo.trim(),
@@ -341,7 +469,11 @@ sap.ui.define([
                     return;
                 }
 
-                // Success!
+                // Close dialog
+                if (this._pGateInDialog) {
+                    this._pGateInDialog.then(oDialog => oDialog.close());
+                }
+
                 let statusText = "";
                 if (m.isDelivery) {
                     statusText = m.withoutPO ? "Cleared WITHOUT PO" : "Cleared with PO: " + m.poNumber;
@@ -352,10 +484,9 @@ sap.ui.define([
                     statusText = "Cleared Security Gate IN";
                 }
 
-                MessageBox.success(`Security Gate IN successfully authorized for ${m.selectedGateInNumber}!\nStatus: SECURITY_IN\nDocumentation: ${statusText}`, {
+                MessageBox.success(`Security Gate IN successfully authorized for ${m.selectedGateInNumber}!\n\nStatus: SECURITY_IN\nCurrent Stage: SECURITY_GATE_IN\nDocumentation: ${statusText}`, {
                     title: "Security Clearance Complete",
                     onClose: () => {
-                        this.onResetForm();
                         this.loadSecurityData();
                         this.getOwnerComponent().loadOverviewData();
                     }
@@ -366,6 +497,393 @@ sap.ui.define([
             }
         },
 
+        onCancelSecurityGateIn: function () {
+            if (this._pGateInDialog) {
+                this._pGateInDialog.then(oDialog => oDialog.close());
+            }
+        },
+
+        // ============================================================
+        // DIALOG: Security Gate OUT
+        // ============================================================
+        onOpenSecurityGateOutDialog: function (oPreselectedTx) {
+            const sId = this.getView().createId("secGateOutFrag");
+            const oSecModel = this.getView().getModel("secModel");
+            const activeUser = models.getActiveUser();
+            const defaultOfficer = activeUser.includes("security") ? activeUser : (activeUser === "superadmin_user" ? "SecurityChief" : "security_user");
+
+            // Reset Gate OUT fields
+            oSecModel.setProperty("/outSecurityPersonnel", defaultOfficer);
+            oSecModel.setProperty("/outDriverVerified", true);
+            oSecModel.setProperty("/outVehicleVerified", true);
+            oSecModel.setProperty("/outEmptyInspectionVerified", true);
+            oSecModel.setProperty("/outMaterialInspected", true);
+            oSecModel.setProperty("/outDocumentsVerified", true);
+            oSecModel.setProperty("/outGatePassVerified", false);
+            oSecModel.setProperty("/outDeliveryDetailsVerified", false);
+            oSecModel.setProperty("/outGatePassType", "RGP");
+            oSecModel.setProperty("/outGatePassDocumentNo", "");
+            oSecModel.setProperty("/outRemarks", "");
+            oSecModel.setProperty("/outInboundRecord", null);
+            oSecModel.setProperty("/outWeighmentSummary", "");
+
+            if (!this._pGateOutDialog) {
+                this._pGateOutDialog = Fragment.load({
+                    id: sId,
+                    name: "factory.gate.fragment.SecurityGateOutDialog",
+                    controller: this
+                }).then(function (oDialog) {
+                    this.getView().addDependent(oDialog);
+                    return oDialog;
+                }.bind(this));
+            }
+
+            this._pGateOutDialog.then(function (oDialog) {
+                let sGateInNo = "";
+                if (oPreselectedTx && oPreselectedTx.gateInNumber) {
+                    sGateInNo = oPreselectedTx.gateInNumber;
+                } else {
+                    const aWaitingOut = oSecModel.getProperty("/waitingOutVehicles") || [];
+                    if (aWaitingOut.length > 0) sGateInNo = aWaitingOut[0].gateInNumber;
+                }
+
+                if (sGateInNo) {
+                    this.selectVehicleForGateOut(sGateInNo);
+                } else {
+                    oSecModel.setProperty("/outSelectedGateInNumber", "");
+                    oSecModel.setProperty("/outSelectedVehicle", null);
+                }
+
+                this._resetDialogInputStates(sId, [
+                    "dialogSecOutPersonnel",
+                    "dialogSecOutDocNo"
+                ]);
+
+                oDialog.open();
+            }.bind(this));
+        },
+
+        onGateOutSelectChange: function (oEvt) {
+            let sKey = "";
+            if (oEvt) {
+                const oSelectedItem = oEvt.getParameter("selectedItem");
+                if (oSelectedItem) {
+                    sKey = oSelectedItem.getKey();
+                } else {
+                    const sTypedVal = (oEvt.getParameter("newValue") || "").trim();
+                    const aWaitingOut = this.getView().getModel("secModel").getProperty("/waitingOutVehicles") || [];
+                    const matched = aWaitingOut.find(v =>
+                        v.gateInNumber.toLowerCase() === sTypedVal.toLowerCase() ||
+                        (v.vehicleRegNo && v.vehicleRegNo.toLowerCase() === sTypedVal.toLowerCase())
+                    );
+                    sKey = matched ? matched.gateInNumber : sTypedVal;
+                }
+            }
+            if (!sKey) {
+                sKey = this.getView().getModel("secModel").getProperty("/outSelectedGateInNumber");
+            }
+            this.selectVehicleForGateOut(sKey);
+        },
+
+        selectVehicleForGateOut: async function (gateInNumber) {
+            const oSecModel = this.getView().getModel("secModel");
+            if (!gateInNumber) return;
+
+            oSecModel.setProperty("/outSelectedGateInNumber", gateInNumber);
+            const aWaitingOut = oSecModel.getProperty("/waitingOutVehicles") || [];
+            let matched = aWaitingOut.find(v => v.gateInNumber === gateInNumber);
+
+            if (!matched) {
+                const aAll = oSecModel.getProperty("/records") || [];
+                matched = aAll.find(v => v.gateInNumber === gateInNumber);
+            }
+
+            if (!matched) {
+                try {
+                    const headers = {
+                        "Authorization": models.getAuthHeaderValue(),
+                        "Content-Type": "application/json"
+                    };
+                    const res = await fetch(`${ODATA_BASE}/GateTransactions?$filter=gateInNumber eq '${gateInNumber}'&$expand=driver`, { headers });
+                    if (res.ok) {
+                        const d = await res.json();
+                        if (d.value && d.value.length > 0) matched = d.value[0];
+                    }
+                } catch (e) {}
+            }
+
+            if (matched) {
+                oSecModel.setProperty("/outSelectedVehicle", matched);
+
+                // Fetch single consolidated Security record and weighments for prior clearance verification
+                try {
+                    const headers = {
+                        "Authorization": models.getAuthHeaderValue(),
+                        "Content-Type": "application/json"
+                    };
+
+                    const [resSec, resWb] = await Promise.all([
+                        fetch(`${ODATA_BASE}/SecurityGateEntries?$filter=gateTransaction_ID eq '${matched.ID}'`, { headers }),
+                        fetch(`${ODATA_BASE}/WeighbridgeTransactions?$filter=gateTransaction_ID eq '${matched.ID}'&$orderby=weighbridgeDateTime desc`, { headers })
+                    ]);
+
+                    if (resSec.ok) {
+                        const dSec = await resSec.json();
+                        const secRecord = (dSec.value && dSec.value[0]) || null;
+                        oSecModel.setProperty("/outInboundRecord", secRecord);
+
+                        if (secRecord) {
+                            if (secRecord.rgpDocumentNo) {
+                                oSecModel.setProperty("/outGatePassType", "RGP");
+                                oSecModel.setProperty("/outGatePassDocumentNo", secRecord.rgpDocumentNo);
+                            } else if (secRecord.nrgpDocumentNo) {
+                                oSecModel.setProperty("/outGatePassType", "NRGP");
+                                oSecModel.setProperty("/outGatePassDocumentNo", secRecord.nrgpDocumentNo);
+                            } else if (secRecord.exitGatePassDocumentNo) {
+                                oSecModel.setProperty("/outGatePassDocumentNo", secRecord.exitGatePassDocumentNo);
+                            }
+                        }
+                    }
+
+                    if (resWb.ok) {
+                        const dWb = await resWb.json();
+                        const aWb = dWb.value || [];
+                        if (aWb.length > 0) {
+                            const latest = aWb[0];
+                            const sSummary = `${latest.weighmentType}: ${latest.weight} ${latest.weightUnit || "KG"} on Scale #${latest.weighbridgeNumber} (${formatter.formatDateTime(latest.weighbridgeDateTime)}) by ${latest.operator}`;
+                            oSecModel.setProperty("/outWeighmentSummary", sSummary);
+                        } else {
+                            oSecModel.setProperty("/outWeighmentSummary", "Direct factory movement (No scale weighments recorded)");
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Failed to load outbound clearance summary:", e);
+                }
+            }
+        },
+
+        onConfirmSecurityGateOut: async function () {
+            const oSecModel = this.getView().getModel("secModel");
+            const m = oSecModel.getData();
+            const sId = this.getView().createId("secGateOutFrag");
+
+            // 1. Validate Gate IN selection
+            if (!m.outSelectedGateInNumber) {
+                MessageBox.error("Please select a vehicle awaiting Security Gate OUT.");
+                return;
+            }
+
+            // 2. Validate Security Personnel
+            const oSecOutInput = Fragment.byId(sId, "dialogSecOutPersonnel");
+            if (!m.outSecurityPersonnel || !m.outSecurityPersonnel.trim()) {
+                if (oSecOutInput) oSecOutInput.setValueState(ValueState.Error);
+                MessageBox.error("Security Exit Officer identifier is mandatory.");
+                return;
+            }
+            if (oSecOutInput) oSecOutInput.setValueState(ValueState.None);
+
+            // 3. For Pickup, Gate Pass Document Number is required
+            const isPickup = (m.outSelectedVehicle && m.outSelectedVehicle.purpose === "PICKUP");
+            const oDocInput = Fragment.byId(sId, "dialogSecOutDocNo");
+            if (isPickup && (!m.outGatePassDocumentNo || !m.outGatePassDocumentNo.trim())) {
+                if (oDocInput) oDocInput.setValueState(ValueState.Error);
+                MessageBox.error("Gate Pass Document Number (RGP / NRGP) is mandatory for material pickup exits.");
+                return;
+            }
+            if (oDocInput) oDocInput.setValueState(ValueState.None);
+
+            // 4. Prepare SecurityGateOut payload
+            const payload = {
+                gateInNumber: m.outSelectedGateInNumber,
+                securityPersonnel: m.outSecurityPersonnel.trim(),
+                gatePassType: m.outGatePassType || "RGP",
+                gatePassDocumentNo: m.outGatePassDocumentNo ? m.outGatePassDocumentNo.trim() : "",
+                driverVerified: Boolean(m.outDriverVerified),
+                vehicleVerified: Boolean(m.outVehicleVerified),
+                documentsVerified: Boolean(m.outDocumentsVerified),
+                gatePassVerified: Boolean(m.outGatePassVerified || isPickup),
+                deliveryDetailsVerified: Boolean(m.outDeliveryDetailsVerified || !isPickup),
+                emptyInspectionVerified: Boolean(m.outEmptyInspectionVerified),
+                materialInspected: Boolean(m.outMaterialInspected),
+                remarks: m.outRemarks ? m.outRemarks.trim() : ""
+            };
+
+            const headers = {
+                "Authorization": models.getAuthHeaderValue(),
+                "Content-Type": "application/json"
+            };
+
+            try {
+                const response = await fetch(`${ODATA_BASE}/SecurityGateOut`, {
+                    method: "POST",
+                    headers: headers,
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    const sErrMsg = errData.error && errData.error.message ? errData.error.message : "Failed to authorize Security Gate OUT";
+                    MessageBox.error("Security Exit Clearance Failed: " + sErrMsg);
+                    return;
+                }
+
+                // Close dialog
+                if (this._pGateOutDialog) {
+                    this._pGateOutDialog.then(oDialog => oDialog.close());
+                }
+
+                MessageBox.success(`Security Gate OUT successfully cleared for ${m.outSelectedGateInNumber}!\n\nStatus transitioned to: SECURITY_OUT\nCurrent Stage: SECURITY_GATE_OUT\n\nThe vehicle is now authorized for final Main Gate Exit. Both Gate IN and Gate OUT have been consolidated onto a single security record.`, {
+                    title: "Security Exit Clearance Complete",
+                    onClose: () => {
+                        this.loadSecurityData();
+                        this.getOwnerComponent().loadOverviewData();
+                    }
+                });
+
+            } catch (networkErr) {
+                MessageBox.error("Network error communicating with GateService: " + networkErr.message);
+            }
+        },
+
+        onCancelSecurityGateOut: function () {
+            if (this._pGateOutDialog) {
+                this._pGateOutDialog.then(oDialog => oDialog.close());
+            }
+        },
+
+        _resetDialogInputStates: function (sFragId, aControlIds) {
+            aControlIds.forEach(ctrlId => {
+                const ctrl = Fragment.byId(sFragId, ctrlId);
+                if (ctrl && ctrl.setValueState) {
+                    ctrl.setValueState(ValueState.None);
+                    ctrl.setValueStateText("");
+                }
+            });
+        },
+
+        // ============================================================
+        // ROW ACTIONS
+        // ============================================================
+        onRowGateInPress: function (oEvt) {
+            const oTx = oEvt.getSource().getBindingContext("secModel").getObject();
+            this.onOpenSecurityGateInDialog(oTx);
+        },
+
+        onRowSendToFactoryPress: function (oEvt) {
+            const oTx = oEvt.getSource().getBindingContext("secModel").getObject();
+            if (!oTx || !oTx.gateInNumber) return;
+
+            MessageBox.confirm(
+                `Direct Factory Entry:\n\nSend vehicle ${oTx.vehicleRegNo} (${oTx.gateInNumber}) directly to Factory Gate without Weighbridge?`,
+                {
+                    title: "Direct Factory Gate IN",
+                    actions: [MessageBox.Action.YES, MessageBox.Action.NO],
+                    emphasizedAction: MessageBox.Action.YES,
+                    onClose: async (sAction) => {
+                        if (sAction !== MessageBox.Action.YES) return;
+
+                        const oTable = this.byId("secTxTable");
+                        if (oTable) oTable.setBusy(true);
+
+                        try {
+                            const headers = {
+                                "Authorization": models.getAuthHeaderValue(),
+                                "Content-Type": "application/json"
+                            };
+                            const res = await fetch(`${ODATA_BASE}/FactoryGateIn`, {
+                                method: "POST",
+                                headers: headers,
+                                body: JSON.stringify({ gateInNumber: oTx.gateInNumber })
+                            });
+
+                            if (!res.ok) {
+                                const errData = await res.json();
+                                const sErrMsg = errData.error && errData.error.message ? errData.error.message : "Failed to record Factory Gate IN";
+                                throw new Error(sErrMsg);
+                            }
+
+                            MessageToast.show(`Vehicle ${oTx.vehicleRegNo} successfully arrived at Factory Gate (Weighbridge Bypassed).`);
+                            await this.loadSecurityData();
+                            this.getOwnerComponent().loadOverviewData();
+                        } catch (err) {
+                            MessageBox.error("Factory Gate IN Error: " + err.message);
+                        } finally {
+                            if (oTable) oTable.setBusy(false);
+                        }
+                    }
+                }
+            );
+        },
+
+        onRowReleaseFromFactoryPress: function (oEvt) {
+            const oTx = oEvt.getSource().getBindingContext("secModel").getObject();
+            if (!oTx || !oTx.gateInNumber) return;
+
+            MessageBox.confirm(
+                `Complete Factory Operations:\n\nRelease vehicle ${oTx.vehicleRegNo} (${oTx.gateInNumber}) from Factory Gate?`,
+                {
+                    title: "Factory Gate Release",
+                    actions: [MessageBox.Action.YES, MessageBox.Action.NO],
+                    emphasizedAction: MessageBox.Action.YES,
+                    onClose: async (sAction) => {
+                        if (sAction !== MessageBox.Action.YES) return;
+
+                        const oTable = this.byId("secTxTable");
+                        if (oTable) oTable.setBusy(true);
+
+                        try {
+                            const headers = {
+                                "Authorization": models.getAuthHeaderValue(),
+                                "Content-Type": "application/json"
+                            };
+                            const res = await fetch(`${ODATA_BASE}/FactoryGateOut`, {
+                                method: "POST",
+                                headers: headers,
+                                body: JSON.stringify({ gateInNumber: oTx.gateInNumber })
+                            });
+
+                            if (!res.ok) {
+                                const errData = await res.json();
+                                const sErrMsg = errData.error && errData.error.message ? errData.error.message : "Failed to record Factory Gate OUT";
+                                throw new Error(sErrMsg);
+                            }
+
+                            MessageToast.show(`Vehicle ${oTx.vehicleRegNo} successfully released from Factory Gate. Ready for Gate OUT.`);
+                            await this.loadSecurityData();
+                            this.getOwnerComponent().loadOverviewData();
+                        } catch (err) {
+                            MessageBox.error("Factory Gate Release Error: " + err.message);
+                        } finally {
+                            if (oTable) oTable.setBusy(false);
+                        }
+                    }
+                }
+            );
+        },
+
+        onRowGateOutPress: function (oEvt) {
+            const oTx = oEvt.getSource().getBindingContext("secModel").getObject();
+            this.onOpenSecurityGateOutDialog(oTx);
+        },
+
+        onRowDetailPress: function (oEvt) {
+            const oTx = oEvt.getSource().getBindingContext("secModel").getObject();
+            this.getOwnerComponent().openDetailDialog(oTx);
+        },
+
+        onRowEditPress: function (oEvt) {
+            const oTx = oEvt.getSource().getBindingContext("secModel").getObject();
+            this.getOwnerComponent().openEditSecurityGateEntryPage(oTx);
+        },
+
+        onTxRowPress: function (oEvt) {
+            const oTx = oEvt.getSource().getBindingContext("secModel").getObject();
+            this.getOwnerComponent().openDetailDialog(oTx);
+        },
+
+        // ============================================================
+        // NAVIGATION
+        // ============================================================
         onNavBack: function () {
             this.getOwnerComponent().navigateTo("launchpadPage", "slide");
         },
