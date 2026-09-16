@@ -249,12 +249,11 @@
                                     placeholder="Optional SO number" />
 
                                 <Label
-                                    text="Tax Invoice #"
-                                    required="{= ${secEditModel>/purpose} === 'DELIVERY' &amp;&amp; !${secEditModel>/withoutPO} }" />
+                                    text="Tax Invoice #" />
                                 <Input
                                     id="inputSecInvoiceNumber"
                                     value="{secEditModel>/invoiceNumber}"
-                                    placeholder="e.g. INV-2026-004455" />
+                                    placeholder="e.g. INV-2026-004455 (Optional)" />
 
                                 <Label text="Invoice Date" />
                                 <DatePicker

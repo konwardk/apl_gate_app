@@ -107,6 +107,38 @@ async function testSecurityGate() {
     assert.strictEqual(Boolean(secEntry2.withoutPO), false);
     console.log(`  -> Verified SecurityGateEntries PO: ${secEntry2.poNumber}, Inv: ${secEntry2.invoiceNumber}`);
 
+    // Step 4b: Delivery vehicle check-in WITH PO but WITHOUT Invoice Number (Invoice is optional)
+    const mainTx2b = srv.tx({ user: mainGateUser });
+    await mainTx2b.run(INSERT.into(GateTransactions).entries({
+        vehicleRegNo: 'KA-05-SEC-1003',
+        vehicleType: 'TRUCK',
+        purpose: 'DELIVERY',
+        driverName: 'Suresh Optional Invoice Driver'
+    }));
+    const createdTx2b = await srv.tx({ user: mainGateUser }).run(
+        SELECT.one.from(GateTransactions).where({ vehicleRegNo: 'KA-05-SEC-1003' })
+    );
+
+    const secTxWithPOOnly = srv.tx({ user: securityUser });
+    const resWithPOOnly = await secTxWithPOOnly.send('SecurityGateIn', {
+        gateInNumber: createdTx2b.gateInNumber,
+        driverLicenseNo: 'DL-776655',
+        securityPersonnel: 'Officer Ramesh',
+        driverVerified: true,
+        vehicleVerified: true,
+        documentsVerified: true,
+        poNumber: 'PO-4500099999',
+        withoutPO: false
+        // invoiceNumber omitted to verify it is optional
+    });
+
+    console.log('[TEST 3b PASS] Successfully completed SecurityGateIn with PO and NO Invoice Number (Invoice is optional)!');
+    assert.strictEqual(resWithPOOnly.status, 'SECURITY_IN');
+    const secEntry2b = await srv.tx({ user: securityUser }).run(SELECT.one.from(SecurityGateEntries).where({ gateInNumber: createdTx2b.gateInNumber }));
+    assert.strictEqual(secEntry2b.poNumber, 'PO-4500099999');
+    assert.strictEqual(secEntry2b.invoiceNumber, null);
+    console.log(`  -> Verified SecurityGateEntries PO: ${secEntry2b.poNumber}, Inv: ${secEntry2b.invoiceNumber || 'null (optional)'}`);
+
     // Step 5: Pickup vehicle check-in WITHOUT RGP or NRGP (optional at gate entry)
     const mainTx3 = srv.tx({ user: mainGateUser });
     await mainTx3.run(INSERT.into(GateTransactions).entries({

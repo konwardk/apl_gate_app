@@ -28,7 +28,7 @@
                     <!-- Section 1: Gate Pass & Vehicle Selection -->
                     <core:Title text="1. Gate Pass &amp; Vehicle Identification" />
 
-                    <Label text="Select Vehicle" required="true" />
+                    <Label text="Select Vehicle" required="{= ${secModel>/isVehicleSelectable} !== false }" />
                     <ComboBox
                         id="dialogSecGateInComboBox"
                         width="100%"
@@ -37,6 +37,8 @@
                         change=".onGateInSelectChange"
                         filterSecondaryValues="true"
                         showSecondaryValues="true"
+                        editable="{= ${secModel>/isVehicleSelectable} !== false }"
+                        enabled="{= ${secModel>/isVehicleSelectable} !== false }"
                         items="{
                             path: 'secModel>/waitingVehicles',
                             templateShareable: false
@@ -131,14 +133,13 @@
                         enabled="{= !${secModel>/withoutPO} }"
                         required="{= ${secModel>/isDelivery} &amp;&amp; !${secModel>/withoutPO} }" />
 
-                    <Label text="Vendor Invoice Number" visible="{secModel>/isDelivery}" required="{= ${secModel>/isDelivery} &amp;&amp; !${secModel>/withoutPO} }" />
+                    <Label text="Vendor Invoice Number" visible="{secModel>/isDelivery}" />
                     <Input
                         id="dialogSecInvoiceNumber"
                         visible="{secModel>/isDelivery}"
                         value="{secModel>/invoiceNumber}"
-                        placeholder="e.g. INV-2026-9011"
-                        enabled="{= !${secModel>/withoutPO} }"
-                        required="{= ${secModel>/isDelivery} &amp;&amp; !${secModel>/withoutPO} }" />
+                        placeholder="e.g. INV-2026-9011 (Optional)"
+                        enabled="{= !${secModel>/withoutPO} }" />
 
                     <Label text="Invoice Date" visible="{secModel>/isDelivery}" />
                     <DatePicker

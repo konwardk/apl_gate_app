@@ -330,30 +330,15 @@ sap.ui.define([
 
             const oPoInput = this.byId("inputSecPoNumber");
             const oInvInput = this.byId("inputSecInvoiceNumber");
+            if (oInvInput) oInvInput.setValueState(ValueState.None);
 
             if (m.purpose === "DELIVERY" && !m.withoutPO) {
-                let bError = false;
-                let sMsg = "";
-
                 if (!m.poNumber || !m.poNumber.trim()) {
                     if (oPoInput) oPoInput.setValueState(ValueState.Error);
-                    bError = true;
-                    sMsg = "Purchase Order (PO) Number is mandatory for Delivery entries.\n(Or toggle 'Without PO Allowed' if authorized).";
+                    MessageBox.error("Purchase Order (PO) Number is mandatory for Delivery entries.\n(Or toggle 'Without PO Allowed' if authorized).");
+                    return;
                 } else {
                     if (oPoInput) oPoInput.setValueState(ValueState.None);
-                }
-
-                if (!m.invoiceNumber || !m.invoiceNumber.trim()) {
-                    if (oInvInput) oInvInput.setValueState(ValueState.Error);
-                    bError = true;
-                    sMsg = (sMsg ? sMsg + "\n" : "") + "Invoice Number is mandatory for Delivery entries.";
-                } else {
-                    if (oInvInput) oInvInput.setValueState(ValueState.None);
-                }
-
-                if (bError) {
-                    MessageBox.error(sMsg);
-                    return;
                 }
             }
 

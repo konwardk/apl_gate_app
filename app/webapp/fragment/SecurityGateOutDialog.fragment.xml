@@ -28,7 +28,7 @@
                     <!-- Section 1: Outbound Vehicle Selection -->
                     <core:Title text="1. Outbound Vehicle &amp; Stage" />
 
-                    <Label text="Select Vehicle" required="true" />
+                    <Label text="Select Vehicle" required="{= ${secModel>/isOutVehicleSelectable} !== false }" />
                     <ComboBox
                         id="dialogSecOutGateInComboBox"
                         width="100%"
@@ -37,6 +37,8 @@
                         change=".onGateOutSelectChange"
                         filterSecondaryValues="true"
                         showSecondaryValues="true"
+                        editable="{= ${secModel>/isOutVehicleSelectable} !== false }"
+                        enabled="{= ${secModel>/isOutVehicleSelectable} !== false }"
                         items="{
                             path: 'secModel>/waitingOutVehicles',
                             templateShareable: false

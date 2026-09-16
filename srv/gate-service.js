@@ -570,14 +570,8 @@ export default cds.service.impl(async function () {
         const bWithoutPO = Boolean(withoutPO);
 
         if (isDelivery && !bWithoutPO) {
-            if (!poNumber && !invoiceNumber) {
-                return req.error(400, 'For Delivery vehicles, PO Number and Invoice Number are mandatory unless "Without PO" is checked.', 'in/poNumber');
-            }
             if (!poNumber) {
                 return req.error(400, 'Purchase Order (PO) Number is mandatory for Delivery vehicles unless "Without PO" is checked.', 'in/poNumber');
-            }
-            if (!invoiceNumber) {
-                return req.error(400, 'Invoice Number is mandatory for Delivery vehicles unless "Without PO" is checked.', 'in/invoiceNumber');
             }
         }
 

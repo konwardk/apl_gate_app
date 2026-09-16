@@ -36,6 +36,7 @@ sap.ui.define([
                 waitingOutVehicles: [],
 
                 // Gate IN properties
+                isVehicleSelectable: true,
                 selectedGateInNumber: "",
                 selectedVehicle: null,
                 driverLicenseNo: "",
@@ -60,6 +61,7 @@ sap.ui.define([
                 remarks: "",
 
                 // Gate OUT properties
+                isOutVehicleSelectable: true,
                 outSelectedGateInNumber: "",
                 outSelectedVehicle: null,
                 outSecurityPersonnel: defaultOfficer,
@@ -225,6 +227,9 @@ sap.ui.define([
             const activeUser = models.getActiveUser();
             const defaultOfficer = activeUser.includes("security") ? activeUser : (activeUser === "superadmin_user" ? "SecurityChief" : "security_user");
 
+            const bIsPreselected = Boolean(oPreselectedTx && oPreselectedTx.gateInNumber);
+            oSecModel.setProperty("/isVehicleSelectable", !bIsPreselected);
+
             // Reset Gate IN fields
             oSecModel.setProperty("/driverLicenseNo", "");
             oSecModel.setProperty("/driverPhoneNo", "");
@@ -260,7 +265,7 @@ sap.ui.define([
             this._pGateInDialog.then(function (oDialog) {
                 // Determine preselected vehicle
                 let sGateInNo = "";
-                if (oPreselectedTx && oPreselectedTx.gateInNumber) {
+                if (bIsPreselected) {
                     sGateInNo = oPreselectedTx.gateInNumber;
                 } else {
                     const aWaiting = oSecModel.getProperty("/waitingVehicles") || [];
@@ -272,6 +277,12 @@ sap.ui.define([
                 } else {
                     oSecModel.setProperty("/selectedGateInNumber", "");
                     oSecModel.setProperty("/selectedVehicle", null);
+                }
+
+                const oComboBox = Fragment.byId(sId, "dialogSecGateInComboBox");
+                if (oComboBox) {
+                    oComboBox.setEnabled(!bIsPreselected);
+                    oComboBox.setEditable(!bIsPreselected);
                 }
 
                 this._resetDialogInputStates(sId, [
@@ -287,6 +298,10 @@ sap.ui.define([
         },
 
         onGateInSelectChange: function (oEvt) {
+            const oSecModel = this.getView().getModel("secModel");
+            if (oSecModel && oSecModel.getProperty("/isVehicleSelectable") === false) {
+                return;
+            }
             let sKey = "";
             if (oEvt) {
                 const oSelectedItem = oEvt.getParameter("selectedItem");
@@ -374,6 +389,10 @@ sap.ui.define([
             }
 
             if (matched) {
+                if (!aWaiting.some(v => v.gateInNumber === matched.gateInNumber)) {
+                    aWaiting.push(matched);
+                    oSecModel.setProperty("/waitingVehicles", aWaiting);
+                }
                 oSecModel.setProperty("/selectedVehicle", matched);
                 oSecModel.setProperty("/isDelivery", matched.purpose === "DELIVERY");
                 oSecModel.setProperty("/isPickup", matched.purpose === "PICKUP");
@@ -480,30 +499,15 @@ sap.ui.define([
 
             const oPoInput = Fragment.byId(sId, "dialogSecPoNumber");
             const oInvInput = Fragment.byId(sId, "dialogSecInvoiceNumber");
+            if (oInvInput) oInvInput.setValueState(ValueState.None);
 
             if (m.isDelivery && !m.withoutPO) {
-                let bError = false;
-                let sMsg = "";
-
                 if (!m.poNumber || !m.poNumber.trim()) {
                     if (oPoInput) oPoInput.setValueState(ValueState.Error);
-                    bError = true;
-                    sMsg = "Purchase Order (PO) Number is mandatory for Delivery vehicles.\n(Or check 'Without PO Allowed' if authorized).";
+                    MessageBox.error("Purchase Order (PO) Number is mandatory for Delivery vehicles.\n(Or check 'Without PO Allowed' if authorized).");
+                    return;
                 } else {
                     if (oPoInput) oPoInput.setValueState(ValueState.None);
-                }
-
-                if (!m.invoiceNumber || !m.invoiceNumber.trim()) {
-                    if (oInvInput) oInvInput.setValueState(ValueState.Error);
-                    bError = true;
-                    sMsg = (sMsg ? sMsg + "\n" : "") + "Invoice Number is mandatory for Delivery vehicles.";
-                } else {
-                    if (oInvInput) oInvInput.setValueState(ValueState.None);
-                }
-
-                if (bError) {
-                    MessageBox.error(sMsg);
-                    return;
                 }
             }
 
@@ -593,6 +597,9 @@ sap.ui.define([
             const activeUser = models.getActiveUser();
             const defaultOfficer = activeUser.includes("security") ? activeUser : (activeUser === "superadmin_user" ? "SecurityChief" : "security_user");
 
+            const bIsPreselected = Boolean(oPreselectedTx && oPreselectedTx.gateInNumber);
+            oSecModel.setProperty("/isOutVehicleSelectable", !bIsPreselected);
+
             // Reset Gate OUT fields
             oSecModel.setProperty("/outSecurityPersonnel", defaultOfficer);
             oSecModel.setProperty("/outDriverVerified", true);
@@ -621,7 +628,7 @@ sap.ui.define([
 
             this._pGateOutDialog.then(function (oDialog) {
                 let sGateInNo = "";
-                if (oPreselectedTx && oPreselectedTx.gateInNumber) {
+                if (bIsPreselected) {
                     sGateInNo = oPreselectedTx.gateInNumber;
                 } else {
                     const aWaitingOut = oSecModel.getProperty("/waitingOutVehicles") || [];
@@ -635,6 +642,12 @@ sap.ui.define([
                     oSecModel.setProperty("/outSelectedVehicle", null);
                 }
 
+                const oComboBox = Fragment.byId(sId, "dialogSecOutGateInComboBox");
+                if (oComboBox) {
+                    oComboBox.setEnabled(!bIsPreselected);
+                    oComboBox.setEditable(!bIsPreselected);
+                }
+
                 this._resetDialogInputStates(sId, [
                     "dialogSecOutPersonnel",
                     "dialogSecOutDocNo"
@@ -645,6 +658,10 @@ sap.ui.define([
         },
 
         onGateOutSelectChange: function (oEvt) {
+            const oSecModel = this.getView().getModel("secModel");
+            if (oSecModel && oSecModel.getProperty("/isOutVehicleSelectable") === false) {
+                return;
+            }
             let sKey = "";
             if (oEvt) {
                 const oSelectedItem = oEvt.getParameter("selectedItem");
@@ -694,6 +711,10 @@ sap.ui.define([
             }
 
             if (matched) {
+                if (!aWaitingOut.some(v => v.gateInNumber === matched.gateInNumber)) {
+                    aWaitingOut.push(matched);
+                    oSecModel.setProperty("/waitingOutVehicles", aWaitingOut);
+                }
                 oSecModel.setProperty("/outSelectedVehicle", matched);
 
                 // Fetch single consolidated Security record and weighments for prior clearance verification
