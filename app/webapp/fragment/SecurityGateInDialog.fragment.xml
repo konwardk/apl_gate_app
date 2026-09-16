@@ -114,13 +114,13 @@
                     <core:Title text="3. Consignment Documents &amp; Inbound Details" />
 
                     <!-- Delivery Fields -->
-                    <Label text="Without PO Allowed" visible="{secModel>/isDelivery}" />
+                    <!-- <Label text="Without PO Allowed" visible="{secModel>/isDelivery}" />
                     <CheckBox
                         id="dialogSecCbWithoutPO"
                         visible="{secModel>/isDelivery}"
                         text="Special Authorization: Inbound consignment without PO"
                         selected="{secModel>/withoutPO}"
-                        select=".onWithoutPOToggle" />
+                        select=".onWithoutPOToggle" /> -->
 
                     <Label text="PO Number" visible="{secModel>/isDelivery}" required="{= ${secModel>/isDelivery} &amp;&amp; !${secModel>/withoutPO} }" />
                     <Input
@@ -131,7 +131,7 @@
                         enabled="{= !${secModel>/withoutPO} }"
                         required="{= ${secModel>/isDelivery} &amp;&amp; !${secModel>/withoutPO} }" />
 
-                    <Label text="Invoice Number" visible="{secModel>/isDelivery}" required="{= ${secModel>/isDelivery} &amp;&amp; !${secModel>/withoutPO} }" />
+                    <Label text="Vendor Invoice Number" visible="{secModel>/isDelivery}" required="{= ${secModel>/isDelivery} &amp;&amp; !${secModel>/withoutPO} }" />
                     <Input
                         id="dialogSecInvoiceNumber"
                         visible="{secModel>/isDelivery}"

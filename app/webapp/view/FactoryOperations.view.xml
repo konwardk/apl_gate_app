@@ -177,7 +177,7 @@
                             <Label text="Unloading Point / Bay" />
                             <Input
                                 value="{facModel>/form/unloadingPoint}"
-                                placeholder="e.g. Bay 1, Storage Tank T-102, Silo A" />
+                                placeholder="e.g. Storage Tank T-102, 500 TPD etc" />
 
                             <Label text="Factory Gate IN Time" required="true" />
                             <DateTimePicker

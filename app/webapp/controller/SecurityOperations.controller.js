@@ -42,9 +42,9 @@ sap.ui.define([
                 driverPhoneNo: "",
                 helperName: "",
                 securityPersonnel: defaultOfficer,
-                driverVerified: true,
-                vehicleVerified: true,
-                documentsVerified: true,
+                driverVerified: false,
+                vehicleVerified: false,
+                documentsVerified: false,
                 withoutPO: false,
                 poNumber: "",
                 soNumber: "",
@@ -56,7 +56,7 @@ sap.ui.define([
                 nrgpDocumentNo: "",
                 gatePassType: "",
                 gatePassVerified: false,
-                emptyInspectionVerified: true,
+                emptyInspectionVerified: false,
                 remarks: "",
 
                 // Gate OUT properties
@@ -240,11 +240,11 @@ sap.ui.define([
             oSecModel.setProperty("/gatePassType", "");
             oSecModel.setProperty("/assignedRoute", "WEIGHBRIDGE");
             oSecModel.setProperty("/gatePassVerified", false);
-            oSecModel.setProperty("/emptyInspectionVerified", true);
+            oSecModel.setProperty("/emptyInspectionVerified", false);
             oSecModel.setProperty("/remarks", "");
-            oSecModel.setProperty("/driverVerified", true);
-            oSecModel.setProperty("/vehicleVerified", true);
-            oSecModel.setProperty("/documentsVerified", true);
+            oSecModel.setProperty("/driverVerified", false);
+            oSecModel.setProperty("/vehicleVerified", false);
+            oSecModel.setProperty("/documentsVerified", false);
 
             if (!this._pGateInDialog) {
                 this._pGateInDialog = Fragment.load({
@@ -294,15 +294,18 @@ sap.ui.define([
                     sKey = oSelectedItem.getKey();
                 } else {
                     const sTypedVal = (oEvt.getParameter("newValue") || "").trim();
-                    const aWaiting = this.getView().getModel("secModel").getProperty("/waitingVehicles") || [];
-                    const matched = aWaiting.find(v =>
-                        v.gateInNumber.toLowerCase() === sTypedVal.toLowerCase() ||
-                        (v.vehicleRegNo && v.vehicleRegNo.toLowerCase() === sTypedVal.toLowerCase())
-                    );
-                    sKey = matched ? matched.gateInNumber : sTypedVal;
+                    if (sTypedVal) {
+                        const aWaiting = this.getView().getModel("secModel").getProperty("/waitingVehicles") || [];
+                        const matched = aWaiting.find(v =>
+                            v.gateInNumber.toLowerCase() === sTypedVal.toLowerCase() ||
+                            (v.vehicleRegNo && v.vehicleRegNo.toLowerCase() === sTypedVal.toLowerCase())
+                        );
+                        sKey = matched ? matched.gateInNumber : sTypedVal;
+                    } else {
+                        sKey = "";
+                    }
                 }
-            }
-            if (!sKey) {
+            } else {
                 sKey = this.getView().getModel("secModel").getProperty("/selectedGateInNumber");
             }
             this.selectVehicleByGateIn(sKey);
@@ -310,7 +313,42 @@ sap.ui.define([
 
         selectVehicleByGateIn: async function (gateInNumber) {
             const oSecModel = this.getView().getModel("secModel");
-            if (!gateInNumber) return;
+            const sId = this.getView().createId("secGateInFrag");
+
+            // Reset user-fillable fields so no previous vehicle data remains
+            oSecModel.setProperty("/driverLicenseNo", "");
+            oSecModel.setProperty("/driverPhoneNo", "");
+            oSecModel.setProperty("/helperName", "");
+            oSecModel.setProperty("/driverVerified", false);
+            oSecModel.setProperty("/vehicleVerified", false);
+            oSecModel.setProperty("/documentsVerified", false);
+            oSecModel.setProperty("/emptyInspectionVerified", false);
+            oSecModel.setProperty("/withoutPO", false);
+            oSecModel.setProperty("/poNumber", "");
+            oSecModel.setProperty("/soNumber", "");
+            oSecModel.setProperty("/invoiceNumber", "");
+            oSecModel.setProperty("/invoiceDate", null);
+            oSecModel.setProperty("/rgpDocumentNo", "");
+            oSecModel.setProperty("/nrgpDocumentNo", "");
+            oSecModel.setProperty("/gatePassType", "");
+            oSecModel.setProperty("/assignedRoute", "WEIGHBRIDGE");
+            oSecModel.setProperty("/remarks", "");
+
+            this._resetDialogInputStates(sId, [
+                "dialogSecDriverPhone",
+                "dialogSecDriverLicense",
+                "dialogSecPersonnel",
+                "dialogSecPoNumber",
+                "dialogSecInvoiceNumber"
+            ]);
+
+            if (!gateInNumber) {
+                oSecModel.setProperty("/selectedGateInNumber", "");
+                oSecModel.setProperty("/selectedVehicle", null);
+                oSecModel.setProperty("/isDelivery", true);
+                oSecModel.setProperty("/isPickup", false);
+                return;
+            }
 
             oSecModel.setProperty("/selectedGateInNumber", gateInNumber);
             const aWaiting = oSecModel.getProperty("/waitingVehicles") || [];
@@ -327,7 +365,7 @@ sap.ui.define([
                         "Authorization": models.getAuthHeaderValue(),
                         "Content-Type": "application/json"
                     };
-                    const res = await fetch(`${ODATA_BASE}/GateTransactions?$filter=gateInNumber eq '${gateInNumber}'&$expand=driver`, { headers });
+                    const res = await fetch(`${ODATA_BASE}/GateTransactions?$filter=gateInNumber eq '${gateInNumber}'`, { headers });
                     if (res.ok) {
                         const d = await res.json();
                         if (d.value && d.value.length > 0) matched = d.value[0];
@@ -339,31 +377,10 @@ sap.ui.define([
                 oSecModel.setProperty("/selectedVehicle", matched);
                 oSecModel.setProperty("/isDelivery", matched.purpose === "DELIVERY");
                 oSecModel.setProperty("/isPickup", matched.purpose === "PICKUP");
-
-                // Auto-fill driver license if driver profile linked
-                if (matched.driver && matched.driver.drivingLicenseNo) {
-                    oSecModel.setProperty("/driverLicenseNo", matched.driver.drivingLicenseNo);
-                    if (matched.driver.phoneNo) {
-                        const sClean = matched.driver.phoneNo.replace(/\D/g, "").slice(-10);
-                        oSecModel.setProperty("/driverPhoneNo", sClean);
-                    }
-                } else if (matched.driver_ID) {
-                    try {
-                        const headers = {
-                            "Authorization": models.getAuthHeaderValue(),
-                            "Content-Type": "application/json"
-                        };
-                        const resDrv = await fetch(`${ODATA_BASE}/Drivers(${matched.driver_ID})`, { headers });
-                        if (resDrv.ok) {
-                            const drv = await resDrv.json();
-                            if (drv.drivingLicenseNo) oSecModel.setProperty("/driverLicenseNo", drv.drivingLicenseNo);
-                            if (drv.phoneNo) {
-                                const sClean = drv.phoneNo.replace(/\D/g, "").slice(-10);
-                                oSecModel.setProperty("/driverPhoneNo", sClean);
-                            }
-                        }
-                    } catch (e) {}
-                }
+            } else {
+                oSecModel.setProperty("/selectedVehicle", null);
+                oSecModel.setProperty("/isDelivery", true);
+                oSecModel.setProperty("/isPickup", false);
             }
         },
 
