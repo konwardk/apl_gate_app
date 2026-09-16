@@ -129,7 +129,10 @@
                         id="dialogSecPoNumber"
                         visible="{secModel>/isDelivery}"
                         value="{secModel>/poNumber}"
-                        placeholder="e.g. PO-4500012345"
+                        placeholder="Select or enter PO Number (e.g. 4500001001)"
+                        showValueHelp="true"
+                        valueHelpRequest=".onPoValueHelpRequest"
+                        valueHelpOnly="false"
                         enabled="{= !${secModel>/withoutPO} }"
                         required="{= ${secModel>/isDelivery} &amp;&amp; !${secModel>/withoutPO} }" />
 

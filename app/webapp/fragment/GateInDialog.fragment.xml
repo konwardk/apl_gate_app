@@ -23,6 +23,19 @@
                         change=".onVehicleRegChange"
                         required="true" />
 
+                    <Label text="Vehicle Type" required="true" />
+                    <Select
+                        id="selectVehicleType"
+                        selectedKey="TRUCK"
+                        width="100%">
+                        <core:Item key="TRUCK" text="TRUCK - Standard Truck / Lorry" />
+                        <core:Item key="TANKER" text="TANKER - Liquid Cargo Tanker" />
+                        <core:Item key="TRAILER" text="TRAILER - Multi-axle Heavy Trailer" />
+                        <core:Item key="CONTAINER" text="CONTAINER - ISO Freight Container" />
+                        <core:Item key="LCV" text="LCV - Light Commercial Vehicle" />
+                        <core:Item key="OTHER" text="OTHER - Miscellaneous / Special Vehicle" />
+                    </Select>
+
                     <Label text="Driver Name" required="true" />
                     <Input
                         id="inputDriverName"

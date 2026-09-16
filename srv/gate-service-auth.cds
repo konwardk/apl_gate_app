@@ -50,6 +50,11 @@ annotate GateService.Suppliers with @(restrict: [
     { grant: '*',    to: ['Admin', 'Superadmin'] }
 ]);
 
+// External Purchase Orders (SAP S/4HANA Cloud)
+annotate GateService.PurchaseOrders with @(restrict: [
+    { grant: 'READ', to: 'authenticated-user' }
+]);
+
 // Security Gate Records
 annotate GateService.SecurityGateEntries with @(restrict: [
     { grant: 'READ', to: 'authenticated-user' },

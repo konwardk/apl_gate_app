@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "@sap/cds": "^10"
+    "@sap/cds": "^10",
+    "@sap-cloud-sdk/connectivity": "^4",
+    "@sap-cloud-sdk/http-client": "^4",
+    "@sap-cloud-sdk/resilience": "^4"
   },
   "devDependencies": {
     "@cap-js/sqlite": "^3"
@@ -17,5 +20,19 @@
     "app/gate-entry",
     "app"
   ],
-  "private": true
+  "private": true,
+  "cds": {
+    "requires": {
+      "CE_PURCHASEORDER_0001": {
+        "kind": "odata",
+        "model": "srv/external/CE_PURCHASEORDER_0001",
+        "[production]": {
+          "credentials": {
+            "destination": "S4HANA_CLOUD_PO",
+            "path": "/sap/opu/odata4/sap/api_purchaseorder_2/srvd_a2x/sap/purchaseorder/0001"
+          }
+        }
+      }
+    }
+  }
 }

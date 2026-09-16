@@ -31,6 +31,8 @@
                         <Text text="{gateInSuccess>/gateInNumber}" />
                         <Label text="Vehicle Reg No" />
                         <Text text="{gateInSuccess>/vehicleRegNo}" />
+                        <Label text="Vehicle Type" />
+                        <Text text="{gateInSuccess>/vehicleType}" />
                         <Label text="Driver Name" />
                         <Text text="{gateInSuccess>/driverName}" />
                         <Label text="Purpose" />

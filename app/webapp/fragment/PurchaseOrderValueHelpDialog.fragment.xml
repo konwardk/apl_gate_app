@@ -1,0 +1,55 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+    <TableSelectDialog
+        id="poValueHelpDialog"
+        title="Select Purchase Order (SAP S/4HANA Cloud)"
+        noDataText="No Purchase Orders found"
+        search=".onPoValueHelpSearch"
+        confirm=".onPoValueHelpConfirm"
+        cancel=".onPoValueHelpCancel"
+        contentWidth="750px"
+        items="{
+            path: 'poModel>/',
+            templateShareable: false
+        }">
+        <columns>
+            <Column width="25%">
+                <header>
+                    <Text text="PO Number" />
+                </header>
+            </Column>
+            <Column width="15%">
+                <header>
+                    <Text text="PO Type" />
+                </header>
+            </Column>
+            <Column width="25%">
+                <header>
+                    <Text text="Supplier Code" />
+                </header>
+            </Column>
+            <Column width="15%">
+                <header>
+                    <Text text="Company" />
+                </header>
+            </Column>
+            <Column width="20%">
+                <header>
+                    <Text text="PO Date" />
+                </header>
+            </Column>
+        </columns>
+        <items>
+            <ColumnListItem type="Active">
+                <cells>
+                    <ObjectIdentifier title="{poModel>PurchaseOrder}" />
+                    <Text text="{poModel>PurchaseOrderType}" />
+                    <Text text="{poModel>Supplier}" />
+                    <Text text="{poModel>CompanyCode}" />
+                    <Text text="{poModel>PurchaseOrderDate}" />
+                </cells>
+            </ColumnListItem>
+        </items>
+    </TableSelectDialog>
+</core:FragmentDefinition>

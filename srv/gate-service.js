@@ -16,7 +16,8 @@ export default cds.service.impl(async function () {
         Vehicles,
         Drivers,
         Transporters,
-        Suppliers
+        Suppliers,
+        PurchaseOrders
     } = this.entities;
 
 
@@ -360,6 +361,80 @@ export default cds.service.impl(async function () {
                 const diffMins = Math.round(diffMs / 60000);
                 tx.durationInPlantMinutes = diffMins;
             }
+        }
+    });
+
+
+    /*
+     * ============================================================
+     * SAP S/4HANA CLOUD EXTERNAL PURCHASE ORDERS
+     * ============================================================
+     */
+
+    this.on('READ', 'PurchaseOrders', async (req) => {
+        try {
+            const externalPO = await cds.connect.to('CE_PURCHASEORDER_0001');
+            return await externalPO.run(req.query);
+        } catch (err) {
+            console.warn('[GateService] External S/4HANA PO service not reachable, serving fallback data:', err.message);
+            const fallbackPOs = [
+                {
+                    PurchaseOrder: "4500001001",
+                    PurchaseOrderType: "NB",
+                    Supplier: "SUPP-01",
+                    CompanyCode: "1000",
+                    PurchasingOrganization: "1010",
+                    PurchasingGroup: "001",
+                    PurchaseOrderDate: "2026-09-10"
+                },
+                {
+                    PurchaseOrder: "4500001002",
+                    PurchaseOrderType: "NB",
+                    Supplier: "SUPP-02",
+                    CompanyCode: "1000",
+                    PurchasingOrganization: "1010",
+                    PurchasingGroup: "001",
+                    PurchaseOrderDate: "2026-09-12"
+                },
+                {
+                    PurchaseOrder: "4500001003",
+                    PurchaseOrderType: "NB",
+                    Supplier: "SUPP-03",
+                    CompanyCode: "1000",
+                    PurchasingOrganization: "1010",
+                    PurchasingGroup: "002",
+                    PurchaseOrderDate: "2026-09-14"
+                },
+                {
+                    PurchaseOrder: "PO-4500112233",
+                    PurchaseOrderType: "NB",
+                    Supplier: "SUPP-01",
+                    CompanyCode: "1000",
+                    PurchasingOrganization: "1010",
+                    PurchasingGroup: "001",
+                    PurchaseOrderDate: "2026-09-15"
+                },
+                {
+                    PurchaseOrder: "PO-APL-7788",
+                    PurchaseOrderType: "NB",
+                    Supplier: "SUPP-02",
+                    CompanyCode: "1000",
+                    PurchasingOrganization: "1010",
+                    PurchasingGroup: "001",
+                    PurchaseOrderDate: "2026-09-16"
+                },
+                {
+                    PurchaseOrder: "PO-DIRECT-8899",
+                    PurchaseOrderType: "NB",
+                    Supplier: "SUPP-03",
+                    CompanyCode: "1000",
+                    PurchasingOrganization: "1010",
+                    PurchasingGroup: "002",
+                    PurchaseOrderDate: "2026-09-16"
+                }
+            ];
+
+            return fallbackPOs;
         }
     });
 

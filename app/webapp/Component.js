@@ -438,6 +438,7 @@ sap.ui.define([
 
             this._pGateInDialog.then(function (oDialog) {
                 const oReg = Fragment.byId(sId, "inputVehicleRegNo");
+                const oType = Fragment.byId(sId, "selectVehicleType");
                 const oDriver = Fragment.byId(sId, "inputDriverName");
                 const oDel = Fragment.byId(sId, "cbDelivery");
                 const oPick = Fragment.byId(sId, "cbPickup");
@@ -445,6 +446,9 @@ sap.ui.define([
                     oReg.setValue("");
                     oReg.setValueState(ValueState.None);
                     oReg.setValueStateText("");
+                }
+                if (oType) {
+                    oType.setSelectedKey("TRUCK");
                 }
                 if (oDriver) {
                     oDriver.setValue("");
@@ -515,8 +519,10 @@ sap.ui.define([
         onGateInConfirm: async function () {
             const sId = this.createId("gateInFrag");
             const oReg = Fragment.byId(sId, "inputVehicleRegNo");
+            const oType = Fragment.byId(sId, "selectVehicleType");
             const oDriver = Fragment.byId(sId, "inputDriverName");
             const regNo = oReg ? oReg.getValue().trim().toUpperCase() : "";
+            const vehicleType = oType ? oType.getSelectedKey() || "TRUCK" : "TRUCK";
             const driver = oDriver ? oDriver.getValue().trim() : "";
 
             if (!regNo) {
@@ -561,7 +567,7 @@ sap.ui.define([
                     },
                     body: JSON.stringify({
                         vehicleRegNo: regNo,
-                        vehicleType: "TRUCK",
+                        vehicleType: vehicleType,
                         purpose: this._selectedPurpose,
                         driverName: driver
                     })
@@ -968,6 +974,7 @@ sap.ui.define([
 
             const sGateInNo = tx.gateInNumber;
             const sVehicleReg = tx.vehicleRegNo || "-";
+            const sVehicleType = tx.vehicleType || (tx.vehicle && tx.vehicle.vehicleType) || "TRUCK";
             const sDriver = tx.driverName || (tx.driver && tx.driver.driverName) || "-";
             const sPurpose = tx.purpose || "DELIVERY";
             const sOperator = tx.gateInOperator || "Gate Operator";
@@ -1120,6 +1127,10 @@ sap.ui.define([
                         <tr>
                             <td class="label-col">Vehicle Registration No</td>
                             <td class="val-col highlight-reg">${sVehicleReg}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">Vehicle Type</td>
+                            <td class="val-col">${sVehicleType}</td>
                         </tr>
                         <tr>
                             <td class="label-col">Driver Name</td>

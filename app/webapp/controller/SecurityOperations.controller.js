@@ -5,9 +5,11 @@ sap.ui.define([
     "sap/m/MessageToast",
     "sap/m/MessageBox",
     "sap/ui/core/library",
+    "sap/ui/model/Filter",
+    "sap/ui/model/FilterOperator",
     "factory/gate/model/formatter",
     "factory/gate/model/models"
-], function (Controller, JSONModel, Fragment, MessageToast, MessageBox, coreLibrary, formatter, models) {
+], function (Controller, JSONModel, Fragment, MessageToast, MessageBox, coreLibrary, Filter, FilterOperator, formatter, models) {
     "use strict";
 
     const ValueState = coreLibrary.ValueState;
@@ -586,6 +588,96 @@ sap.ui.define([
             if (this._pGateInDialog) {
                 this._pGateInDialog.then(oDialog => oDialog.close());
             }
+        },
+
+        // ============================================================
+        // F4 SEARCH HELP: Purchase Orders from SAP S/4HANA Cloud
+        // ============================================================
+        onPoValueHelpRequest: async function () {
+            const sId = this.getView().createId("poVHFrag");
+
+            if (!this._pPoValueHelpDialog) {
+                this._pPoValueHelpDialog = Fragment.load({
+                    id: sId,
+                    name: "factory.gate.fragment.PurchaseOrderValueHelpDialog",
+                    controller: this
+                }).then(function (oDialog) {
+                    this.getView().addDependent(oDialog);
+                    return oDialog;
+                }.bind(this));
+            }
+
+            const oDialog = await this._pPoValueHelpDialog;
+            oDialog.setBusy(true);
+            oDialog.open();
+
+            try {
+                const res = await fetch(`${ODATA_BASE}/PurchaseOrders?$top=50&$orderby=PurchaseOrderDate desc`, {
+                    headers: {
+                        "Authorization": models.getAuthHeaderValue(),
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    const aPOs = data.value || [];
+                    const oPoModel = new JSONModel(aPOs);
+                    oDialog.setModel(oPoModel, "poModel");
+                    const oBinding = oDialog.getBinding("items");
+                    if (oBinding) {
+                        oBinding.filter([]);
+                    }
+                } else {
+                    MessageToast.show("Failed to fetch Purchase Orders from server.");
+                }
+            } catch (err) {
+                console.error("Error loading Purchase Orders:", err);
+                MessageToast.show("Could not load POs: " + err.message);
+            } finally {
+                oDialog.setBusy(false);
+            }
+        },
+
+        onPoValueHelpSearch: function (oEvt) {
+            const sValue = (oEvt.getParameter("value") || "").trim().toUpperCase();
+            const oFilter = new Filter({
+                filters: [
+                    new Filter("PurchaseOrder", FilterOperator.Contains, sValue),
+                    new Filter("Supplier", FilterOperator.Contains, sValue),
+                    new Filter("CompanyCode", FilterOperator.Contains, sValue)
+                ],
+                and: false
+            });
+            const oBinding = oEvt.getSource().getBinding("items");
+            if (oBinding) {
+                oBinding.filter(sValue ? [oFilter] : []);
+            }
+        },
+
+        onPoValueHelpConfirm: function (oEvt) {
+            const oSelectedItem = oEvt.getParameter("selectedItem");
+            if (oSelectedItem) {
+                const oContext = oSelectedItem.getBindingContext("poModel");
+                if (oContext) {
+                    const sSelectedPo = oContext.getProperty("PurchaseOrder");
+                    const oSecModel = this.getView().getModel("secModel");
+                    oSecModel.setProperty("/poNumber", sSelectedPo);
+
+                    // Clear error state if set
+                    const sId = this.getView().createId("secGateInFrag");
+                    const oPoInput = Fragment.byId(sId, "dialogSecPoNumber");
+                    if (oPoInput) {
+                        oPoInput.setValueState(ValueState.None);
+                    }
+
+                    MessageToast.show(`Selected Purchase Order: ${sSelectedPo}`);
+                }
+            }
+        },
+
+        onPoValueHelpCancel: function () {
+            // Dialog closes automatically
         },
 
         // ============================================================

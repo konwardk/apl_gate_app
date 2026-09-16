@@ -161,22 +161,30 @@ async function runTests() {
         }
     }
 
-    // Valid without optional series: AS-02-1234
+    // Valid without optional series: AS-02-1234 (vehicleType: TANKER)
     const valid1 = await tx.send('CreateGateIn', {
         vehicleRegNo: 'AS-02-1234',
+        vehicleType: 'TANKER',
         purpose: 'DELIVERY',
         driverName: 'Test Driver 1'
     });
-    console.log(`  -> Successfully created with AS-02-1234: ${valid1.gateInNumber}`);
+    console.log(`  -> Successfully created with AS-02-1234: ${valid1.gateInNumber}, vehicleType: ${valid1.vehicleType}`);
+    if (valid1.vehicleType !== 'TANKER') {
+        throw new Error(`FAIL: expected vehicleType 'TANKER', got '${valid1.vehicleType}'`);
+    }
 
-    // Valid with optional series: AS-02-AB-1234
+    // Valid with optional series: AS-02-AB-1234 (vehicleType: CONTAINER)
     const valid2 = await tx.send('CreateGateIn', {
         vehicleRegNo: 'AS-02-AB-1234',
+        vehicleType: 'CONTAINER',
         purpose: 'DELIVERY',
         driverName: 'Test Driver 2'
     });
-    console.log(`  -> Successfully created with AS-02-AB-1234: ${valid2.gateInNumber}`);
-    console.log('  [PASS] Vehicle registration format validation successful.');
+    console.log(`  -> Successfully created with AS-02-AB-1234: ${valid2.gateInNumber}, vehicleType: ${valid2.vehicleType}`);
+    if (valid2.vehicleType !== 'CONTAINER') {
+        throw new Error(`FAIL: expected vehicleType 'CONTAINER', got '${valid2.vehicleType}'`);
+    }
+    console.log('  [PASS] Vehicle registration format and VehicleType validation successful.');
 
     console.log('\n========================================================');
     console.log(' ALL 8 CRUD OPERATIONS AND VALIDATIONS PASSED!');

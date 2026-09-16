@@ -1,4 +1,5 @@
 using factory.gate as db from '../db/schema';
+using { CE_PURCHASEORDER_0001 as externalPO } from './external/CE_PURCHASEORDER_0001';
 
 @path: '/gate'
 service GateService {
@@ -86,6 +87,24 @@ service GateService {
     @readonly
     entity Suppliers
         as projection on db.Suppliers;
+
+    /*
+     * ============================================================
+     * SAP S/4HANA CLOUD EXTERNAL PURCHASE ORDERS
+     * ============================================================
+     */
+
+    @readonly
+    entity PurchaseOrders
+        as projection on externalPO.PurchaseOrder {
+            key PurchaseOrder,
+                PurchaseOrderType,
+                Supplier,
+                CompanyCode,
+                PurchasingOrganization,
+                PurchasingGroup,
+                PurchaseOrderDate
+        };
 
 
     /*
