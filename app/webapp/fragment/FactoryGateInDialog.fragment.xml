@@ -1,0 +1,129 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:core="sap.ui.core">
+    <Dialog
+        id="factoryGateInDialog"
+        title="Factory Gate IN - Vehicle Arrival Check-In"
+        icon="sap-icon://log-in"
+        contentWidth="680px"
+        contentHeight="auto"
+        verticalScrolling="true"
+        resizable="true"
+        draggable="true"
+        class="sapUiContentPadding">
+        <content>
+            <form:SimpleForm
+                id="factoryGateInDialogForm"
+                editable="true"
+                layout="ResponsiveGridLayout"
+                labelSpanXL="4"
+                labelSpanL="4"
+                labelSpanM="4"
+                labelSpanS="12"
+                columnsXL="1"
+                columnsL="1"
+                columnsM="1">
+                <form:content>
+                    <!-- Section 1: Vehicle & Consignment Identification -->
+                    <core:Title text="1. Gate Pass &amp; Vehicle Identification" />
+
+                    <Label text="Select Vehicle" required="{= ${facModel>/isVehicleSelectable} !== false }" />
+                    <ComboBox
+                        id="dialogFacGateInComboBox"
+                        width="100%"
+                        placeholder="Search or select Gate IN #, Vehicle Reg, or PO..."
+                        selectedKey="{facModel>/selectedGateInNumber}"
+                        change=".onGateInSelectChange"
+                        filterSecondaryValues="true"
+                        showSecondaryValues="true"
+                        editable="{= ${facModel>/isVehicleSelectable} !== false }"
+                        enabled="{= ${facModel>/isVehicleSelectable} !== false }"
+                        noDataText="No security-cleared vehicles awaiting Factory Gate IN"
+                        items="{
+                            path: 'facModel>/eligibleVehicles',
+                            templateShareable: false
+                        }">
+                        <core:ListItem
+                            key="{facModel>gateInNumber}"
+                            text="{facModel>gateInNumber}"
+                            additionalText="{facModel>vehicleRegNo} ({facModel>status}) - {facModel>deliveryFlowDesc}" />
+                    </ComboBox>
+
+                    <Label text="Vehicle Reg No" />
+                    <HBox alignItems="Center">
+                        <Label
+                            text="{= ${facModel>/selectedVehicle/vehicleRegNo} || 'Select a Gate IN Number' }"
+                            design="Bold"
+                            class="sapUiTinyMarginEnd" />
+                        <ObjectStatus
+                            text="{= ${facModel>/selectedVehicle/status} ? 'Stage: ' + ${facModel>/selectedVehicle/status} : '' }"
+                            state="{path: 'facModel>/selectedVehicle/status', formatter: '.formatter.getStatusState'}" />
+                    </HBox>
+
+                    <Label text="Driver &amp; Transporter" />
+                    <VBox>
+                        <Text text="{= ${facModel>/selectedVehicle/driverName} ? ${facModel>/selectedVehicle/driverName} + ' (' + (${facModel>/selectedVehicle/vehicleType} || 'TRUCK') + ')' : '-' }" design="Bold" />
+                        <Text text="{= ${facModel>/form/transporterName} || ${facModel>/selectedVehicle/transporter/transporterName} || '-' }" class="sapUiTinyMarginTop" />
+                    </VBox>
+
+                    <Label text="Delivery Flow" />
+                    <HBox alignItems="Center">
+                        <ObjectStatus
+                            text="{= ${facModel>/selectedVehicle/deliveryFlowDesc} || '-' }"
+                            state="{= ${facModel>/selectedVehicle/deliveryFlowState} || 'None' }"
+                            class="sapUiTinyMarginEnd" />
+                        <Text text="{= ${facModel>/selectedVehicle/inboundWeightFormatted} ? '(Gross Weight: ' + ${facModel>/selectedVehicle/inboundWeightFormatted} + ')' : '' }" />
+                    </HBox>
+
+                    <Label text="PO &amp; Supplier" />
+                    <VBox>
+                        <Text text="{= ${facModel>/form/poNumber} ? 'PO: ' + ${facModel>/form/poNumber} : 'No PO Assigned' }" design="Bold" />
+                        <Text text="{= ${facModel>/form/supplierName} || ${facModel>/selectedVehicle/supplier/supplierName} || '-' }" class="sapUiTinyMarginTop" />
+                    </VBox>
+
+                    <Label text="Invoice Number" />
+                    <Text text="{= ${facModel>/form/invoiceNumber} ? ${facModel>/form/invoiceNumber} + (${facModel>/form/invoiceDate} ? ' (Dated: ' + ${facModel>/form/invoiceDate} + ')' : '') : '-' }" />
+
+                    <!-- Section 2: Factory Arrival Recording -->
+                    <core:Title text="2. Factory Gate Check-In Recording" />
+
+                    <Label text="Factory Gate IN Time" required="true" />
+                    <DateTimePicker
+                        id="dialogFacInTimePicker"
+                        value="{facModel>/form/factoryGateInDateTimeStr}"
+                        valueFormat="yyyy-MM-dd'T'HH:mm:ss"
+                        displayFormat="dd/MM/yyyy, HH:mm:ss"
+                        change=".onGateInDateTimeChange"
+                        placeholder="Select Factory Gate IN Date &amp; Time"
+                        width="100%" />
+
+                    <Label text="Factory Gate Operator" required="true" />
+                    <Input
+                        id="dialogFacInOperator"
+                        value="{facModel>/form/factoryGateInOperator}"
+                        placeholder="Enter Factory Gate Operator name"
+                        required="true" />
+
+                    <Label text="Factory Yard Area" />
+                    <Input
+                        id="dialogFacInArea"
+                        value="{facModel>/form/factoryArea}"
+                        placeholder="e.g. Raw Material Yard, Silo Bay 1..." />
+                </form:content>
+            </form:SimpleForm>
+        </content>
+        <buttons>
+            <Button
+                id="btnConfirmFactoryGateIn"
+                text="Confirm Factory Gate IN"
+                icon="sap-icon://log-in"
+                type="Emphasized"
+                press=".onConfirmFactoryGateIn" />
+            <Button
+                text="Cancel"
+                type="Transparent"
+                press=".onCancelFactoryGateIn" />
+        </buttons>
+    </Dialog>
+</core:FragmentDefinition>

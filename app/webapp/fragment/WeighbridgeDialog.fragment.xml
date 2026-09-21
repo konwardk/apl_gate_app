@@ -1,0 +1,158 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:core="sap.ui.core">
+    <Dialog
+        id="weighbridgeDialog"
+        title="{= ${wbModel>/dialogTitle} || 'Record Weighbridge Scale Weighment' }"
+        icon="sap-icon://dimension"
+        contentWidth="680px"
+        contentHeight="auto"
+        verticalScrolling="true"
+        resizable="true"
+        draggable="true"
+        class="sapUiContentPadding">
+        <content>
+            <form:SimpleForm
+                id="weighbridgeDialogForm"
+                editable="true"
+                layout="ResponsiveGridLayout"
+                labelSpanXL="4"
+                labelSpanL="4"
+                labelSpanM="4"
+                labelSpanS="12"
+                columnsXL="1"
+                columnsL="1"
+                columnsM="1">
+                <form:content>
+                    <!-- Section 1: Gate Pass & Vehicle Identification -->
+                    <core:Title text="1. Gate Pass &amp; Vehicle Identification" />
+
+                    <Label text="Select Vehicle" required="{= ${wbModel>/isVehicleSelectable} !== false }" />
+                    <ComboBox
+                        id="dialogWbGateInComboBox"
+                        width="100%"
+                        placeholder="Type or select Gate IN #, Vehicle Reg, or Driver..."
+                        selectedKey="{wbModel>/selectedGateInNumber}"
+                        change=".onGateInSelectChange"
+                        filterSecondaryValues="true"
+                        showSecondaryValues="true"
+                        editable="{= ${wbModel>/isVehicleSelectable} !== false }"
+                        enabled="{= ${wbModel>/isVehicleSelectable} !== false }"
+                        noDataText="No vehicles currently awaiting Weighbridge scale clearance"
+                        items="{
+                            path: 'wbModel>/eligibleVehicles',
+                            templateShareable: false
+                        }">
+                        <core:ListItem
+                            key="{wbModel>gateInNumber}"
+                            text="{wbModel>gateInNumber}"
+                            additionalText="{wbModel>vehicleRegNo} ({wbModel>purpose}) - Stage: {wbModel>currentStage}" />
+                    </ComboBox>
+
+                    <Label text="Vehicle Reg No" />
+                    <HBox alignItems="Center">
+                        <Label
+                            text="{= ${wbModel>/selectedVehicle/vehicleRegNo} || 'Select a Gate IN Number above' }"
+                            design="Bold"
+                            class="sapUiTinyMarginEnd" />
+                        <ObjectStatus
+                            text="{= 'Stage: ' + (${wbModel>/selectedVehicle/currentStage} || '-') }"
+                            state="{path: 'wbModel>/selectedVehicle/status', formatter: '.formatter.getStatusState'}" />
+                    </HBox>
+
+                    <Label text="Vehicle &amp; Purpose" />
+                    <HBox alignItems="Center">
+                        <Text text="{= ${wbModel>/selectedVehicle/vehicleType} || 'TRUCK' }" class="sapUiTinyMarginEnd" />
+                        <ObjectStatus
+                            text="{= ${wbModel>/selectedVehicle/purpose} || '-' }"
+                            state="{path: 'wbModel>/selectedVehicle/purpose', formatter: '.formatter.getPurposeState'}"
+                            class="sapUiTinyMarginEnd" />
+                        <Text text="{= ${wbModel>/selectedVehicle/driverName} ? '(' + ${wbModel>/selectedVehicle/driverName} + ')' : '' }" />
+                    </HBox>
+
+                    <Label text="Guidance" />
+                    <MessageStrip
+                        text="{wbModel>/expectedOperationDescription}"
+                        type="{wbModel>/expectedOperationType}"
+                        showIcon="true"
+                        class="sapUiTinyMarginBottom" />
+
+                    <!-- Section 2: Scale & Weight Capture -->
+                    <core:Title text="2. Scale &amp; Weight Capture" />
+
+                    <Label text="Weighbridge Number" required="true" />
+                    <Input
+                        id="dialogWbNumberInput"
+                        value="{wbModel>/weighbridgeNumber}"
+                        placeholder="Enter Scale Identifier (e.g. WB-01)"
+                        maxLength="30"
+                        required="true" />
+
+                    <Label text="Weighment Type" required="true" />
+                    <Select
+                        id="dialogWbTypeSelect"
+                        width="100%"
+                        selectedKey="{wbModel>/weighmentType}"
+                        change=".onWeighmentTypeChange">
+                        <core:Item key="GROSS_IN" text="GROSS_IN - Gross Inbound (Truck + Cargo)" />
+                        <core:Item key="TARE_IN" text="TARE_IN - Tare Inbound (Empty Truck)" />
+                        <core:Item key="TARE_OUT" text="TARE_OUT - Tare Outbound (Empty Truck)" />
+                        <core:Item key="GROSS_OUT" text="GROSS_OUT - Gross Outbound (Loaded Truck)" />
+                    </Select>
+
+                    <Label text="Weight (KG)" required="true" />
+                    <Input
+                        id="dialogWbWeightInput"
+                        value="{wbModel>/inputWeight}"
+                        type="Number"
+                        placeholder="Enter scale reading in KG"
+                        liveChange=".onWeightLiveChange"
+                        required="true" />
+
+                    <Label text="Net Weight Result" visible="{= Boolean(${wbModel>/calculatedNetWeight}) }" />
+                    <ObjectStatus
+                        text="{= 'Net Consignment: ' + ${wbModel>/calculatedNetWeight} + ' KG (' + ${wbModel>/calculatedNetWeightMT} + ' MT)' }"
+                        state="{wbModel>/netWeightStatusState}"
+                        icon="sap-icon://dimension"
+                        visible="{= Boolean(${wbModel>/calculatedNetWeight}) }" />
+
+                    <Label text="Date &amp; Time" required="true" />
+                    <DateTimePicker
+                        id="dialogWbTimePicker"
+                        value="{wbModel>/weighbridgeDateTimeStr}"
+                        valueFormat="yyyy-MM-dd'T'HH:mm:ss"
+                        displayFormat="dd/MM/yyyy, HH:mm:ss"
+                        width="100%" />
+
+                    <Label text="Weighbridge Operator" required="true" />
+                    <Input
+                        id="dialogWbOperatorInput"
+                        value="{wbModel>/operator}"
+                        placeholder="Operator name / ID"
+                        required="true" />
+
+                    <Label text="Remarks" />
+                    <TextArea
+                        id="dialogWbRemarks"
+                        value="{wbModel>/remarks}"
+                        rows="2"
+                        maxLength="255"
+                        placeholder="Enter optional scale observations..." />
+                </form:content>
+            </form:SimpleForm>
+        </content>
+        <buttons>
+            <Button
+                id="btnConfirmWeighment"
+                text="Confirm Weighment"
+                icon="sap-icon://accept"
+                type="Emphasized"
+                press=".onConfirmWeighmentDialog" />
+            <Button
+                text="Cancel"
+                type="Transparent"
+                press=".onCancelWeighmentDialog" />
+        </buttons>
+    </Dialog>
+</core:FragmentDefinition>

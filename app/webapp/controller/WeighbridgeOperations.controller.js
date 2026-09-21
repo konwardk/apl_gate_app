@@ -20,6 +20,17 @@ sap.ui.define([
             const activeUser = models.getActiveUser();
             const nowIso = new Date().toISOString().substring(0, 19);
             const oWbModel = new JSONModel({
+                allRecords: [],
+                displayedRecords: [],
+                selectedFilter: "ALL",
+                searchQuery: "",
+                allCount: 0,
+                awaitingInCount: 0,
+                insideYardCount: 0,
+                awaitingOutCount: 0,
+                completedCount: 0,
+                dialogTitle: "Record Inbound Weighment (1st Scale)",
+                isVehicleSelectable: true,
                 weighbridgeNumber: "WB-01",
                 weighmentType: "GROSS_IN",
                 weightUnit: "KG",
@@ -48,6 +59,57 @@ sap.ui.define([
             this.loadWeighbridgeData();
         },
 
+        _enrichRecord: function (tx) {
+            const weighments = tx.weighments || [];
+            const inboundWeighment = weighments.find(w => w.weighmentType === "GROSS_IN" || w.weighmentType === "TARE_IN") || null;
+            const outboundWeighment = weighments.find(w => w.weighmentType === "TARE_OUT" || w.weighmentType === "GROSS_OUT") || null;
+
+            let netWeightFormatted = "";
+            let netWeightKg = null;
+            if (inboundWeighment && outboundWeighment) {
+                if (inboundWeighment.weighmentType === "GROSS_IN" && outboundWeighment.weighmentType === "TARE_OUT") {
+                    netWeightKg = Number(inboundWeighment.weight) - Number(outboundWeighment.weight);
+                } else if (inboundWeighment.weighmentType === "TARE_IN" && outboundWeighment.weighmentType === "GROSS_OUT") {
+                    netWeightKg = Number(outboundWeighment.weight) - Number(inboundWeighment.weight);
+                }
+                if (netWeightKg !== null) {
+                    const mt = (netWeightKg / 1000).toFixed(2);
+                    netWeightFormatted = `${formatter.formatWeight(netWeightKg, "KG")} (${mt} MT)`;
+                }
+            }
+
+            const driverName = tx.driverName || (tx.driver && tx.driver.driverName) || "";
+            const isAssignedWb = (tx.assignedRoute === "WEIGHBRIDGE" || weighments.length > 0);
+
+            const isAwaitingInbound = (tx.status === "SECURITY_IN" && tx.assignedRoute === "WEIGHBRIDGE") ||
+                (isAssignedWb && !inboundWeighment && ["SECURITY_IN", "WEIGHBRIDGE_IN"].includes(tx.status));
+            const isInsideYard = tx.status === "FACTORY_IN" || (inboundWeighment && !outboundWeighment && tx.status !== "FACTORY_OUT");
+            const isAwaitingOutbound = tx.status === "FACTORY_OUT" && !outboundWeighment;
+            const isScaleCompleted = Boolean(outboundWeighment || tx.status === "WEIGHBRIDGE_OUT" || tx.status === "SECURITY_OUT" || tx.status === "COMPLETED");
+
+            const canWeighIn = isAwaitingInbound;
+            const canWeighOut = isAwaitingOutbound;
+            const hasAnyWeighment = Boolean(inboundWeighment || outboundWeighment);
+
+            return {
+                ...tx,
+                driverName: driverName,
+                inboundWeighment: inboundWeighment,
+                outboundWeighment: outboundWeighment,
+                inboundWeight: inboundWeighment ? inboundWeighment.weight : null,
+                outboundWeight: outboundWeighment ? outboundWeighment.weight : null,
+                netWeightFormatted: netWeightFormatted,
+                isAwaitingInbound: isAwaitingInbound,
+                isInsideYard: isInsideYard,
+                isAwaitingOutbound: isAwaitingOutbound,
+                isScaleCompleted: isScaleCompleted,
+                canWeighIn: canWeighIn,
+                canWeighOut: canWeighOut,
+                hasAnyWeighment: hasAnyWeighment,
+                isAssignedWb: isAssignedWb
+            };
+        },
+
         loadWeighbridgeData: async function () {
             const oWbModel = this.getView().getModel("wbModel");
             const headers = {
@@ -56,55 +118,102 @@ sap.ui.define([
             };
 
             try {
-                // 1. Fetch Inbound Queue (status eq 'SECURITY_IN')
-                const resInbound = await fetch(`${ODATA_BASE}/GateTransactions?$filter=status eq 'SECURITY_IN'&$orderby=createdAt desc`, { headers });
-                let aInbound = [];
-                if (resInbound.ok) {
-                    const dataInbound = await resInbound.json();
-                    aInbound = dataInbound.value || [];
-                    oWbModel.setProperty("/inboundQueue", aInbound);
+                const res = await fetch(`${ODATA_BASE}/GateTransactions?$expand=weighments,transporter,supplier,driver&$orderby=createdAt desc`, { headers });
+                let raw = [];
+                if (res.ok) {
+                    const data = await res.json();
+                    raw = data.value || [];
                 }
 
-                // 2. Fetch Outbound Queue (status eq 'FACTORY_OUT' with previous weighments expanded)
-                const resOutbound = await fetch(`${ODATA_BASE}/GateTransactions?$filter=status eq 'FACTORY_OUT'&$expand=weighments&$orderby=createdAt desc`, { headers });
-                let aOutbound = [];
-                if (resOutbound.ok) {
-                    const dataOutbound = await resOutbound.json();
-                    aOutbound = (dataOutbound.value || []).map(function (v) {
-                        const inWb = (v.weighments || []).find(w => w.weighmentType === "GROSS_IN" || w.weighmentType === "TARE_IN");
-                        v.inboundWeight = inWb ? inWb.weight : null;
-                        v.inboundWeighment = inWb || null;
-                        return v;
-                    });
-                    oWbModel.setProperty("/outboundQueue", aOutbound);
-                }
+                const processed = raw.map(tx => this._enrichRecord(tx)).filter(tx => tx.isAssignedWb || tx.hasAnyWeighment || ["WEIGHBRIDGE_IN", "WEIGHBRIDGE_OUT", "FACTORY_OUT"].includes(tx.status));
+                oWbModel.setProperty("/allRecords", processed);
 
-                // 3. Combined eligible vehicles for ComboBox
-                const aCombined = [...aInbound, ...aOutbound];
-                oWbModel.setProperty("/eligibleVehicles", aCombined);
+                const eligible = processed.filter(tx => tx.canWeighIn || tx.canWeighOut);
+                oWbModel.setProperty("/eligibleVehicles", eligible);
 
-                // 4. Fetch Completed Weighments History
+                const awaitingInCount = processed.filter(t => t.isAwaitingInbound).length;
+                const insideYardCount = processed.filter(t => t.isInsideYard).length;
+                const awaitingOutCount = processed.filter(t => t.isAwaitingOutbound).length;
+                const completedCount = processed.filter(t => t.isScaleCompleted).length;
+
+                oWbModel.setProperty("/allCount", processed.length);
+                oWbModel.setProperty("/awaitingInCount", awaitingInCount);
+                oWbModel.setProperty("/insideYardCount", insideYardCount);
+                oWbModel.setProperty("/awaitingOutCount", awaitingOutCount);
+                oWbModel.setProperty("/completedCount", completedCount);
+
+                this._applyFilterAndSearch();
+
+                // Fetch Completed Weighments History
                 const resCompleted = await fetch(`${ODATA_BASE}/WeighbridgeTransactions?$expand=gateTransaction&$orderby=weighbridgeDateTime desc&$top=50`, { headers });
                 if (resCompleted.ok) {
                     const dataCompleted = await resCompleted.json();
                     oWbModel.setProperty("/completedWeighments", dataCompleted.value || []);
                 }
-
-                // If currently selected vehicle exists in queue, refresh its state
-                const currentGateIn = oWbModel.getProperty("/selectedGateInNumber");
-                if (currentGateIn) {
-                    const matched = aCombined.find(v => v.gateInNumber === currentGateIn);
-                    if (matched) {
-                        this.selectVehicleByGateIn(matched.gateInNumber);
-                    }
-                } else if (aCombined.length > 0) {
-                    // Auto-select first queue vehicle for convenience
-                    this.selectVehicleByGateIn(aCombined[0].gateInNumber);
-                }
-
             } catch (err) {
                 console.error("Error loading weighbridge queue data:", err);
             }
+        },
+
+        loadScaleQueue: function () {
+            return this.loadWeighbridgeData();
+        },
+
+        _applyFilterAndSearch: function () {
+            const oWbModel = this.getView().getModel("wbModel");
+            const all = oWbModel.getProperty("/allRecords") || [];
+            const filterKey = oWbModel.getProperty("/selectedFilter") || "ALL";
+            const q = (oWbModel.getProperty("/searchQuery") || "").trim().toLowerCase();
+
+            let filtered = all;
+
+            if (filterKey === "AWAITING_IN") {
+                filtered = all.filter(t => t.isAwaitingInbound);
+            } else if (filterKey === "INSIDE_YARD") {
+                filtered = all.filter(t => t.isInsideYard);
+            } else if (filterKey === "AWAITING_OUT") {
+                filtered = all.filter(t => t.isAwaitingOutbound);
+            } else if (filterKey === "COMPLETED") {
+                filtered = all.filter(t => t.isScaleCompleted);
+            }
+
+            if (q) {
+                filtered = filtered.filter(t =>
+                    (t.gateInNumber && t.gateInNumber.toLowerCase().includes(q)) ||
+                    (t.vehicleRegNo && t.vehicleRegNo.toLowerCase().includes(q)) ||
+                    (t.driverName && t.driverName.toLowerCase().includes(q)) ||
+                    (t.transporter && t.transporter.transporterName && t.transporter.transporterName.toLowerCase().includes(q)) ||
+                    (t.purpose && t.purpose.toLowerCase().includes(q))
+                );
+            }
+
+            oWbModel.setProperty("/displayedRecords", filtered);
+        },
+
+        onFilterCategoryChange: function (oEvt) {
+            const key = oEvt.getParameter("item").getKey();
+            this.getView().getModel("wbModel").setProperty("/selectedFilter", key);
+            this._applyFilterAndSearch();
+        },
+
+        onSearchLiveChange: function (oEvt) {
+            const q = oEvt.getParameter("newValue") || "";
+            this.getView().getModel("wbModel").setProperty("/searchQuery", q);
+            this._applyFilterAndSearch();
+        },
+
+        onSearch: function (oEvt) {
+            const q = oEvt.getParameter("query") || "";
+            this.getView().getModel("wbModel").setProperty("/searchQuery", q);
+            this._applyFilterAndSearch();
+        },
+
+        onResetSearch: function () {
+            this.getView().getModel("wbModel").setProperty("/searchQuery", "");
+            this.getView().getModel("wbModel").setProperty("/selectedFilter", "ALL");
+            const oSearch = this.byId("wbSearchField");
+            if (oSearch) oSearch.setValue("");
+            this._applyFilterAndSearch();
         },
 
         onRefreshQueue: function () {
@@ -464,6 +573,10 @@ sap.ui.define([
                 }
 
                 const updatedTx = await response.json();
+
+                if (this._pWeighbridgeDialog) {
+                    this._pWeighbridgeDialog.then(oDialog => oDialog.close());
+                }
 
                 // Prepare summary text
                 const sTypeDesc = formatter.getWeighmentTypeDesc(sType);
@@ -914,6 +1027,150 @@ sap.ui.define([
             if (this._pSlipDialog) {
                 this._pSlipDialog.then(oDialog => oDialog.close());
             }
+        },
+
+        // ============================================================
+        // Weighbridge Dialog Management
+        // ============================================================
+        onOpenWeighbridgeInDialog: async function (oEvt) {
+            let oTx = null;
+            if (oEvt && oEvt.getSource) {
+                const oCtx = oEvt.getSource().getBindingContext("wbModel");
+                if (oCtx) {
+                    oTx = oCtx.getObject();
+                }
+            }
+
+            const oWbModel = this.getView().getModel("wbModel");
+            oWbModel.setProperty("/dialogTitle", "Record Inbound Weighment (1st Scale)");
+
+            if (oTx) {
+                oWbModel.setProperty("/isVehicleSelectable", false);
+                await this.selectVehicleByGateIn(oTx.gateInNumber);
+            } else {
+                oWbModel.setProperty("/isVehicleSelectable", true);
+                const aEligible = oWbModel.getProperty("/eligibleVehicles") || [];
+                const awaitingIn = aEligible.filter(v => v.canWeighIn);
+                const target = awaitingIn.length > 0 ? awaitingIn[0] : (aEligible[0] || null);
+                if (target) {
+                    await this.selectVehicleByGateIn(target.gateInNumber);
+                }
+            }
+
+            this._openWeighbridgeDialog();
+        },
+
+        onOpenWeighbridgeOutDialog: async function (oEvt) {
+            let oTx = null;
+            if (oEvt && oEvt.getSource) {
+                const oCtx = oEvt.getSource().getBindingContext("wbModel");
+                if (oCtx) {
+                    oTx = oCtx.getObject();
+                }
+            }
+
+            const oWbModel = this.getView().getModel("wbModel");
+            oWbModel.setProperty("/dialogTitle", "Record Outbound Weighment (2nd Scale)");
+
+            if (oTx) {
+                oWbModel.setProperty("/isVehicleSelectable", false);
+                await this.selectVehicleByGateIn(oTx.gateInNumber);
+            } else {
+                oWbModel.setProperty("/isVehicleSelectable", true);
+                const aEligible = oWbModel.getProperty("/eligibleVehicles") || [];
+                const awaitingOut = aEligible.filter(v => v.canWeighOut);
+                const target = awaitingOut.length > 0 ? awaitingOut[0] : (aEligible[0] || null);
+                if (target) {
+                    await this.selectVehicleByGateIn(target.gateInNumber);
+                }
+            }
+
+            this._openWeighbridgeDialog();
+        },
+
+        _openWeighbridgeDialog: function () {
+            const oView = this.getView();
+            const sId = oView.createId("wbFrag");
+            if (!this._pWeighbridgeDialog) {
+                this._pWeighbridgeDialog = Fragment.load({
+                    id: sId,
+                    name: "factory.gate.fragment.WeighbridgeDialog",
+                    controller: this
+                }).then(function (oDialog) {
+                    oView.addDependent(oDialog);
+                    return oDialog;
+                });
+            }
+            this._pWeighbridgeDialog.then(function (oDialog) {
+                oDialog.open();
+            });
+        },
+
+        onCancelWeighmentDialog: function () {
+            if (this._pWeighbridgeDialog) {
+                this._pWeighbridgeDialog.then(oDialog => oDialog.close());
+            }
+        },
+
+        onConfirmWeighmentDialog: async function () {
+            await this.onRecordWeighment();
+        },
+
+        // ============================================================
+        // Table Row Actions
+        // ============================================================
+        onRowWeighInPress: function (oEvt) {
+            this.onOpenWeighbridgeInDialog(oEvt);
+        },
+
+        onRowWeighOutPress: function (oEvt) {
+            this.onOpenWeighbridgeOutDialog(oEvt);
+        },
+
+        onRowSlipPress: function (oEvt) {
+            const oCtx = oEvt.getSource().getBindingContext("wbModel");
+            if (!oCtx) return;
+            const oTx = oCtx.getObject();
+            const lastWb = oTx.outboundWeighment || oTx.inboundWeighment;
+            if (lastWb) {
+                this.openWeighmentSlipDialog({
+                    slipNumber: lastWb.ID ? "SLIP-" + lastWb.ID.substring(0, 8).toUpperCase() : "SLIP-WB-001",
+                    gateInNumber: oTx.gateInNumber,
+                    vehicleRegNo: oTx.vehicleRegNo,
+                    vehicleType: oTx.vehicleType || "TRUCK",
+                    driverName: oTx.driverName || "-",
+                    purpose: oTx.purpose || "DELIVERY",
+                    weighbridgeNumber: lastWb.weighbridgeNumber || "WB-01",
+                    weighmentType: lastWb.weighmentType,
+                    weight: lastWb.weight,
+                    weightUnit: lastWb.weightUnit || "KG",
+                    operator: lastWb.operator || models.getActiveUser(),
+                    remarks: lastWb.remarks || "-",
+                    weighbridgeDateTime: lastWb.weighbridgeDateTime || new Date(),
+                    hasNetCalculation: Boolean(oTx.netWeightFormatted)
+                });
+            } else {
+                MessageToast.show("No weighment recorded yet for this vehicle.");
+            }
+        },
+
+        onRowViewPress: function (oEvt) {
+            const oCtx = oEvt.getSource().getBindingContext("wbModel");
+            if (!oCtx) return;
+            const oTx = oCtx.getObject();
+            if (oTx.canWeighIn) {
+                this.onOpenWeighbridgeInDialog(oEvt);
+            } else if (oTx.canWeighOut) {
+                this.onOpenWeighbridgeOutDialog(oEvt);
+            } else if (oTx.hasAnyWeighment) {
+                this.onRowSlipPress(oEvt);
+            } else {
+                this.selectVehicleByGateIn(oTx.gateInNumber);
+            }
+        },
+
+        onTxRowPress: function (oEvt) {
+            this.onRowViewPress(oEvt);
         },
 
         // ============================================================

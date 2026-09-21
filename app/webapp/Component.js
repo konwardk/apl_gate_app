@@ -67,6 +67,26 @@ sap.ui.define([
             }
         },
 
+        openFactoryOperationsFor: function (gateInNumber) {
+            this.navigateTo("factoryGateOpsPage", "slide");
+            const aPages = this._oNavContainer ? this._oNavContainer.getPages() : [];
+            const oFacPage = aPages.find(function (p) {
+                return p.getId().endsWith("factoryGateOpsPage");
+            });
+            if (oFacPage && oFacPage.getController) {
+                const oCtrl = oFacPage.getController();
+                if (oCtrl && oCtrl.loadVehicleByGateInNumber) {
+                    oCtrl.loadVehicleByGateInNumber(gateInNumber);
+                } else if (oCtrl && oCtrl.loadFactoryData) {
+                    oCtrl.loadFactoryData().then(function () {
+                        if (oCtrl._selectVehicleByGateInNumber) {
+                            oCtrl._selectVehicleByGateInNumber(gateInNumber);
+                        }
+                    });
+                }
+            }
+        },
+
         // ============================================================
         // Fiori Elements App Navigation & Viewer
         // ============================================================

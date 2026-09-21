@@ -571,13 +571,20 @@ sap.ui.define([
 
                 const sRouteDesc = (m.assignedRoute === "FACTORY") ? "To Factory Gate (Direct Delivery)" : "To Weighbridge (Gross/Tare Scale)";
 
-                MessageBox.success(`Security Gate IN successfully authorized for ${m.selectedGateInNumber}!\n\nStatus: ${m.assignedRoute === "FACTORY" ? "FACTORY_IN" : "SECURITY_IN"}\nAssigned Route: ${sRouteDesc}\nDocumentation: ${statusText}`, {
-                    title: "Security Clearance Complete",
-                    onClose: () => {
-                        this.loadSecurityData();
-                        this.getOwnerComponent().loadOverviewData();
-                    }
-                });
+                if (m.assignedRoute === "FACTORY") {
+                    MessageToast.show(`Security clearance completed for ${m.selectedGateInNumber}. Opening Factory Operations...`);
+                    this.loadSecurityData();
+                    this.getOwnerComponent().loadOverviewData();
+                    this.getOwnerComponent().openFactoryOperationsFor(m.selectedGateInNumber);
+                } else {
+                    MessageBox.success(`Security Gate IN successfully authorized for ${m.selectedGateInNumber}!\n\nStatus: SECURITY_IN\nAssigned Route: ${sRouteDesc}\nDocumentation: ${statusText}`, {
+                        title: "Security Clearance Complete",
+                        onClose: () => {
+                            this.loadSecurityData();
+                            this.getOwnerComponent().loadOverviewData();
+                        }
+                    });
+                }
 
             } catch (networkErr) {
                 MessageBox.error("Network error communicating with GateService: " + networkErr.message);
@@ -1056,9 +1063,10 @@ sap.ui.define([
                                 throw new Error(sErrMsg);
                             }
 
-                            MessageToast.show(`Vehicle ${oTx.vehicleRegNo} successfully routed to Factory Gate (Weighbridge Bypassed).`);
+                            MessageToast.show(`Vehicle ${oTx.vehicleRegNo} routed to Factory Gate. Opening Factory Operations...`);
                             await this.loadSecurityData();
                             this.getOwnerComponent().loadOverviewData();
+                            this.getOwnerComponent().openFactoryOperationsFor(oTx.gateInNumber);
                         } catch (err) {
                             MessageBox.error("Route Assignment Error: " + err.message);
                         } finally {
