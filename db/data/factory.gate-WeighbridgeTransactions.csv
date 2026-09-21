@@ -1,3 +1,1 @@
 ID;gateTransaction_ID;weighbridgeNumber;weighmentType;weight;weightUnit;weighbridgeDateTime;operator;remarks
-c3333333-4444-5555-6666-777777777773;a1111111-2222-3333-4444-555555555553;WB-01;TARE_IN;12450.000;KG;2026-09-09T09:55:00Z;WeighOperator1;Tare Weight recorded before loading
-c3333333-4444-5555-6666-777777777774;a1111111-2222-3333-4444-555555555554;WB-01;GROSS_IN;28750.000;KG;2026-09-09T10:15:00Z;weighbridge_user;Initial gross weight for consignment

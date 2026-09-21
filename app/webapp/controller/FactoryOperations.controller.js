@@ -1,11 +1,12 @@
 sap.ui.define([
     "sap/ui/core/mvc/Controller",
+    "sap/ui/core/Fragment",
     "sap/ui/model/json/JSONModel",
     "sap/m/MessageToast",
     "sap/m/MessageBox",
     "factory/gate/model/formatter",
     "factory/gate/model/models"
-], function (Controller, JSONModel, MessageToast, MessageBox, formatter, models) {
+], function (Controller, Fragment, JSONModel, MessageToast, MessageBox, formatter, models) {
     "use strict";
 
     const ODATA_BASE = "/gate";
@@ -20,6 +21,7 @@ sap.ui.define([
                 eligibleVehicles: [],
                 selectedGateInNumber: "",
                 selectedVehicle: null,
+                selectedPoDetails: null,
                 vehicleStageMessage: "",
                 vehicleStageMessageType: "None",
                 selectedFilter: "ALL",
@@ -28,6 +30,8 @@ sap.ui.define([
                 waitingInCount: 0,
                 insideYardCount: 0,
                 yardDoneCount: 0,
+                gateInSuccess: null,
+                gateOutSuccess: null,
                 form: {
                     gateInNumber: "",
                     poNumber: "",
@@ -35,8 +39,9 @@ sap.ui.define([
                     invoiceDate: null,
                     supplierName: "",
                     transporterName: "",
-                    factoryArea: "Methanol Plant - Unloading Bay",
+                    factoryArea: "Raw Material Yard",
                     unloadingPoint: "",
+                    gateOutType: "STANDARD",
                     factoryGateInDateTime: new Date().toISOString(),
                     factoryGateInDateTimeStr: new Date().toISOString().substring(0, 19),
                     factoryGateInOperator: models.getActiveUser(),
@@ -76,12 +81,12 @@ sap.ui.define([
             }
 
             const driverName = tx.driverName || (tx.driver && tx.driver.driverName) || "";
-            const isWaitingIn = (tx.status === "SECURITY_IN" || tx.status === "WEIGHBRIDGE_IN") &&
-                (!tx.factoryEntry || !tx.factoryEntry.factoryGateInDateTime);
+            const hasGateOut = Boolean(tx.factoryEntry && tx.factoryEntry.factoryGateOutDateTime) || tx.status === "FACTORY_OUT" || tx.status === "COMPLETED";
+            const hasGateIn = Boolean(tx.factoryEntry && tx.factoryEntry.factoryGateInDateTime);
 
-            const isInsideYard = tx.status === "FACTORY_IN";
-            const isYardDone = tx.status === "FACTORY_OUT" ||
-                (tx.factoryEntry && tx.factoryEntry.factoryGateOutDateTime);
+            const isWaitingIn = (tx.status === "SECURITY_IN" || tx.status === "WEIGHBRIDGE_IN" || (tx.status === "FACTORY_IN" && !hasGateIn)) && !hasGateOut;
+            const isInsideYard = tx.status === "FACTORY_IN" && !hasGateOut;
+            const isYardDone = hasGateOut;
 
             return {
                 ...tx,
@@ -91,7 +96,7 @@ sap.ui.define([
                 deliveryFlowState: flowState,
                 inboundWeightFormatted: inboundWeightStr,
                 inboundWeightText: inboundWeightStr || "No Inbound Weight (Direct Delivery)",
-                canRowFactoryIn: isWaitingIn,
+                canRowFactoryIn: !hasGateOut,
                 canRowFactoryOut: isInsideYard,
                 isWaitingIn: isWaitingIn,
                 isInsideYard: isInsideYard,
@@ -106,7 +111,7 @@ sap.ui.define([
             };
 
             try {
-                const url = `${ODATA_BASE}/GateTransactions?$expand=securityEntry,factoryEntry,weighments,transporter,supplier,driver&$filter=purpose eq 'DELIVERY'&$orderby=createdAt desc`;
+                const url = `${ODATA_BASE}/GateTransactions?$expand=securityEntry,factoryEntry,weighments,transporter,supplier,driver,deliveryDetails&$filter=purpose eq 'DELIVERY'&$orderby=createdAt desc`;
                 const res = await fetch(url, { headers });
                 if (!res.ok) {
                     throw new Error(`Failed to fetch transactions: ${res.statusText}`);
@@ -229,6 +234,16 @@ sap.ui.define([
             this._selectVehicleByGateInNumber(sKey);
         },
 
+        onSearchGateInBtnPress: function () {
+            const oCombo = this.byId("facGateInComboBox");
+            const sVal = (oCombo ? (oCombo.getSelectedKey() || oCombo.getValue()) : "").trim();
+            if (sVal) {
+                this._selectVehicleByGateInNumber(sVal);
+            } else {
+                MessageToast.show("Please enter or select a Gate IN Number");
+            }
+        },
+
         _selectVehicleByGateInNumber: async function (sGateInNo) {
             const oCombo = this.byId("facGateInComboBox");
             if (!sGateInNo || !sGateInNo.trim()) {
@@ -248,6 +263,7 @@ sap.ui.define([
                 (t.gateInNumber && t.gateInNumber.toLowerCase() === q) ||
                 (t.vehicleRegNo && t.vehicleRegNo.toLowerCase() === q) ||
                 (t.securityEntry && t.securityEntry.poNumber && t.securityEntry.poNumber.toLowerCase() === q) ||
+                (t.deliveryDetails && t.deliveryDetails.poNumber && t.deliveryDetails.poNumber.toLowerCase() === q) ||
                 (t.factoryEntry && t.factoryEntry.poNumber && t.factoryEntry.poNumber.toLowerCase() === q)
             );
 
@@ -260,7 +276,7 @@ sap.ui.define([
                     };
                     const sEnc = encodeURIComponent(sGateInNo.trim());
                     const sEncLow = encodeURIComponent(q);
-                    const url = `${ODATA_BASE}/GateTransactions?$filter=gateInNumber eq '${sEnc}' or tolower(gateInNumber) eq '${sEncLow}' or tolower(vehicleRegNo) eq '${sEncLow}'&$expand=securityEntry,factoryEntry,weighments,transporter,supplier,driver`;
+                    const url = `${ODATA_BASE}/GateTransactions?$filter=gateInNumber eq '${sEnc}' or tolower(gateInNumber) eq '${sEncLow}' or tolower(vehicleRegNo) eq '${sEncLow}'&$expand=securityEntry,factoryEntry,weighments,transporter,supplier,driver,deliveryDetails`;
                     const res = await fetch(url, { headers });
                     if (res.ok) {
                         const data = await res.json();
@@ -289,7 +305,37 @@ sap.ui.define([
             }
         },
 
-        _populateFormFromVehicle: function (oTx, bNotify) {
+        _fetchPoDetails: async function (sPoNumber) {
+            if (!sPoNumber || sPoNumber === "N/A") {
+                this._oFacModel.setProperty("/selectedPoDetails", null);
+                return;
+            }
+            try {
+                const headers = {
+                    "Authorization": models.getAuthHeaderValue(),
+                    "Content-Type": "application/json"
+                };
+                const sClean = sPoNumber.replace(/^PO-/i, "").trim();
+                const sEnc1 = encodeURIComponent(sPoNumber.trim());
+                const sEnc2 = encodeURIComponent(sClean);
+                const url = `${ODATA_BASE}/PurchaseOrders?$filter=PurchaseOrder eq '${sEnc1}' or PurchaseOrder eq '${sEnc2}' or contains(PurchaseOrder,'${sEnc2}')&$top=1`;
+                const res = await fetch(url, { headers });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.value && data.value.length > 0) {
+                        this._oFacModel.setProperty("/selectedPoDetails", data.value[0]);
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn("PO details fetch failed:", e);
+            }
+            this._oFacModel.setProperty("/selectedPoDetails", null);
+        },
+
+        _populateFormFromVehicle: async function (oTx, bNotify) {
+            if (!oTx) return;
+
             // Ensure oTx has enriched properties
             if (!oTx.deliveryFlowDesc) {
                 oTx = this._enrichRecord(oTx);
@@ -300,12 +346,13 @@ sap.ui.define([
 
             const fac = oTx.factoryEntry;
             const sec = oTx.securityEntry;
+            const del = oTx.deliveryDetails;
 
-            // Auto-collect PO, Invoice, Supplier, Transporter from Security Gate or existing Factory entry
-            const poNumber = (fac && fac.poNumber) || (sec && sec.poNumber) || "";
-            const invoiceNumber = (fac && fac.invoiceNumber) || (sec && sec.invoiceNumber) || "";
-            const invoiceDate = (fac && fac.invoiceDate) || (sec && sec.invoiceDate) || null;
-            const supplierName = (fac && fac.supplierName) || (oTx.supplier && oTx.supplier.supplierName) || (sec && sec.supplierName) || "";
+            // Auto-collect PO, Invoice, Supplier, Transporter from Security Gate, DeliveryDetails or existing Factory entry
+            const poNumber = (fac && fac.poNumber) || (sec && sec.poNumber) || (del && del.poNumber) || "";
+            const invoiceNumber = (fac && fac.invoiceNumber) || (sec && sec.invoiceNumber) || (del && del.invoiceNumber) || "";
+            const invoiceDate = (fac && fac.invoiceDate) || (sec && sec.invoiceDate) || (del && del.invoiceDate) || null;
+            const supplierName = (fac && fac.supplierName) || (oTx.supplier && oTx.supplier.supplierName) || (sec && sec.supplierName) || (del && del.supplierName) || "";
             const transporterName = (fac && fac.transporterName) || (oTx.transporter && oTx.transporter.transporterName) || (sec && sec.transporterName) || "";
 
             const now = new Date();
@@ -325,11 +372,21 @@ sap.ui.define([
                     facOutTimeIso = d.toISOString();
                     facOutTimeStr = facOutTimeIso.substring(0, 19);
                 }
-            } else if (oTx.status === "FACTORY_IN") {
-                facOutTimeIso = now.toISOString();
-                facOutTimeStr = facOutTimeIso.substring(0, 19);
             }
-            const facOutOp = (fac && fac.factoryGateOutOperator) || (oTx.status === "FACTORY_IN" ? models.getActiveUser() : "");
+            const facOutOp = (fac && fac.factoryGateOutOperator) || "";
+
+            // Determine Gate Out Type
+            let gateOutType = "STANDARD";
+            const rawRemarks = (fac && fac.remarks) || "";
+            if (sec && sec.gatePassType) {
+                gateOutType = sec.gatePassType;
+            }
+            if (rawRemarks) {
+                const match = rawRemarks.match(/\[Gate Out Type:\s*([^\]]+)\]/i);
+                if (match) {
+                    gateOutType = match[1].trim();
+                }
+            }
 
             const formObj = {
                 gateInNumber: oTx.gateInNumber,
@@ -338,8 +395,9 @@ sap.ui.define([
                 invoiceDate: invoiceDate,
                 supplierName: supplierName,
                 transporterName: transporterName,
-                factoryArea: (fac && fac.factoryArea) || "Methanol Plant - Unloading Bay",
+                factoryArea: (fac && fac.factoryArea) || "Raw Material Yard",
                 unloadingPoint: (fac && fac.unloadingPoint) || "",
+                gateOutType: gateOutType,
                 factoryGateInDateTime: facInTimeIso,
                 factoryGateInDateTimeStr: facInTimeStr,
                 factoryGateInOperator: facInOp,
@@ -352,10 +410,13 @@ sap.ui.define([
                 unloadedQuantity: (fac && fac.unloadedQuantity != null) ? String(fac.unloadedQuantity) : "",
                 goodsInspected: fac ? Boolean(fac.goodsInspected) : true,
                 sealVerified: fac ? Boolean(fac.sealVerified) : true,
-                remarks: (fac && fac.remarks) || ""
+                remarks: rawRemarks
             };
 
             this._oFacModel.setProperty("/form", formObj);
+
+            // Fetch PO master details if PO number is present
+            await this._fetchPoDetails(poNumber);
 
             // Set informative process stage note
             let sStageMsg = "";
@@ -364,16 +425,24 @@ sap.ui.define([
                 sStageMsg = `Vehicle #${oTx.gateInNumber} is currently at Main Gate IN. Security check-in is required before Factory Gate IN.`;
                 sStageMsgType = "Warning";
             } else if (oTx.status === "SECURITY_IN") {
-                sStageMsg = `Direct Delivery: Security check complete. Ready for Factory Gate IN. (Auto-collected PO #${poNumber || 'N/A'}, Inv #${invoiceNumber || 'N/A'})`;
+                sStageMsg = `Direct Delivery: Security check complete. Ready for Factory Gate IN.`;
                 sStageMsgType = "Success";
             } else if (oTx.status === "WEIGHBRIDGE_IN") {
-                sStageMsg = `Weighed Delivery: Inbound Gross weighment complete. Ready for Factory Gate IN. (Auto-collected PO #${poNumber || 'N/A'}, Inv #${invoiceNumber || 'N/A'})`;
+                sStageMsg = `Weighed Delivery: Inbound Gross weighment complete. Ready for Factory Gate IN.`;
                 sStageMsgType = "Success";
             } else if (oTx.status === "FACTORY_IN") {
-                sStageMsg = `Vehicle is inside Factory Yard. Ready for Factory Gate OUT clearance.`;
-                sStageMsgType = "Information";
+                if (fac && fac.factoryGateOutDateTime) {
+                    sStageMsg = `Factory Yard clearance already completed for this vehicle.`;
+                    sStageMsgType = "None";
+                } else if (fac && fac.factoryGateInDateTime) {
+                    sStageMsg = `Factory Gate IN recorded. Vehicle is inside yard. Ready for Factory Gate OUT on exit.`;
+                    sStageMsgType = "Information";
+                } else {
+                    sStageMsg = `Vehicle #${oTx.gateInNumber} is at Factory Gate. Ready for Factory Gate IN recording.`;
+                    sStageMsgType = "Success";
+                }
             } else if (oTx.status === "FACTORY_OUT") {
-                sStageMsg = `Factory Yard unloading already completed for this vehicle.`;
+                sStageMsg = `Factory Yard clearance already completed for this vehicle.`;
                 sStageMsgType = "None";
             }
             this._oFacModel.setProperty("/vehicleStageMessage", sStageMsg);
@@ -419,7 +488,7 @@ sap.ui.define([
             }
 
             if (!form.factoryGateInOperator || !form.factoryGateInOperator.trim()) {
-                MessageBox.error("Factory Gate IN Operator name is mandatory.");
+                MessageBox.error("Factory Gate Operator name is mandatory. Please enter your name.");
                 return;
             }
 
@@ -427,7 +496,7 @@ sap.ui.define([
                 gateInNumber: form.gateInNumber,
                 factoryGateInDateTime: inTime,
                 factoryGateInOperator: form.factoryGateInOperator.trim(),
-                factoryArea: form.factoryArea,
+                factoryArea: form.factoryArea || "Raw Material Yard",
                 unloadingPoint: form.unloadingPoint || "",
                 poNumber: form.poNumber || "",
                 invoiceNumber: form.invoiceNumber || "",
@@ -463,9 +532,24 @@ sap.ui.define([
                     throw new Error(errMsg);
                 }
 
+                const oVehicle = this._oFacModel.getProperty("/selectedVehicle");
+                const successData = {
+                    gateInNumber: form.gateInNumber,
+                    vehicleRegNo: oVehicle?.vehicleRegNo || form.gateInNumber,
+                    vehicleType: oVehicle?.vehicleType || "TRUCK",
+                    driverName: oVehicle?.driverName || "-",
+                    transporterName: form.transporterName || oVehicle?.transporter?.transporterName || "-",
+                    poNumber: form.poNumber || "N/A",
+                    supplierName: form.supplierName || "-",
+                    factoryGateInDateTime: inTime,
+                    factoryGateInOperator: form.factoryGateInOperator
+                };
+                this._oFacModel.setProperty("/gateInSuccess", successData);
+
                 MessageToast.show(`Factory Gate IN successfully recorded for #${form.gateInNumber}!`);
                 this.getOwnerComponent().loadOverviewData();
                 await this.loadFactoryData();
+                this._openFactoryGateInSuccessDialog();
             } catch (err) {
                 MessageBox.error(err.message);
             } finally {
@@ -481,8 +565,20 @@ sap.ui.define([
                 return;
             }
 
+            const oVehicle = this._oFacModel.getProperty("/selectedVehicle");
+            if (oVehicle && oVehicle.status !== "FACTORY_IN") {
+                if (oVehicle.status === "SECURITY_IN" || oVehicle.status === "WEIGHBRIDGE_IN" || oVehicle.status === "GATE_IN") {
+                    MessageBox.warning(`Vehicle #${form.gateInNumber} is currently at '${oVehicle.status}'. Please record Factory Gate IN first before recording Factory Gate OUT.`);
+                    return;
+                }
+            }
+
             const outTime = form.factoryGateOutDateTime || (form.factoryGateOutDateTimeStr ? new Date(form.factoryGateOutDateTimeStr).toISOString() : new Date().toISOString());
-            const outOp = (form.factoryGateOutOperator && form.factoryGateOutOperator.trim()) || models.getActiveUser();
+            const outOp = (form.factoryGateInOperator && form.factoryGateInOperator.trim()) || (form.factoryGateOutOperator && form.factoryGateOutOperator.trim()) || models.getActiveUser();
+
+            const sGateOutType = form.gateOutType || "STANDARD";
+            const sUserRemarks = (form.remarks && form.remarks.trim()) || "";
+            const sPrefixedRemarks = sUserRemarks ? `[Gate Out Type: ${sGateOutType}] ${sUserRemarks}` : `[Gate Out Type: ${sGateOutType}] Factory yard operations completed`;
 
             const payload = {
                 gateInNumber: form.gateInNumber,
@@ -491,9 +587,9 @@ sap.ui.define([
                 unloadingStatus: form.unloadingStatus || "COMPLETED",
                 unloadedQuantity: form.unloadedQuantity ? parseFloat(form.unloadedQuantity) : null,
                 quantityUnit: "KG",
-                goodsInspected: Boolean(form.goodsInspected),
-                sealVerified: Boolean(form.sealVerified),
-                remarks: form.remarks || "Factory yard operations completed"
+                goodsInspected: form.goodsInspected !== undefined ? Boolean(form.goodsInspected) : true,
+                sealVerified: form.sealVerified !== undefined ? Boolean(form.sealVerified) : true,
+                remarks: sPrefixedRemarks
             };
 
             const oForm = this.byId("factoryEntryForm");
@@ -520,9 +616,27 @@ sap.ui.define([
                     throw new Error(errMsg);
                 }
 
+                const successData = {
+                    gateInNumber: form.gateInNumber,
+                    vehicleRegNo: oVehicle?.vehicleRegNo || form.gateInNumber,
+                    vehicleType: oVehicle?.vehicleType || "TRUCK",
+                    driverName: oVehicle?.driverName || "-",
+                    transporterName: form.transporterName || oVehicle?.transporter?.transporterName || "-",
+                    poNumber: form.poNumber || "N/A",
+                    supplierName: form.supplierName || "-",
+                    gateOutType: sGateOutType,
+                    factoryGateInDateTime: form.factoryGateInDateTime,
+                    factoryGateInOperator: form.factoryGateInOperator,
+                    factoryGateOutDateTime: outTime,
+                    factoryGateOutOperator: outOp,
+                    remarks: sUserRemarks || "Factory yard operations completed"
+                };
+                this._oFacModel.setProperty("/gateOutSuccess", successData);
+
                 MessageToast.show(`Factory Gate OUT clearance recorded for #${form.gateInNumber}!`);
                 this.getOwnerComponent().loadOverviewData();
                 await this.loadFactoryData();
+                this._openFactoryGateOutSuccessDialog();
             } catch (err) {
                 MessageBox.error(err.message);
             } finally {
@@ -541,7 +655,11 @@ sap.ui.define([
             const inTime = form.factoryGateInDateTime || (form.factoryGateInDateTimeStr ? new Date(form.factoryGateInDateTimeStr).toISOString() : new Date().toISOString());
             const inOp = (form.factoryGateInOperator && form.factoryGateInOperator.trim()) || models.getActiveUser();
             const outTime = form.factoryGateOutDateTime || (form.factoryGateOutDateTimeStr ? new Date(form.factoryGateOutDateTimeStr).toISOString() : new Date().toISOString());
-            const outOp = (form.factoryGateOutOperator && form.factoryGateOutOperator.trim()) || models.getActiveUser();
+            const outOp = (form.factoryGateOutOperator && form.factoryGateOutOperator.trim()) || inOp;
+
+            const sGateOutType = form.gateOutType || "STANDARD";
+            const sUserRemarks = (form.remarks && form.remarks.trim()) || "";
+            const sPrefixedRemarks = sUserRemarks ? `[Gate Out Type: ${sGateOutType}] ${sUserRemarks}` : `[Gate Out Type: ${sGateOutType}] Full Factory clearance completed`;
 
             const payload = {
                 gateInNumber: form.gateInNumber,
@@ -549,7 +667,7 @@ sap.ui.define([
                 factoryGateInOperator: inOp,
                 factoryGateOutDateTime: outTime,
                 factoryGateOutOperator: outOp,
-                factoryArea: form.factoryArea,
+                factoryArea: form.factoryArea || "Raw Material Yard",
                 unloadingPoint: form.unloadingPoint || "",
                 poNumber: form.poNumber || "",
                 invoiceNumber: form.invoiceNumber || "",
@@ -561,9 +679,9 @@ sap.ui.define([
                 unloadedQuantity: form.unloadedQuantity ? parseFloat(form.unloadedQuantity) : null,
                 quantityUnit: "KG",
                 deliveryNoteNo: form.deliveryNoteNo || "",
-                goodsInspected: Boolean(form.goodsInspected),
-                sealVerified: Boolean(form.sealVerified),
-                remarks: form.remarks || "Full Factory clearance completed"
+                goodsInspected: form.goodsInspected !== undefined ? Boolean(form.goodsInspected) : true,
+                sealVerified: form.sealVerified !== undefined ? Boolean(form.sealVerified) : true,
+                remarks: sPrefixedRemarks
             };
 
             const oForm = this.byId("factoryEntryForm");
@@ -590,13 +708,94 @@ sap.ui.define([
                     throw new Error(errMsg);
                 }
 
+                const oVehicle = this._oFacModel.getProperty("/selectedVehicle");
+                const successData = {
+                    gateInNumber: form.gateInNumber,
+                    vehicleRegNo: oVehicle?.vehicleRegNo || form.gateInNumber,
+                    vehicleType: oVehicle?.vehicleType || "TRUCK",
+                    driverName: oVehicle?.driverName || "-",
+                    transporterName: form.transporterName || oVehicle?.transporter?.transporterName || "-",
+                    poNumber: form.poNumber || "N/A",
+                    supplierName: form.supplierName || "-",
+                    gateOutType: sGateOutType,
+                    factoryGateInDateTime: inTime,
+                    factoryGateInOperator: inOp,
+                    factoryGateOutDateTime: outTime,
+                    factoryGateOutOperator: outOp,
+                    remarks: sUserRemarks || "Full Factory clearance completed"
+                };
+                this._oFacModel.setProperty("/gateOutSuccess", successData);
+
                 MessageToast.show(`Complete Factory clearance recorded for #${form.gateInNumber}!`);
                 this.getOwnerComponent().loadOverviewData();
                 await this.loadFactoryData();
+                this._openFactoryGateOutSuccessDialog();
             } catch (err) {
                 MessageBox.error(err.message);
             } finally {
                 if (oForm) oForm.setBusy(false);
+            }
+        },
+
+        _openFactoryGateInSuccessDialog: function () {
+            const oView = this.getView();
+            const sId = oView.createId("facGateInSuccessFrag");
+            if (!this._pFactoryGateInSuccessDialog) {
+                this._pFactoryGateInSuccessDialog = Fragment.load({
+                    id: sId,
+                    name: "factory.gate.fragment.FactoryGateInSuccessDialog",
+                    controller: this
+                }).then(function (oDialog) {
+                    oView.addDependent(oDialog);
+                    return oDialog;
+                });
+            }
+            this._pFactoryGateInSuccessDialog.then(function (oDialog) {
+                oDialog.open();
+            });
+        },
+
+        onCloseFactoryGateInSuccessDialog: function () {
+            if (this._pFactoryGateInSuccessDialog) {
+                this._pFactoryGateInSuccessDialog.then(oDialog => oDialog.close());
+            }
+        },
+
+        onPrintFactoryGateInSlip: function () {
+            const data = this._oFacModel.getProperty("/gateInSuccess");
+            if (data) {
+                this.getOwnerComponent().printFactoryGateInSlip(data);
+            }
+        },
+
+        _openFactoryGateOutSuccessDialog: function () {
+            const oView = this.getView();
+            const sId = oView.createId("facGateOutSuccessFrag");
+            if (!this._pFactoryGateOutSuccessDialog) {
+                this._pFactoryGateOutSuccessDialog = Fragment.load({
+                    id: sId,
+                    name: "factory.gate.fragment.FactoryGateOutSuccessDialog",
+                    controller: this
+                }).then(function (oDialog) {
+                    oView.addDependent(oDialog);
+                    return oDialog;
+                });
+            }
+            this._pFactoryGateOutSuccessDialog.then(function (oDialog) {
+                oDialog.open();
+            });
+        },
+
+        onCloseFactoryGateOutSuccessDialog: function () {
+            if (this._pFactoryGateOutSuccessDialog) {
+                this._pFactoryGateOutSuccessDialog.then(oDialog => oDialog.close());
+            }
+        },
+
+        onPrintFactoryGateOutSlip: function () {
+            const data = this._oFacModel.getProperty("/gateOutSuccess");
+            if (data) {
+                this.getOwnerComponent().printFactoryGateOutSlip(data);
             }
         },
 
@@ -606,9 +805,12 @@ sap.ui.define([
             if (oCombo) {
                 oCombo.setValueState("None");
                 oCombo.setValueStateText("");
+                oCombo.setSelectedKey("");
+                oCombo.setValue("");
             }
             this._oFacModel.setProperty("/selectedGateInNumber", "");
             this._oFacModel.setProperty("/selectedVehicle", null);
+            this._oFacModel.setProperty("/selectedPoDetails", null);
             this._oFacModel.setProperty("/vehicleStageMessage", "");
             this._oFacModel.setProperty("/vehicleStageMessageType", "None");
             this._oFacModel.setProperty("/form", {
@@ -618,8 +820,9 @@ sap.ui.define([
                 invoiceDate: null,
                 supplierName: "",
                 transporterName: "",
-                factoryArea: "Methanol Plant - Unloading Bay",
+                factoryArea: "Raw Material Yard",
                 unloadingPoint: "",
+                gateOutType: "STANDARD",
                 factoryGateInDateTime: nowIso,
                 factoryGateInDateTimeStr: nowIso.substring(0, 19),
                 factoryGateInOperator: models.getActiveUser(),
@@ -645,20 +848,30 @@ sap.ui.define([
             }
         },
 
-        onRowFactoryInPress: function (oEvt) {
+        onRowFactoryInPress: async function (oEvt) {
             const oCtx = oEvt.getSource().getBindingContext("facModel");
             if (oCtx) {
                 const oTx = oCtx.getObject();
-                this._populateFormFromVehicle(oTx, false);
-                this.onRecordFactoryIn();
+                await this._populateFormFromVehicle(oTx, false);
+                const form = this._oFacModel.getProperty("/form");
+                if (form.factoryGateInOperator && form.factoryGateInOperator.trim()) {
+                    this.onRecordFactoryIn();
+                } else {
+                    MessageToast.show(`Loaded #${oTx.gateInNumber}. Please enter your operator name and click 'Record Factory Gate IN'.`);
+                }
             }
         },
 
-        onRowFactoryOutPress: function (oEvt) {
+        onRowFactoryOutPress: async function (oEvt) {
             const oCtx = oEvt.getSource().getBindingContext("facModel");
             if (oCtx) {
                 const oTx = oCtx.getObject();
-                this._populateFormFromVehicle(oTx, false);
+                await this._populateFormFromVehicle(oTx, false);
+                if (!this._oFacModel.getProperty("/form/factoryGateOutDateTimeStr")) {
+                    const now = new Date().toISOString();
+                    this._oFacModel.setProperty("/form/factoryGateOutDateTime", now);
+                    this._oFacModel.setProperty("/form/factoryGateOutDateTimeStr", now.substring(0, 19));
+                }
                 this.onRecordFactoryOut();
             }
         },
@@ -667,7 +880,13 @@ sap.ui.define([
             const oCtx = oEvt.getSource().getBindingContext("facModel");
             if (oCtx) {
                 const oTx = oCtx.getObject();
-                this.getOwnerComponent().printGateInPass(oTx);
+                if (oTx.factoryEntry && oTx.factoryEntry.factoryGateOutDateTime) {
+                    this.getOwnerComponent().printFactoryGateOutSlip(oTx);
+                } else if (oTx.factoryEntry && oTx.factoryEntry.factoryGateInDateTime) {
+                    this.getOwnerComponent().printFactoryGateInSlip(oTx);
+                } else {
+                    this.getOwnerComponent().printGateInPass(oTx);
+                }
             }
         },
 

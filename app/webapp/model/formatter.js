@@ -6,6 +6,7 @@ sap.ui.define([
 
     const ValueState = coreLibrary.ValueState;
     const dtFormat = DateFormat.getDateTimeInstance({ style: "medium" });
+    const dFormat = DateFormat.getDateInstance({ style: "medium" });
 
     return {
         formatDateTime: function (val) {
@@ -15,6 +16,16 @@ sap.ui.define([
                 return isNaN(d.getTime()) ? "-" : dtFormat.format(d);
             } catch (e) {
                 return "-";
+            }
+        },
+
+        formatDate: function (val) {
+            if (!val) return "-";
+            try {
+                const d = new Date(val);
+                return isNaN(d.getTime()) ? String(val) : dFormat.format(d);
+            } catch (e) {
+                return String(val) || "-";
             }
         },
 
@@ -101,6 +112,40 @@ sap.ui.define([
                     return "GROSS_OUT - Gross Outbound (Loaded Truck)";
                 default:
                     return type || "-";
+            }
+        },
+
+        getGateOutTypeDesc: function (type) {
+            switch (type) {
+                case "RGP":
+                    return "RGP - Returnable Gate Pass";
+                case "NRGP":
+                    return "NRGP - Non-Returnable Gate Pass";
+                case "STANDARD":
+                    return "Standard Clearance (Delivery Completed)";
+                case "MATERIAL_RETURN":
+                    return "Material Return / Rejection";
+                case "EMPTY_VEHICLE":
+                    return "Empty Vehicle Exit";
+                default:
+                    return type || "Standard Clearance";
+            }
+        },
+
+        getGateOutTypeState: function (type) {
+            switch (type) {
+                case "RGP":
+                    return ValueState.Warning;
+                case "NRGP":
+                    return ValueState.Information;
+                case "STANDARD":
+                    return ValueState.Success;
+                case "MATERIAL_RETURN":
+                    return ValueState.Error;
+                case "EMPTY_VEHICLE":
+                    return ValueState.None;
+                default:
+                    return ValueState.None;
             }
         }
     };

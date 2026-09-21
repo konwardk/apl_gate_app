@@ -1176,6 +1176,309 @@ sap.ui.define([
             }, 300);
         },
 
+        printFactoryGateOutSlip: function (tx) {
+            if (!tx || !tx.gateInNumber) {
+                MessageToast.show("No Factory Gate OUT record available to print.");
+                return;
+            }
+
+            let iframe = document.getElementById("factoryGateOutPrintIframe");
+            if (!iframe) {
+                iframe = document.createElement("iframe");
+                iframe.id = "factoryGateOutPrintIframe";
+                iframe.style.position = "fixed";
+                iframe.style.right = "0";
+                iframe.style.bottom = "0";
+                iframe.style.width = "0";
+                iframe.style.height = "0";
+                iframe.style.border = "0";
+                iframe.style.visibility = "hidden";
+                document.body.appendChild(iframe);
+            }
+
+            const sGateInNo = tx.gateInNumber;
+            const sVehicleReg = tx.vehicleRegNo || (tx.vehicle && tx.vehicle.vehicleRegNo) || "-";
+            const sVehicleType = tx.vehicleType || (tx.vehicle && tx.vehicle.vehicleType) || "TRUCK";
+            const sDriver = tx.driverName || (tx.driver && tx.driver.driverName) || "-";
+            const sTransporter = tx.transporterName || (tx.transporter && tx.transporter.transporterName) || (tx.factoryEntry && tx.factoryEntry.transporterName) || "-";
+            const sPo = tx.poNumber || (tx.factoryEntry && tx.factoryEntry.poNumber) || (tx.securityEntry && tx.securityEntry.poNumber) || "-";
+            const sSupplier = tx.supplierName || (tx.supplier && tx.supplier.supplierName) || (tx.factoryEntry && tx.factoryEntry.supplierName) || "-";
+            const sInvoice = tx.invoiceNumber || (tx.factoryEntry && tx.factoryEntry.invoiceNumber) || (tx.securityEntry && tx.securityEntry.invoiceNumber) || "-";
+
+            let sGateOutType = tx.gateOutType || "";
+            if (!sGateOutType && tx.factoryEntry && tx.factoryEntry.remarks) {
+                const match = tx.factoryEntry.remarks.match(/\[Gate Out Type:\s*([^\]]+)\]/i);
+                if (match) sGateOutType = match[1].trim();
+            }
+            if (!sGateOutType && tx.securityEntry && tx.securityEntry.gatePassType) {
+                sGateOutType = tx.securityEntry.gatePassType;
+            }
+            if (!sGateOutType) sGateOutType = "STANDARD";
+            const sGateOutTypeDesc = tx.gateOutTypeDesc || formatter.getGateOutTypeDesc(sGateOutType);
+
+            const sFacInDate = tx.factoryGateInDateTime || (tx.factoryEntry && tx.factoryEntry.factoryGateInDateTime);
+            const sFacInOp = tx.factoryGateInOperator || (tx.factoryEntry && tx.factoryEntry.factoryGateInOperator) || "Factory Operator";
+            const sFacOutDate = tx.factoryGateOutDateTime || (tx.factoryEntry && tx.factoryEntry.factoryGateOutDateTime) || new Date();
+            const sFacOutOp = tx.factoryGateOutOperator || (tx.factoryEntry && tx.factoryEntry.factoryGateOutOperator) || "Factory Operator";
+
+            let sRemarks = tx.remarks || (tx.factoryEntry && tx.factoryEntry.remarks) || "Clearance Completed";
+            sRemarks = sRemarks.replace(/\[Gate Out Type:\s*[^\]]+\]\s*/i, "").trim() || "Yard clearance completed";
+
+            const barcodeSvg = this._generateBarcodeSvg(sGateInNo);
+
+            const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>APL Factory Gate OUT Clearance - ${sGateInNo}</title>
+                <style>
+                    @page { size: auto; margin: 10mm; }
+                    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+                    body { background: #ffffff; color: #111827; padding: 10px; font-size: 13px; }
+                    .slip-card { max-width: 560px; margin: 0 auto; border: 2px solid #111827; border-radius: 6px; padding: 22px 26px; }
+                    .header-box { text-align: center; border-bottom: 2px solid #111827; padding-bottom: 12px; margin-bottom: 14px; }
+                    .company-name { font-size: 18px; font-weight: 800; color: #111827; letter-spacing: 0.5px; text-transform: uppercase; }
+                    .company-sub { font-size: 13px; font-weight: 700; color: #15803d; letter-spacing: 1px; margin-top: 3px; }
+                    .barcode-box { text-align: center; margin: 12px 0 16px 0; padding: 8px 0; background: #f8fafc; border-radius: 4px; }
+                    .barcode-text { font-family: "Courier New", Courier, monospace; font-size: 13px; font-weight: 700; letter-spacing: 3px; color: #1e293b; margin-top: 4px; }
+                    .details-table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+                    .details-table td { padding: 7px 10px; border-bottom: 1px solid #e5e7eb; font-size: 12.5px; }
+                    .label-col { width: 40%; font-weight: 600; color: #4b5563; text-transform: uppercase; font-size: 11px; }
+                    .val-col { width: 60%; font-weight: 700; color: #111827; }
+                    .highlight-num { font-size: 16px; color: #0284c7; font-family: "Courier New", Courier, monospace; }
+                    .type-badge { display: inline-block; padding: 3px 9px; border-radius: 4px; font-size: 12px; font-weight: 800; }
+                    .badge-rgp { background: #fef3c7; color: #b45309; border: 1px solid #f59e0b; }
+                    .badge-nrgp { background: #e0f2fe; color: #0369a1; border: 1px solid #38bdf8; }
+                    .badge-standard { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+                    .badge-return { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+                    .signatures-box { display: flex; justify-content: space-between; margin-top: 32px; padding-top: 8px; }
+                    .sig-item { width: 30%; text-align: center; }
+                    .sig-line { border-top: 1px dashed #6b7280; margin-top: 36px; margin-bottom: 5px; }
+                    .sig-label { font-size: 10.5px; font-weight: 600; color: #374151; }
+                </style>
+            </head>
+            <body>
+                <div class="slip-card">
+                    <div class="header-box">
+                        <div class="company-name">Assam Petro-chemicals Ltd (APL)</div>
+                        <div class="company-sub">FACTORY GATE OUT CLEARANCE SLIP</div>
+                    </div>
+
+                    <div class="barcode-box">
+                        ${barcodeSvg}
+                        <div class="barcode-text">* ${sGateInNo} *</div>
+                    </div>
+
+                    <table class="details-table">
+                        <tr>
+                            <td class="label-col">Gate IN Number</td>
+                            <td class="val-col highlight-num">${sGateInNo}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">Gate Out Type</td>
+                            <td class="val-col">
+                                <span class="type-badge ${sGateOutType === 'RGP' ? 'badge-rgp' : (sGateOutType === 'NRGP' ? 'badge-nrgp' : (sGateOutType === 'MATERIAL_RETURN' ? 'badge-return' : 'badge-standard'))}">
+                                    ${sGateOutTypeDesc}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">Vehicle Reg No</td>
+                            <td class="val-col">${sVehicleReg} (${sVehicleType})</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">Driver / Transporter</td>
+                            <td class="val-col">${sDriver} / ${sTransporter}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">Purchase Order (PO)</td>
+                            <td class="val-col">${sPo}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">Supplier / Vendor</td>
+                            <td class="val-col">${sSupplier}</td>
+                        </tr>
+                        ${sInvoice && sInvoice !== "-" ? `
+                        <tr>
+                            <td class="label-col">Invoice Number</td>
+                            <td class="val-col">${sInvoice}</td>
+                        </tr>` : ""}
+                        <tr>
+                            <td class="label-col">Factory Gate IN</td>
+                            <td class="val-col">${formatter.formatDateTime(sFacInDate)} (By: ${sFacInOp})</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">Factory Gate OUT</td>
+                            <td class="val-col">${formatter.formatDateTime(sFacOutDate)} (By: ${sFacOutOp})</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">Clearance Status</td>
+                            <td class="val-col" style="color: #15803d;">FACTORY YARD CLEARED</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">Remarks / Observations</td>
+                            <td class="val-col">${sRemarks}</td>
+                        </tr>
+                    </table>
+
+                    <div class="signatures-box">
+                        <div class="sig-item">
+                            <div class="sig-line"></div>
+                            <div class="sig-label">Driver Signature</div>
+                        </div>
+                        <div class="sig-item">
+                            <div class="sig-line"></div>
+                            <div class="sig-label">Factory In-Charge</div>
+                        </div>
+                        <div class="sig-item">
+                            <div class="sig-line"></div>
+                            <div class="sig-label">Security Officer</div>
+                        </div>
+                    </div>
+                </div>
+            </body>
+            </html>
+            `;
+
+            const frameDoc = iframe.contentWindow.document;
+            frameDoc.open();
+            frameDoc.write(htmlContent);
+            frameDoc.close();
+
+            setTimeout(() => {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+            }, 300);
+        },
+
+        printFactoryGateInSlip: function (tx) {
+            if (!tx || !tx.gateInNumber) {
+                MessageToast.show("No Factory Gate IN record available to print.");
+                return;
+            }
+
+            let iframe = document.getElementById("factoryGateInPrintIframe");
+            if (!iframe) {
+                iframe = document.createElement("iframe");
+                iframe.id = "factoryGateInPrintIframe";
+                iframe.style.position = "fixed";
+                iframe.style.right = "0";
+                iframe.style.bottom = "0";
+                iframe.style.width = "0";
+                iframe.style.height = "0";
+                iframe.style.border = "0";
+                iframe.style.visibility = "hidden";
+                document.body.appendChild(iframe);
+            }
+
+            const sGateInNo = tx.gateInNumber;
+            const sVehicleReg = tx.vehicleRegNo || (tx.vehicle && tx.vehicle.vehicleRegNo) || "-";
+            const sVehicleType = tx.vehicleType || (tx.vehicle && tx.vehicle.vehicleType) || "TRUCK";
+            const sDriver = tx.driverName || (tx.driver && tx.driver.driverName) || "-";
+            const sTransporter = tx.transporterName || (tx.transporter && tx.transporter.transporterName) || "-";
+            const sPo = tx.poNumber || "-";
+            const sSupplier = tx.supplierName || "-";
+            const sFacInDate = tx.factoryGateInDateTime || new Date();
+            const sFacInOp = tx.factoryGateInOperator || "Factory Operator";
+            const barcodeSvg = this._generateBarcodeSvg(sGateInNo);
+
+            const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>APL Factory Gate IN Slip - ${sGateInNo}</title>
+                <style>
+                    @page { size: auto; margin: 10mm; }
+                    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+                    body { background: #ffffff; color: #111827; padding: 10px; font-size: 13px; }
+                    .slip-card { max-width: 540px; margin: 0 auto; border: 2px solid #111827; border-radius: 6px; padding: 22px 26px; }
+                    .header-box { text-align: center; border-bottom: 2px solid #111827; padding-bottom: 12px; margin-bottom: 14px; }
+                    .company-name { font-size: 18px; font-weight: 800; color: #111827; letter-spacing: 0.5px; text-transform: uppercase; }
+                    .company-sub { font-size: 13px; font-weight: 700; color: #0284c7; letter-spacing: 1px; margin-top: 3px; }
+                    .barcode-box { text-align: center; margin: 12px 0 16px 0; padding: 8px 0; background: #f8fafc; border-radius: 4px; }
+                    .barcode-text { font-family: "Courier New", Courier, monospace; font-size: 13px; font-weight: 700; letter-spacing: 3px; color: #1e293b; margin-top: 4px; }
+                    .details-table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+                    .details-table td { padding: 8px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px; }
+                    .label-col { width: 42%; font-weight: 600; color: #4b5563; text-transform: uppercase; font-size: 11.5px; }
+                    .val-col { width: 58%; font-weight: 700; color: #111827; }
+                    .highlight-num { font-size: 16px; color: #0284c7; font-family: "Courier New", Courier, monospace; }
+                    .signatures-box { display: flex; justify-content: space-between; margin-top: 30px; padding-top: 8px; }
+                    .sig-item { width: 45%; text-align: center; }
+                    .sig-line { border-top: 1px dashed #6b7280; margin-top: 35px; margin-bottom: 5px; }
+                    .sig-label { font-size: 11px; font-weight: 600; color: #374151; }
+                </style>
+            </head>
+            <body>
+                <div class="slip-card">
+                    <div class="header-box">
+                        <div class="company-name">Assam Petro-chemicals Ltd (APL)</div>
+                        <div class="company-sub">FACTORY GATE IN ENTRY SLIP</div>
+                    </div>
+
+                    <div class="barcode-box">
+                        ${barcodeSvg}
+                        <div class="barcode-text">* ${sGateInNo} *</div>
+                    </div>
+
+                    <table class="details-table">
+                        <tr>
+                            <td class="label-col">Gate IN Number</td>
+                            <td class="val-col highlight-num">${sGateInNo}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">Vehicle Registration No</td>
+                            <td class="val-col">${sVehicleReg} (${sVehicleType})</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">Driver / Transporter</td>
+                            <td class="val-col">${sDriver} / ${sTransporter}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">PO Number</td>
+                            <td class="val-col">${sPo}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">Supplier</td>
+                            <td class="val-col">${sSupplier}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">Factory Gate IN Time</td>
+                            <td class="val-col">${formatter.formatDateTime(sFacInDate)}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-col">Inbound Operator</td>
+                            <td class="val-col">${sFacInOp}</td>
+                        </tr>
+                    </table>
+
+                    <div class="signatures-box">
+                        <div class="sig-item">
+                            <div class="sig-line"></div>
+                            <div class="sig-label">Driver Signature</div>
+                        </div>
+                        <div class="sig-item">
+                            <div class="sig-line"></div>
+                            <div class="sig-label">Factory Operator Signature</div>
+                        </div>
+                    </div>
+                </div>
+            </body>
+            </html>
+            `;
+
+            const frameDoc = iframe.contentWindow.document;
+            frameDoc.open();
+            frameDoc.write(htmlContent);
+            frameDoc.close();
+
+            setTimeout(() => {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+            }, 300);
+        },
+
         _generateBarcodeSvg: function (text) {
             if (!text) text = "GATE-PASS";
             let x = 10;

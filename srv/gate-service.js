@@ -434,7 +434,46 @@ export default cds.service.impl(async function () {
                 }
             ];
 
-            return fallbackPOs;
+            let result = [...fallbackPOs];
+
+            // Apply WHERE filtering if provided in CQN
+            if (req.query?.SELECT?.where) {
+                const where = req.query.SELECT.where;
+                for (let i = 0; i < where.length; i++) {
+                    const col = where[i]?.ref?.[0] || (typeof where[i] === 'string' ? where[i] : null);
+                    const op = where[i + 1];
+                    const val = where[i + 2]?.val ?? where[i + 2];
+                    if (col && op === '=' && val !== undefined) {
+                        result = result.filter(item => String(item[col]).toLowerCase() === String(val).toLowerCase());
+                        i += 2;
+                    }
+                }
+            }
+
+            // Apply ORDER BY sorting if provided
+            if (req.query?.SELECT?.orderBy && req.query.SELECT.orderBy.length > 0) {
+                const orderItem = req.query.SELECT.orderBy[0];
+                const sortCol = orderItem?.ref?.[0];
+                const isDesc = orderItem?.sort === 'desc';
+                if (sortCol) {
+                    result.sort((a, b) => {
+                        if (a[sortCol] < b[sortCol]) return isDesc ? 1 : -1;
+                        if (a[sortCol] > b[sortCol]) return isDesc ? -1 : 1;
+                        return 0;
+                    });
+                }
+            }
+
+            // Apply LIMIT / TOP if provided
+            if (req.query?.SELECT?.limit?.rows?.val) {
+                result = result.slice(0, req.query.SELECT.limit.rows.val);
+            }
+
+            if (req.query?.SELECT?.count) {
+                result.$count = result.length;
+            }
+
+            return result;
         }
     });
 
@@ -1182,10 +1221,10 @@ export default cds.service.impl(async function () {
 
         const transaction = await getTransaction(gateInNumber, req);
 
-        // Allow both SECURITY_IN (direct entry without scale) and WEIGHBRIDGE_IN (entry after scale)
+        // Allow SECURITY_IN (direct entry without scale), WEIGHBRIDGE_IN (entry after scale), and FACTORY_IN (direct factory route assigned from Security Gate or updating check-in)
         validateStage(
             transaction,
-            ['SECURITY_IN', 'WEIGHBRIDGE_IN'],
+            ['SECURITY_IN', 'WEIGHBRIDGE_IN', 'FACTORY_IN'],
             req
         );
 

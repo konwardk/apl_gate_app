@@ -6,6 +6,7 @@
         title="Select Purchase Order (SAP S/4HANA Cloud)"
         noDataText="No Purchase Orders found"
         search=".onPoValueHelpSearch"
+        liveChange=".onPoValueHelpSearch"
         confirm=".onPoValueHelpConfirm"
         cancel=".onPoValueHelpCancel"
         contentWidth="750px"

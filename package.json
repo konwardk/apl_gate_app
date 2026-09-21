@@ -14,7 +14,7 @@
   "scripts": {
     "start": "cds-serve",
     "watch": "cds watch",
-    "test": "node test/gate-crud.test.js && node test/security-gate.test.js && node test/weighbridge.test.js && node test/gate-out.test.js && node test/security-gate-out.test.js && node test/bypass-weighbridge.test.js && node test/entry-wise-edit.test.js && node test/factory-gate.test.js && node test/security-route-assign.test.js"
+    "test": "node test/gate-crud.test.js && node test/security-gate.test.js && node test/weighbridge.test.js && node test/gate-out.test.js && node test/security-gate-out.test.js && node test/bypass-weighbridge.test.js && node test/entry-wise-edit.test.js && node test/factory-gate.test.js && node test/security-route-assign.test.js && node test/po-service.test.js"
   },
   "sapux": [
     "app/gate-entry",
@@ -24,7 +24,7 @@
   "cds": {
     "requires": {
       "CE_PURCHASEORDER_0001": {
-        "kind": "odata",
+        "kind": "odata-v4",
         "model": "srv/external/CE_PURCHASEORDER_0001",
         "[production]": {
           "credentials": {

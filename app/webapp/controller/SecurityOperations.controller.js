@@ -640,19 +640,25 @@ sap.ui.define([
         },
 
         onPoValueHelpSearch: function (oEvt) {
-            const sValue = (oEvt.getParameter("value") || "").trim().toUpperCase();
+            const sValue = (oEvt.getParameter("value") || "").trim();
+            const oBinding = oEvt.getSource().getBinding("items");
+            if (!oBinding) return;
+
+            if (!sValue) {
+                oBinding.filter([]);
+                return;
+            }
+
             const oFilter = new Filter({
                 filters: [
-                    new Filter("PurchaseOrder", FilterOperator.Contains, sValue),
-                    new Filter("Supplier", FilterOperator.Contains, sValue),
-                    new Filter("CompanyCode", FilterOperator.Contains, sValue)
+                    new Filter({ path: "PurchaseOrder", operator: FilterOperator.Contains, value1: sValue, caseSensitive: false }),
+                    new Filter({ path: "PurchaseOrderType", operator: FilterOperator.Contains, value1: sValue, caseSensitive: false }),
+                    new Filter({ path: "Supplier", operator: FilterOperator.Contains, value1: sValue, caseSensitive: false }),
+                    new Filter({ path: "CompanyCode", operator: FilterOperator.Contains, value1: sValue, caseSensitive: false })
                 ],
                 and: false
             });
-            const oBinding = oEvt.getSource().getBinding("items");
-            if (oBinding) {
-                oBinding.filter(sValue ? [oFilter] : []);
-            }
+            oBinding.filter([oFilter]);
         },
 
         onPoValueHelpConfirm: function (oEvt) {

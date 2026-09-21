@@ -1,0 +1,92 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:core="sap.ui.core">
+    <Dialog
+        id="factoryGateOutSuccessDialog"
+        title="Factory Gate OUT Clearance Completed"
+        type="Message"
+        state="Success"
+        contentWidth="540px">
+        <content>
+            <VBox alignItems="Center" class="sapUiSmallMargin">
+                <core:Icon
+                    src="sap-icon://sys-enter-2"
+                    color="#107e3e"
+                    size="2.8rem"
+                    class="sapUiSmallMarginBottom" />
+                <Title
+                    text="{facModel>/gateOutSuccess/gateInNumber}"
+                    level="H1"
+                    titleStyle="H1"
+                    class="sapUiTinyMarginBottom success-gate-number" />
+                <ObjectStatus
+                    text="Status: FACTORY_OUT (Yard Clearance Completed)"
+                    state="Success"
+                    class="sapUiTinyMarginBottom" />
+                <ObjectStatus
+                    text="{path: 'facModel>/gateOutSuccess/gateOutType', formatter: '.formatter.getGateOutTypeDesc'}"
+                    state="{path: 'facModel>/gateOutSuccess/gateOutType', formatter: '.formatter.getGateOutTypeState'}"
+                    icon="sap-icon://tag"
+                    class="sapUiSmallMarginBottom" />
+
+                <form:SimpleForm
+                    layout="ResponsiveGridLayout"
+                    labelSpanXL="5"
+                    labelSpanL="5"
+                    labelSpanM="5"
+                    labelSpanS="12"
+                    adjustLabelSpan="false"
+                    emptySpanXL="0"
+                    emptySpanL="0"
+                    columnsXL="1"
+                    columnsL="1"
+                    width="100%">
+                    <form:content>
+                        <Label text="Vehicle Reg No" />
+                        <Text text="{facModel>/gateOutSuccess/vehicleRegNo} ({facModel>/gateOutSuccess/vehicleType})" design="Bold" />
+
+                        <Label text="Driver / Transporter" />
+                        <Text text="{facModel>/gateOutSuccess/driverName} / {facModel>/gateOutSuccess/transporterName}" />
+
+                        <Label text="PO Number" />
+                        <Text text="{facModel>/gateOutSuccess/poNumber}" design="Bold" />
+
+                        <Label text="Supplier" />
+                        <Text text="{facModel>/gateOutSuccess/supplierName}" />
+
+                        <Label text="Gate Out Type" />
+                        <Text text="{path: 'facModel>/gateOutSuccess/gateOutType', formatter: '.formatter.getGateOutTypeDesc'}" design="Bold" />
+
+                        <Label text="Factory Gate IN" />
+                        <Text text="{path: 'facModel>/gateOutSuccess/factoryGateInDateTime', formatter: '.formatter.formatDateTime'}" />
+
+                        <Label text="Inbound Operator" />
+                        <Text text="{facModel>/gateOutSuccess/factoryGateInOperator}" />
+
+                        <Label text="Factory Gate OUT" />
+                        <Text text="{path: 'facModel>/gateOutSuccess/factoryGateOutDateTime', formatter: '.formatter.formatDateTime'}" />
+
+                        <Label text="Outbound Operator" />
+                        <Text text="{facModel>/gateOutSuccess/factoryGateOutOperator}" />
+
+                        <Label text="Remarks" />
+                        <Text text="{= ${facModel>/gateOutSuccess/remarks} || '-' }" />
+                    </form:content>
+                </form:SimpleForm>
+            </VBox>
+        </content>
+        <beginButton>
+            <Button
+                text="Print Gate OUT Slip"
+                icon="sap-icon://print"
+                type="Emphasized"
+                press=".onPrintFactoryGateOutSlip" />
+        </beginButton>
+        <endButton>
+            <Button
+                text="Close"
+                press=".onCloseFactoryGateOutSuccessDialog" />
+        </endButton>
+    </Dialog>
+</core:FragmentDefinition>
