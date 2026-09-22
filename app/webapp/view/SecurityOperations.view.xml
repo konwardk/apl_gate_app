@@ -201,20 +201,23 @@
                                     alignItems="Center"
                                     wrap="NoWrap"
                                     class="sapUiNoMargin">
+                                <!-- Gate IN button: visible only before Security Gate IN is performed -->
                                 <Button
                                     text="Gate IN"
                                     icon="sap-icon://shield"
                                     type="Emphasized"
                                     tooltip="Process Security Gate IN"
-                                    visible="{= ${secModel>status} === 'GATE_IN' &amp;&amp; !${secModel>securityEntry/securityInDateTime} }"
+                                    visible="{secModel>canSecurityGateIn}"
                                     press=".onRowGateInPress"
                                     class="sapUiTinyMarginEnd" />
+
+                                <!-- Route assignment buttons (only if vehicle is at SECURITY_IN and route has not yet been assigned) -->
                                 <Button
                                     text="To Weighbridge"
                                     icon="sap-icon://dimension"
                                     type="Default"
                                     tooltip="Assign Route: Send vehicle to Weighbridge for gross/tare weighment"
-                                    visible="{= ${secModel>status} === 'SECURITY_IN' }"
+                                    visible="{secModel>canAssignRoute}"
                                     press=".onRowSendToWeighbridgePress"
                                     class="sapUiTinyMarginEnd" />
                                 <Button
@@ -222,25 +225,46 @@
                                     icon="sap-icon://factory"
                                     type="Emphasized"
                                     tooltip="Assign Route: Send vehicle directly to Factory Gate (Bypass Weighbridge)"
-                                    visible="{= ${secModel>status} === 'SECURITY_IN' }"
+                                    visible="{secModel>canAssignRoute}"
                                     press=".onRowSendToFactoryPress"
                                     class="sapUiTinyMarginEnd" />
+
+                                <!-- Assigned Section indicator buttons: once Gate IN is done, shows where it is assigned -->
                                 <Button
-                                    text="Release Factory"
-                                    icon="sap-icon://log-out"
-                                    type="Attention"
-                                    tooltip="Complete Factory Operations and Release Vehicle"
-                                    visible="{= ${secModel>status} === 'FACTORY_IN' }"
-                                    press=".onRowReleaseFromFactoryPress"
+                                    text="At Weighbridge"
+                                    icon="sap-icon://dimension"
+                                    type="Information"
+                                    tooltip="Assigned to Weighbridge. Operation pending at Weighbridge. Click to navigate to Weighbridge Operations."
+                                    visible="{secModel>isAtWeighbridge}"
+                                    press=".onRowNavToWeighbridge"
                                     class="sapUiTinyMarginEnd" />
+                                <Button
+                                    text="At Factory"
+                                    icon="sap-icon://factory"
+                                    type="Information"
+                                    tooltip="Assigned to Factory Gate. Operation pending in Factory Yard. Click to navigate to Factory Operations."
+                                    visible="{secModel>isAtFactory}"
+                                    press=".onRowNavToFactory"
+                                    class="sapUiTinyMarginEnd" />
+
+                                <!-- Gate OUT button: visible ONLY when next operation in Weighbridge or Factory is completed -->
                                 <Button
                                     text="Gate OUT"
                                     icon="sap-icon://log-out"
                                     type="Success"
-                                    tooltip="Process Security Gate OUT"
-                                    visible="{= (${secModel>status} === 'WEIGHBRIDGE_OUT' || ${secModel>status} === 'FACTORY_OUT') &amp;&amp; !${secModel>securityEntry/securityOutDateTime} }"
+                                    tooltip="Process Security Gate OUT (Weighbridge/Factory operations complete)"
+                                    visible="{secModel>canSecurityGateOut}"
                                     press=".onRowGateOutPress"
                                     class="sapUiTinyMarginEnd" />
+
+                                <!-- Cleared Status Badge -->
+                                <ObjectStatus
+                                    text="Exit Cleared"
+                                    state="Success"
+                                    icon="sap-icon://sys-enter-2"
+                                    visible="{secModel>isCleared}"
+                                    class="sapUiTinyMarginEnd" />
+
                                 <Button
                                     icon="sap-icon://print"
                                     type="Transparent"

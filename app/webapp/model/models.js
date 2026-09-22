@@ -53,9 +53,9 @@ sap.ui.define([
                 canViewSecurityGateOps: isSuper || isAdmin || isSecurity,
                 canRecordWeighment: isSuper || isWeighbridge,
                 canViewWeighbridgeOps: isSuper || isAdmin || isWeighbridge,
-                canRecordFactoryOps: isSuper || isFactory || isSecurity,
-                canViewFactoryGateOps: isSuper || isAdmin || isFactory || isSecurity,
-                canViewFactoryOps: isSuper || isAdmin || isFactory || isSecurity,
+                canRecordFactoryOps: isSuper || isFactory,
+                canViewFactoryGateOps: isSuper || isAdmin || isFactory,
+                canViewFactoryOps: isSuper || isAdmin || isFactory,
                 canViewMasterData: isSuper || isAdmin,
                 canViewAuditTrail: isSuper || isAdmin || isAuditor
             };

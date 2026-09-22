@@ -68,7 +68,10 @@
                         <Text text="{path: 'facModel>/gateOutSuccess/factoryGateOutDateTime', formatter: '.formatter.formatDateTime'}" />
 
                         <Label text="Outbound Operator" />
-                        <Text text="{facModel>/gateOutSuccess/factoryGateOutOperator}" />
+                        <Text text="{facModel>/gateOutSuccess/factoryGateOutOperator}" design="Bold" />
+
+                        <Label text="Unloaded Quantity" visible="{= Boolean(${facModel>/gateOutSuccess/unloadedQuantity}) }" />
+                        <Text text="{facModel>/gateOutSuccess/unloadedQuantity} {facModel>/gateOutSuccess/quantityUnit}" visible="{= Boolean(${facModel>/gateOutSuccess/unloadedQuantity}) }" />
 
                         <Label text="Remarks" />
                         <Text text="{= ${facModel>/gateOutSuccess/remarks} || '-' }" />

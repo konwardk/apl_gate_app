@@ -49,16 +49,15 @@ async function testSecurityRouteAssignment() {
     });
 
     const txAfterFacRoute = await srv.tx({ user: securityUser }).run(SELECT.one.from(GateTransactions).where({ ID: gateTx1.ID }));
-    assert.strictEqual(txAfterFacRoute.status, 'FACTORY_IN');
+    assert.strictEqual(txAfterFacRoute.status, 'SECURITY_IN');
     assert.strictEqual(txAfterFacRoute.currentStage, 'FACTORY');
     assert.strictEqual(txAfterFacRoute.assignedRoute, 'FACTORY');
-    console.log(`[PASS] Vehicle ${txAfterFacRoute.vehicleRegNo} successfully transitioned to FACTORY_IN: Route=${txAfterFacRoute.assignedRoute}`);
+    console.log(`[PASS] Vehicle ${txAfterFacRoute.vehicleRegNo} routed to Factory Gate: Stage=${txAfterFacRoute.currentStage}, Status=${txAfterFacRoute.status}, Route=${txAfterFacRoute.assignedRoute}`);
 
-    // Verify FactoryGateEntries created
-    const facEntry = await srv.tx({ user: factoryUser }).run(SELECT.one.from(FactoryGateEntries).where({ gateTransaction_ID: gateTx1.ID }));
-    assert.ok(facEntry, 'FactoryGateEntries record should be created');
-    assert.strictEqual(facEntry.poNumber, 'PO-APL-5501');
-    console.log(`[PASS] FactoryGateEntries populated: PO=${facEntry.poNumber}, Operator=${facEntry.factoryGateInOperator}`);
+    // Verify FactoryGateEntries is NOT created by Security Gate IN (only created when Factory Gate Operator records Factory Gate IN)
+    const facEntryBefore = await srv.tx({ user: factoryUser }).run(SELECT.one.from(FactoryGateEntries).where({ gateTransaction_ID: gateTx1.ID }));
+    assert.ok(!facEntryBefore, 'FactoryGateEntries must NOT be created by Security Gate IN');
+    console.log(`[PASS] Verified Security Gate IN does not create FactoryGateEntries record`);
 
     // --- Scenario 3: Assign Route to Weighbridge on new vehicle by Security User ---
     console.log('\n--- Scenario 3: Assign Route to Weighbridge on new vehicle ---');

@@ -85,6 +85,54 @@ sap.ui.define([
             this.loadSecurityData();
         },
 
+        _enrichSecurityRecord: function (tx) {
+            const secEntry = tx.securityEntry || {};
+            const hasSecurityIn = Boolean(secEntry.securityInDateTime) || (tx.status !== "GATE_IN" && tx.status !== "CANCELLED");
+            const hasSecurityOut = Boolean(secEntry.securityOutDateTime) || ["SECURITY_OUT", "COMPLETED"].includes(tx.status);
+
+            // 1. Can do Security Gate IN
+            // Only when status is GATE_IN, Gate IN has not been performed yet, and transaction is active
+            const canSecurityGateIn = (tx.status === "GATE_IN" && !hasSecurityIn && tx.status !== "CANCELLED");
+
+            // 2. Assigned route and section
+            const sAssignedRoute = (tx.assignedRoute || secEntry.assignedRoute || "").toUpperCase().trim();
+
+            // Unassigned route: only when at SECURITY_IN and no route has been chosen yet
+            const canAssignRoute = (tx.status === "SECURITY_IN" && !sAssignedRoute);
+
+            // Assigned to Weighbridge:
+            // Route is WEIGHBRIDGE (or currently in WEIGHBRIDGE_IN), and has not completed weighbridge exit (WEIGHBRIDGE_OUT) or final clearance
+            const isAtWeighbridge = (sAssignedRoute === "WEIGHBRIDGE" || tx.status === "WEIGHBRIDGE_IN") &&
+                !["WEIGHBRIDGE_OUT", "SECURITY_OUT", "COMPLETED", "CANCELLED", "GATE_IN"].includes(tx.status);
+
+            // Assigned to Factory Gate:
+            // Route is FACTORY (or currently in FACTORY_IN / stage FACTORY), and has not completed factory exit (FACTORY_OUT) or final clearance
+            const isAtFactory = (sAssignedRoute === "FACTORY" || tx.status === "FACTORY_IN") &&
+                !["FACTORY_OUT", "SECURITY_OUT", "COMPLETED", "CANCELLED", "GATE_IN"].includes(tx.status);
+
+            // 3. Can do Security Gate OUT:
+            // Only once next operation is completed in Weighbridge (WEIGHBRIDGE_OUT) or Factory (FACTORY_OUT)
+            const canSecurityGateOut = (tx.status === "WEIGHBRIDGE_OUT" || tx.status === "FACTORY_OUT") &&
+                !hasSecurityOut &&
+                tx.status !== "CANCELLED";
+
+            // 4. Cleared
+            const isCleared = hasSecurityOut || ["SECURITY_OUT", "COMPLETED"].includes(tx.status);
+
+            return {
+                ...tx,
+                hasSecurityIn: hasSecurityIn,
+                hasSecurityOut: hasSecurityOut,
+                canSecurityGateIn: canSecurityGateIn,
+                canAssignRoute: canAssignRoute,
+                isAtWeighbridge: isAtWeighbridge,
+                isAtFactory: isAtFactory,
+                canSecurityGateOut: canSecurityGateOut,
+                isCleared: isCleared,
+                assignedRouteClean: sAssignedRoute
+            };
+        },
+
         loadSecurityData: async function () {
             const oSecModel = this.getView().getModel("secModel");
             const oTable = this.byId("secTxTable");
@@ -103,31 +151,26 @@ sap.ui.define([
                 }
 
                 const data = await res.json();
-                const aRecords = data.value || [];
+                const rawRecords = data.value || [];
+                const aRecords = rawRecords.map(tx => this._enrichSecurityRecord(tx));
                 oSecModel.setProperty("/records", aRecords);
 
                 // Derive waiting queues
-                const aWaitingIn = aRecords.filter(r => r.status === "GATE_IN");
-                // Eligible for Security Gate OUT: Scale outbound, Factory outbound, or Direct exit without scale (SECURITY_IN, FACTORY_IN)
-                const aWaitingOut = aRecords.filter(r => 
-                    r.status === "WEIGHBRIDGE_OUT" || 
-                    r.status === "FACTORY_OUT" || 
-                    r.status === "SECURITY_IN" || 
-                    r.status === "FACTORY_IN"
-                );
-                const aWaitingOutReady = aRecords.filter(r => r.status === "WEIGHBRIDGE_OUT" || r.status === "FACTORY_OUT");
+                const aWaitingIn = aRecords.filter(r => r.canSecurityGateIn);
+                // Eligible for Security Gate OUT: Scale outbound or Factory outbound completed
+                const aWaitingOut = aRecords.filter(r => r.canSecurityGateOut);
 
                 oSecModel.setProperty("/waitingVehicles", aWaitingIn);
                 oSecModel.setProperty("/waitingOutVehicles", aWaitingOut);
 
                 // Compute counts
-                const inPlantCount = aRecords.filter(r => ["SECURITY_IN", "WEIGHBRIDGE_IN", "FACTORY_IN"].includes(r.status)).length;
-                const clearedCount = aRecords.filter(r => ["SECURITY_OUT", "COMPLETED"].includes(r.status) || (r.securityEntry && r.securityEntry.securityOutDateTime)).length;
+                const inPlantCount = aRecords.filter(r => r.isAtWeighbridge || r.isAtFactory || ["SECURITY_IN", "WEIGHBRIDGE_IN", "FACTORY_IN"].includes(r.status)).length;
+                const clearedCount = aRecords.filter(r => r.isCleared).length;
 
                 oSecModel.setProperty("/allRecordsCount", aRecords.length);
                 oSecModel.setProperty("/waitingInCount", aWaitingIn.length);
                 oSecModel.setProperty("/inPlantCount", inPlantCount);
-                oSecModel.setProperty("/waitingOutCount", aWaitingOutReady.length);
+                oSecModel.setProperty("/waitingOutCount", aWaitingOut.length);
                 oSecModel.setProperty("/clearedCount", clearedCount);
 
                 this._applyFilters();
@@ -149,13 +192,13 @@ sap.ui.define([
 
             // 1. Filter Category
             if (sFilter === "WAITING_IN") {
-                aFiltered = aFiltered.filter(r => r.status === "GATE_IN");
+                aFiltered = aFiltered.filter(r => r.canSecurityGateIn);
             } else if (sFilter === "IN_PLANT") {
-                aFiltered = aFiltered.filter(r => ["SECURITY_IN", "WEIGHBRIDGE_IN", "FACTORY_IN"].includes(r.status));
+                aFiltered = aFiltered.filter(r => r.isAtWeighbridge || r.isAtFactory || ["SECURITY_IN", "WEIGHBRIDGE_IN", "FACTORY_IN"].includes(r.status));
             } else if (sFilter === "WAITING_OUT") {
-                aFiltered = aFiltered.filter(r => r.status === "WEIGHBRIDGE_OUT" || r.status === "FACTORY_OUT");
+                aFiltered = aFiltered.filter(r => r.canSecurityGateOut);
             } else if (sFilter === "CLEARED") {
-                aFiltered = aFiltered.filter(r => ["SECURITY_OUT", "COMPLETED"].includes(r.status) || (r.securityEntry && r.securityEntry.securityOutDateTime));
+                aFiltered = aFiltered.filter(r => r.isCleared);
             }
 
             // 2. Search Query Filter
@@ -571,20 +614,13 @@ sap.ui.define([
 
                 const sRouteDesc = (m.assignedRoute === "FACTORY") ? "To Factory Gate (Direct Delivery)" : "To Weighbridge (Gross/Tare Scale)";
 
-                if (m.assignedRoute === "FACTORY") {
-                    MessageToast.show(`Security clearance completed for ${m.selectedGateInNumber}. Opening Factory Operations...`);
-                    this.loadSecurityData();
-                    this.getOwnerComponent().loadOverviewData();
-                    this.getOwnerComponent().openFactoryOperationsFor(m.selectedGateInNumber);
-                } else {
-                    MessageBox.success(`Security Gate IN successfully authorized for ${m.selectedGateInNumber}!\n\nStatus: SECURITY_IN\nAssigned Route: ${sRouteDesc}\nDocumentation: ${statusText}`, {
-                        title: "Security Clearance Complete",
-                        onClose: () => {
-                            this.loadSecurityData();
-                            this.getOwnerComponent().loadOverviewData();
-                        }
-                    });
-                }
+                MessageBox.success(`Security Gate IN successfully authorized for ${m.selectedGateInNumber}!\n\nStatus: SECURITY_IN\nAssigned Route: ${sRouteDesc}\nDocumentation: ${statusText}\n\nVehicle is assigned to ${sRouteDesc}. Factory Gate IN will be recorded by the Factory Gate Operator.`, {
+                    title: "Security Clearance Complete",
+                    onClose: () => {
+                        this.loadSecurityData();
+                        this.getOwnerComponent().loadOverviewData();
+                    }
+                });
 
             } catch (networkErr) {
                 MessageBox.error("Network error communicating with GateService: " + networkErr.message);
@@ -1063,10 +1099,9 @@ sap.ui.define([
                                 throw new Error(sErrMsg);
                             }
 
-                            MessageToast.show(`Vehicle ${oTx.vehicleRegNo} routed to Factory Gate. Opening Factory Operations...`);
+                            MessageToast.show(`Vehicle ${oTx.vehicleRegNo} successfully routed to Factory Gate.`);
                             await this.loadSecurityData();
                             this.getOwnerComponent().loadOverviewData();
-                            this.getOwnerComponent().openFactoryOperationsFor(oTx.gateInNumber);
                         } catch (err) {
                             MessageBox.error("Route Assignment Error: " + err.message);
                         } finally {
@@ -1121,6 +1156,34 @@ sap.ui.define([
                     }
                 }
             );
+        },
+
+        onRowNavToWeighbridge: function (oEvt) {
+            const oTx = oEvt.getSource().getBindingContext("secModel").getObject();
+            const oModel = this.getOwnerComponent().getModel();
+            if (oModel.getProperty("/canViewWeighbridgeOps")) {
+                if (oTx) {
+                    MessageToast.show(`Vehicle ${oTx.vehicleRegNo} (${oTx.gateInNumber}) is currently assigned to Weighbridge.`);
+                }
+                this.getOwnerComponent().navigateTo("weighbridgeOpsPage", "slide");
+            } else {
+                MessageToast.show(`Vehicle ${oTx?.vehicleRegNo || ''} is assigned to Weighbridge. Weighment must be completed by the Weighbridge Operator.`);
+            }
+        },
+
+        onRowNavToFactory: function (oEvt) {
+            const oTx = oEvt.getSource().getBindingContext("secModel").getObject();
+            const oModel = this.getOwnerComponent().getModel();
+            if (oModel.getProperty("/canViewFactoryGateOps")) {
+                if (oTx) {
+                    MessageToast.show(`Vehicle ${oTx.vehicleRegNo} (${oTx.gateInNumber}) is currently assigned to Factory Gate.`);
+                    this.getOwnerComponent().openFactoryOperationsFor(oTx.gateInNumber);
+                } else {
+                    this.getOwnerComponent().navigateTo("factoryGateOpsPage", "slide");
+                }
+            } else {
+                MessageToast.show(`Vehicle ${oTx?.vehicleRegNo || ''} is assigned to Factory Gate area. Factory Gate IN must be recorded by the Factory Operator.`);
+            }
         },
 
         onRowGateOutPress: function (oEvt) {

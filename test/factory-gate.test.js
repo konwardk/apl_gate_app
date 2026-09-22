@@ -88,17 +88,19 @@ async function testFactoryGateOperations() {
     assert.strictEqual(facEntry1.unloadingPoint, 'Storage Tank Farm T-02');
     console.log(`[Step 4 PASS] Factory Gate IN recorded: Status=${afterFacIn.status}, PO=${facEntry1.poNumber}, Inv=${facEntry1.invoiceNumber}`);
 
-    // 5. Factory Gate OUT (Unloading finished)
+    // 5. Factory Gate OUT (Unloading finished with DIFFERENT operator & distinct remarks)
     const facOutTime = new Date('2026-09-14T12:30:00.000Z');
     await srv.tx({ user: factoryUser }).send('FactoryGateOut', {
         gateInNumber: gateTx1.gateInNumber,
         factoryGateOutDateTime: facOutTime,
-        factoryGateOutOperator: 'FactoryOfficer_Pranab',
+        factoryGateOutOperator: 'FactoryOfficer_Biswajit', // Different operator from Gate IN
+        gateOutType: 'STANDARD',
         unloadingStatus: 'COMPLETED',
         unloadedQuantity: 22000.000,
         quantityUnit: 'KG',
         goodsInspected: true,
         sealVerified: true,
+        factoryGateOutRemarks: 'Discharge completed into Tank T-02 without leakage',
         remarks: 'Discharge completed into Tank T-02 without leakage'
     });
 
@@ -112,7 +114,13 @@ async function testFactoryGateOperations() {
     assert.strictEqual(updatedFacEntry1.unloadingStatus, 'COMPLETED');
     assert.strictEqual(Number(updatedFacEntry1.unloadedQuantity), 22000);
     assert.ok(updatedFacEntry1.factoryGateOutDateTime, 'Factory Gate OUT timestamp recorded');
-    console.log(`[Step 5 PASS] Factory Gate OUT recorded: Status=${afterFacOut.status}, Unloaded=${updatedFacEntry1.unloadedQuantity} ${updatedFacEntry1.quantityUnit}`);
+    // Verify Gate IN operator was preserved and Gate OUT operator was separately recorded
+    assert.strictEqual(updatedFacEntry1.factoryGateInOperator, 'FactoryOfficer_Pranab', 'Gate IN operator must remain unchanged');
+    assert.strictEqual(updatedFacEntry1.factoryGateOutOperator, 'FactoryOfficer_Biswajit', 'Gate OUT operator must be separately stored');
+    assert.strictEqual(updatedFacEntry1.gateOutType, 'STANDARD', 'Gate OUT type must be stored');
+    assert.strictEqual(updatedFacEntry1.factoryGateInRemarks, 'Tanker connected to discharge pump line', 'Gate IN remarks preserved');
+    assert.strictEqual(updatedFacEntry1.factoryGateOutRemarks, 'Discharge completed into Tank T-02 without leakage', 'Gate OUT remarks stored separately');
+    console.log(`[Step 5 PASS] Factory Gate OUT recorded with distinct operators: InOp=${updatedFacEntry1.factoryGateInOperator}, OutOp=${updatedFacEntry1.factoryGateOutOperator}, Unloaded=${updatedFacEntry1.unloadedQuantity} ${updatedFacEntry1.quantityUnit}`);
 
     // Verify Audit Trail
     const adminUser = new cds.User({ id: 'admin_user', roles: ['Admin', 'Auditor'] });

@@ -187,6 +187,7 @@ service GateService {
         transporterName         : String,
         materialDescription     : String,
         deliveryNoteNo          : String,
+        factoryGateInRemarks    : String,
         remarks                 : String
     ) returns GateTransactions;
 
@@ -200,6 +201,8 @@ service GateService {
         quantityUnit            : String,
         goodsInspected          : Boolean,
         sealVerified            : Boolean,
+        gateOutType             : String,
+        factoryGateOutRemarks   : String,
         remarks                 : String
     ) returns GateTransactions;
 
@@ -210,6 +213,7 @@ service GateService {
         factoryGateInOperator   : String,
         factoryGateOutDateTime  : Timestamp,
         factoryGateOutOperator  : String,
+        gateOutType             : String,
         factoryArea             : String,
         unloadingPoint          : String,
         poNumber                : String,
@@ -224,6 +228,8 @@ service GateService {
         deliveryNoteNo          : String,
         goodsInspected          : Boolean,
         sealVerified            : Boolean,
+        factoryGateInRemarks    : String,
+        factoryGateOutRemarks   : String,
         remarks                 : String
     ) returns GateTransactions;
 

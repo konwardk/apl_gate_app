@@ -150,6 +150,10 @@
                                 <Text
                                     text="{= ${facModel>factoryEntry/factoryGateInOperator} ? 'Op: ' + ${facModel>factoryEntry/factoryGateInOperator} : (${facModel>isWaitingIn} ? 'Awaiting Check-In' : '-') }"
                                     class="sapUiTinyMarginTop" />
+                                <Text
+                                    text="{= ${facModel>factoryEntry/factoryArea} ? ${facModel>factoryEntry/factoryArea} + (${facModel>factoryEntry/unloadingPoint} ? ' (' + ${facModel>factoryEntry/unloadingPoint} + ')' : '') : '' }"
+                                    class="sapUiTinyMarginTop"
+                                    visible="{= Boolean(${facModel>factoryEntry/factoryArea}) }" />
                             </VBox>
 
                             <!-- 6. Factory Gate OUT -->
@@ -157,12 +161,20 @@
                                 <Text
                                     text="{path: 'facModel>factoryEntry/factoryGateOutDateTime', formatter: '.formatter.formatDateTime'}"
                                     design="Bold" />
+                                <Text
+                                    text="{= ${facModel>factoryEntry/factoryGateOutOperator} ? 'Op: ' + ${facModel>factoryEntry/factoryGateOutOperator} : '' }"
+                                    visible="{= Boolean(${facModel>factoryEntry/factoryGateOutDateTime}) }"
+                                    class="sapUiTinyMarginTop" />
                                 <HBox alignItems="Center" class="sapUiTinyMarginTop" visible="{= Boolean(${facModel>factoryEntry/factoryGateOutDateTime}) }">
                                     <ObjectStatus
-                                        text="{path: 'facModel>factoryEntry/remarks', formatter: '.formatter.getGateOutTypeDesc'}"
-                                        state="Information"
+                                        text="{= ${facModel>factoryEntry/gateOutType} ? ${path: 'facModel>factoryEntry/gateOutType', formatter: '.formatter.getGateOutTypeDesc'} : ${path: 'facModel>factoryEntry/remarks', formatter: '.formatter.getGateOutTypeDesc'} }"
+                                        state="{path: 'facModel>factoryEntry/gateOutType', formatter: '.formatter.getGateOutTypeState'}"
                                         icon="sap-icon://tag" />
                                 </HBox>
+                                <Text
+                                    text="{= ${facModel>factoryEntry/unloadedQuantity} ? ${facModel>factoryEntry/unloadedQuantity} + ' ' + (${facModel>factoryEntry/quantityUnit} || 'KG') : '' }"
+                                    class="sapUiTinyMarginTop"
+                                    visible="{= Boolean(${facModel>factoryEntry/unloadedQuantity}) }" />
                                 <Text
                                     text="{= ${facModel>isInsideYard} ? 'Inside Yard (Unloading)' : (!${facModel>factoryEntry/factoryGateOutDateTime} ? '-' : '') }"
                                     class="sapUiTinyMarginTop"
@@ -183,16 +195,18 @@
                                     text="Gate IN"
                                     icon="sap-icon://log-in"
                                     type="Emphasized"
-                                    tooltip="Record Factory Gate Check-In for this vehicle"
+                                    tooltip="{= ${facModel>canRowFactoryIn} ? 'Record Factory Gate Check-In for this vehicle' : 'Factory Gate IN already completed' }"
                                     visible="{facModel>canRowFactoryIn}"
+                                    enabled="{facModel>canRowFactoryIn}"
                                     press=".onRowFactoryInPress"
                                     class="sapUiTinyMarginEnd" />
                                 <Button
                                     text="Gate OUT"
                                     icon="sap-icon://log-out"
                                     type="Success"
-                                    tooltip="Record Factory Gate Exit &amp; Clearance for this vehicle"
+                                    tooltip="{= ${facModel>canRowFactoryOut} ? 'Record Factory Gate Exit &amp; Clearance for this vehicle' : 'Vehicle must complete Factory Gate IN first' }"
                                     visible="{facModel>canRowFactoryOut}"
+                                    enabled="{facModel>canRowFactoryOut}"
                                     press=".onRowFactoryOutPress"
                                     class="sapUiTinyMarginEnd" />
                                 <Button

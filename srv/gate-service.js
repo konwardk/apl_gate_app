@@ -748,9 +748,12 @@ export default cds.service.impl(async function () {
         }
 
         // 6. Update main transaction stage and status
+        // Security Gate IN only stores the Security Gate IN record and assigns the route.
+        // It does NOT change factory gate IN status or create FactoryGateEntries.
+        // The factory GATE IN record will be stored by the factory gate operator.
         const determinedRoute = assignedRoute ? assignedRoute.toUpperCase().trim() : '';
         const targetStage = determinedRoute === 'WEIGHBRIDGE' ? 'WEIGHBRIDGE_IN' : (determinedRoute === 'FACTORY' ? 'FACTORY' : 'SECURITY_GATE_IN');
-        const targetStatus = determinedRoute === 'FACTORY' ? 'FACTORY_IN' : 'SECURITY_IN';
+        const targetStatus = 'SECURITY_IN';
 
         await UPDATE(GateTransactions)
             .set({
@@ -763,23 +766,6 @@ export default cds.service.impl(async function () {
             .where({
                 ID: transaction.ID
             });
-
-        // If directly routed to factory at entry, initialize FactoryGateEntries
-        if (determinedRoute === 'FACTORY') {
-            await INSERT.into(FactoryGateEntries).entries({
-                ID: cds.utils.uuid(),
-                gateTransaction_ID: transaction.ID,
-                gateInNumber: transaction.gateInNumber,
-                factoryGateInDateTime: new Date(),
-                factoryGateInOperator: securityPersonnel,
-                factoryArea: 'Raw Material Yard',
-                poNumber: isDelivery ? (bWithoutPO ? '' : (poNumber || '')) : '',
-                invoiceNumber: isDelivery ? (bWithoutPO ? '' : (invoiceNumber || '')) : '',
-                invoiceDate: isDelivery ? (bWithoutPO ? null : (invoiceDate || null)) : null,
-                unloadingStatus: 'IN_PROGRESS',
-                remarks: 'Direct Factory Entry assigned at Security Gate IN'
-            });
-        }
 
         // 7. Create immutable Audit Log
         let auditRemarks;
@@ -799,7 +785,7 @@ export default cds.service.impl(async function () {
         await INSERT.into(GateAuditLogs).entries({
             ID: cds.utils.uuid(),
             gateTransaction_ID: transaction.ID,
-            action: determinedRoute === 'FACTORY' ? 'FACTORY_GATE_IN' : 'SECURITY_GATE_IN',
+            action: 'SECURITY_GATE_IN',
             oldStatus: 'GATE_IN',
             newStatus: targetStatus,
             oldStage: 'MAIN_GATE_IN',
@@ -875,7 +861,7 @@ export default cds.service.impl(async function () {
         } else if (sRoute === 'FACTORY') {
             await UPDATE(GateTransactions)
                 .set({
-                    status: 'FACTORY_IN',
+                    status: 'SECURITY_IN',
                     currentStage: 'FACTORY',
                     assignedRoute: 'FACTORY'
                 })
@@ -885,53 +871,18 @@ export default cds.service.impl(async function () {
                 .set({ assignedRoute: 'FACTORY' })
                 .where({ gateTransaction_ID: transaction.ID });
 
-            const secEntry = await SELECT.one.from(SecurityGateEntries).where({ gateTransaction_ID: transaction.ID });
-            const existingFac = await SELECT.one.from(FactoryGateEntries).where({ gateTransaction_ID: transaction.ID });
-
-            const poNumber = secEntry?.poNumber || '';
-            const invoiceNumber = secEntry?.invoiceNumber || '';
-            const invoiceDate = secEntry?.invoiceDate || null;
-
-            if (existingFac) {
-                await UPDATE(FactoryGateEntries)
-                    .set({
-                        factoryGateInDateTime: new Date(),
-                        factoryGateInOperator: sOperator,
-                        poNumber: poNumber,
-                        invoiceNumber: invoiceNumber,
-                        invoiceDate: invoiceDate,
-                        unloadingStatus: 'IN_PROGRESS',
-                        remarks: remarks || 'Direct Factory Entry assigned by Security Gate'
-                    })
-                    .where({ ID: existingFac.ID });
-            } else {
-                await INSERT.into(FactoryGateEntries).entries({
-                    ID: cds.utils.uuid(),
-                    gateTransaction_ID: transaction.ID,
-                    gateInNumber: transaction.gateInNumber,
-                    factoryGateInDateTime: new Date(),
-                    factoryGateInOperator: sOperator,
-                    factoryArea: 'Raw Material Yard',
-                    poNumber: poNumber,
-                    invoiceNumber: invoiceNumber,
-                    invoiceDate: invoiceDate,
-                    unloadingStatus: 'IN_PROGRESS',
-                    remarks: remarks || 'Direct Factory Entry assigned by Security Gate'
-                });
-            }
-
             await INSERT.into(GateAuditLogs).entries({
                 ID: cds.utils.uuid(),
                 gateTransaction_ID: transaction.ID,
-                action: 'FACTORY_GATE_IN',
+                action: 'ROUTE_ASSIGNED',
                 oldStatus: transaction.status,
-                newStatus: 'FACTORY_IN',
+                newStatus: 'SECURITY_IN',
                 oldStage: transaction.currentStage,
                 newStage: 'FACTORY',
                 actionDateTime: new Date(),
                 userId: req.user?.id || 'SYSTEM',
                 userName: sOperator,
-                remarks: remarks || `Direct Factory Entry assigned by Security Gate: ${sOperator} (Weighbridge bypassed)`
+                remarks: remarks || `Security Gate: Route assigned to Factory Gate (Weighbridge bypassed) by ${sOperator}`
             });
         }
 
@@ -1212,6 +1163,7 @@ export default cds.service.impl(async function () {
             transporterName: reqTransporterName,
             materialDescription,
             deliveryNoteNo,
+            factoryGateInRemarks,
             remarks
         } = req.data;
 
@@ -1248,6 +1200,7 @@ export default cds.service.impl(async function () {
 
         const sOperator = factoryGateInOperator || req.user?.id || 'SYSTEM';
         const inTimestamp = factoryGateInDateTime ? new Date(factoryGateInDateTime) : new Date();
+        const sInRemarks = factoryGateInRemarks || remarks || '';
 
         // Check if consolidated record already exists
         const existing = await SELECT.one.from(FactoryGateEntries).where({ gateTransaction_ID: transaction.ID });
@@ -1256,6 +1209,7 @@ export default cds.service.impl(async function () {
                 .set({
                     factoryGateInDateTime: inTimestamp,
                     factoryGateInOperator: sOperator,
+                    factoryGateInRemarks: sInRemarks || existing.factoryGateInRemarks || '',
                     factoryArea: factoryArea || existing.factoryArea || 'Raw Material Yard',
                     unloadingPoint: unloadingPoint || existing.unloadingPoint || '',
                     poNumber: poNumber,
@@ -1275,6 +1229,7 @@ export default cds.service.impl(async function () {
                 gateInNumber: transaction.gateInNumber,
                 factoryGateInDateTime: inTimestamp,
                 factoryGateInOperator: sOperator,
+                factoryGateInRemarks: sInRemarks,
                 factoryArea: factoryArea || 'Raw Material Yard',
                 unloadingPoint: unloadingPoint || '',
                 poNumber: poNumber,
@@ -1341,6 +1296,8 @@ export default cds.service.impl(async function () {
             quantityUnit,
             goodsInspected,
             sealVerified,
+            gateOutType,
+            factoryGateOutRemarks,
             remarks
         } = req.data;
 
@@ -1358,6 +1315,8 @@ export default cds.service.impl(async function () {
 
         const sOperator = factoryGateOutOperator || req.user?.id || 'SYSTEM';
         const outTimestamp = factoryGateOutDateTime ? new Date(factoryGateOutDateTime) : new Date();
+        const sOutRemarks = factoryGateOutRemarks || remarks || '';
+        const sGateOutType = gateOutType || 'STANDARD';
 
         const existing = await SELECT.one.from(FactoryGateEntries).where({ gateTransaction_ID: transaction.ID });
         if (existing) {
@@ -1365,8 +1324,10 @@ export default cds.service.impl(async function () {
                 .set({
                     factoryGateOutDateTime: outTimestamp,
                     factoryGateOutOperator: sOperator,
-                    unloadingStatus: unloadingStatus || 'COMPLETED',
-                    unloadedQuantity: unloadedQuantity || existing.unloadedQuantity,
+                    gateOutType: sGateOutType,
+                    factoryGateOutRemarks: sOutRemarks || existing.factoryGateOutRemarks || '',
+                    unloadingStatus: unloadingStatus || existing.unloadingStatus || 'COMPLETED',
+                    unloadedQuantity: (unloadedQuantity !== undefined && unloadedQuantity !== null) ? unloadedQuantity : existing.unloadedQuantity,
                     quantityUnit: quantityUnit || existing.quantityUnit || 'KG',
                     goodsInspected: goodsInspected !== undefined ? Boolean(goodsInspected) : existing.goodsInspected,
                     sealVerified: sealVerified !== undefined ? Boolean(sealVerified) : existing.sealVerified,
@@ -1380,6 +1341,8 @@ export default cds.service.impl(async function () {
                 gateInNumber: transaction.gateInNumber,
                 factoryGateOutDateTime: outTimestamp,
                 factoryGateOutOperator: sOperator,
+                gateOutType: sGateOutType,
+                factoryGateOutRemarks: sOutRemarks,
                 unloadingStatus: unloadingStatus || 'COMPLETED',
                 unloadedQuantity: unloadedQuantity || null,
                 quantityUnit: quantityUnit || 'KG',
@@ -1431,6 +1394,7 @@ export default cds.service.impl(async function () {
             factoryGateInOperator,
             factoryGateOutDateTime,
             factoryGateOutOperator,
+            gateOutType,
             factoryArea,
             unloadingPoint,
             poNumber: reqPoNumber,
@@ -1445,6 +1409,8 @@ export default cds.service.impl(async function () {
             deliveryNoteNo,
             goodsInspected,
             sealVerified,
+            factoryGateInRemarks,
+            factoryGateOutRemarks,
             remarks
         } = req.data;
 
@@ -1482,6 +1448,7 @@ export default cds.service.impl(async function () {
         const outOp = factoryGateOutOperator || (factoryGateOutDateTime ? (req.user?.id || 'SYSTEM') : null);
         const inTime = factoryGateInDateTime ? new Date(factoryGateInDateTime) : new Date();
         const outTime = factoryGateOutDateTime ? new Date(factoryGateOutDateTime) : null;
+        const sGateOutType = gateOutType || 'STANDARD';
 
         const isOutRecorded = Boolean(outTime) || transaction.status === 'FACTORY_IN';
         const newStatus = isOutRecorded ? 'FACTORY_OUT' : 'FACTORY_IN';
@@ -1492,8 +1459,11 @@ export default cds.service.impl(async function () {
                 .set({
                     factoryGateInDateTime: inTime || existing.factoryGateInDateTime,
                     factoryGateInOperator: inOp || existing.factoryGateInOperator,
+                    factoryGateInRemarks: factoryGateInRemarks || existing.factoryGateInRemarks || '',
                     factoryGateOutDateTime: outTime || existing.factoryGateOutDateTime,
                     factoryGateOutOperator: outOp || existing.factoryGateOutOperator,
+                    factoryGateOutRemarks: factoryGateOutRemarks || existing.factoryGateOutRemarks || '',
+                    gateOutType: sGateOutType || existing.gateOutType || 'STANDARD',
                     factoryArea: factoryArea || existing.factoryArea || 'Raw Material Yard',
                     unloadingPoint: unloadingPoint || existing.unloadingPoint || '',
                     poNumber: poNumber || existing.poNumber,
@@ -1518,8 +1488,11 @@ export default cds.service.impl(async function () {
                 gateInNumber: transaction.gateInNumber,
                 factoryGateInDateTime: inTime,
                 factoryGateInOperator: inOp,
+                factoryGateInRemarks: factoryGateInRemarks || '',
                 factoryGateOutDateTime: outTime,
                 factoryGateOutOperator: outOp,
+                factoryGateOutRemarks: factoryGateOutRemarks || '',
+                gateOutType: sGateOutType,
                 factoryArea: factoryArea || 'Raw Material Yard',
                 unloadingPoint: unloadingPoint || '',
                 poNumber: poNumber,

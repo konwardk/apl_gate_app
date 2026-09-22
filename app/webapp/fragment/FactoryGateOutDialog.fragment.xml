@@ -70,16 +70,23 @@
                     <Label text="Consignment PO" />
                     <Text text="{= ${facModel>/form/poNumber} ? 'PO: ' + ${facModel>/form/poNumber} + (${facModel>/form/supplierName} ? ' (' + ${facModel>/form/supplierName} + ')' : '') : 'No PO Assigned' }" />
 
-                    <Label text="Factory Gate IN Time" />
+                    <Label text="Factory Gate IN Record" />
                     <HBox alignItems="Center">
                         <Text
                             text="{path: 'facModel>/form/factoryGateInDateTime', formatter: '.formatter.formatDateTime'}"
+                            design="Bold"
                             class="sapUiTinyMarginEnd" />
-                        <Text text="{= ${facModel>/form/factoryGateInOperator} ? 'by ' + ${facModel>/form/factoryGateInOperator} : '' }" design="Italic" />
+                        <Text text="{= ${facModel>/form/factoryGateInOperator} ? '(Operator: ' + ${facModel>/form/factoryGateInOperator} + ')' : '' }" />
                     </HBox>
 
+                    <Label text="Factory Yard Area / Bay" />
+                    <Text text="{= ${facModel>/form/factoryArea} || '-' }{= ${facModel>/form/unloadingPoint} ? ' (' + ${facModel>/form/unloadingPoint} + ')' : '' }" />
+
+                    <Label text="Inbound Remarks" visible="{= Boolean(${facModel>/form/factoryGateInRemarks}) }" />
+                    <Text text="{facModel>/form/factoryGateInRemarks}" visible="{= Boolean(${facModel>/form/factoryGateInRemarks}) }" />
+
                     <!-- Section 2: Gate OUT Recording -->
-                    <core:Title text="2. Factory Gate Exit Recording" />
+                    <core:Title text="2. Factory Gate Exit &amp; Clearance Recording" />
 
                     <Label text="Factory Gate OUT Time" required="true" />
                     <DateTimePicker
@@ -91,11 +98,11 @@
                         placeholder="Select Factory Gate OUT Date &amp; Time"
                         width="100%" />
 
-                    <Label text="Factory Gate Operator" required="true" />
+                    <Label text="Factory Gate OUT Operator" required="true" />
                     <Input
                         id="dialogFacOutOperator"
                         value="{facModel>/form/factoryGateOutOperator}"
-                        placeholder="Enter Factory Gate Operator name"
+                        placeholder="Enter Factory Gate OUT Operator name"
                         required="true" />
 
                     <Label text="Gate Out Type" required="true" />
@@ -113,10 +120,58 @@
                         </items>
                     </ComboBox>
 
-                    <Label text="Remarks" />
+                    <Label text="Unloading Status" />
+                    <ComboBox
+                        id="dialogFacOutUnloadingStatus"
+                        selectedKey="{facModel>/form/unloadingStatus}"
+                        width="100%">
+                        <items>
+                            <core:Item key="COMPLETED" text="COMPLETED - Full cargo unloaded successfully" />
+                            <core:Item key="PARTIAL" text="PARTIAL - Partial unloading done" />
+                            <core:Item key="REJECTED" text="REJECTED - Cargo rejected at inspection" />
+                            <core:Item key="IN_PROGRESS" text="IN_PROGRESS - Unloading in progress" />
+                        </items>
+                    </ComboBox>
+
+                    <Label text="Unloaded Quantity &amp; Unit" />
+                    <HBox width="100%" alignItems="Center">
+                        <Input
+                            id="dialogFacOutUnloadedQty"
+                            value="{facModel>/form/unloadedQuantity}"
+                            placeholder="e.g. 22000"
+                            type="Number"
+                            width="60%"
+                            class="sapUiTinyMarginEnd" />
+                        <ComboBox
+                            id="dialogFacOutQtyUnit"
+                            selectedKey="{facModel>/form/quantityUnit}"
+                            width="40%">
+                            <items>
+                                <core:Item key="KG" text="KG - Kilograms" />
+                                <core:Item key="MT" text="MT - Metric Tonnes" />
+                                <core:Item key="LTR" text="LTR - Litres" />
+                                <core:Item key="NOS" text="NOS - Numbers / Units" />
+                                <core:Item key="BAGS" text="BAGS - Bags" />
+                            </items>
+                        </ComboBox>
+                    </HBox>
+
+                    <Label text="Physical Verification" />
+                    <VBox>
+                        <CheckBox
+                            id="dialogFacOutGoodsInspected"
+                            text="Goods / Cargo Inspected &amp; Verified"
+                            selected="{facModel>/form/goodsInspected}" />
+                        <CheckBox
+                            id="dialogFacOutSealVerified"
+                            text="Vehicle / Tanker Seal Verified"
+                            selected="{facModel>/form/sealVerified}" />
+                    </VBox>
+
+                    <Label text="Factory Gate OUT Remarks" />
                     <TextArea
                         id="dialogFacOutRemarks"
-                        value="{facModel>/form/remarks}"
+                        value="{facModel>/form/factoryGateOutRemarks}"
                         rows="3"
                         maxLength="500"
                         placeholder="Enter remarks on gate exit / unloading observations..." />

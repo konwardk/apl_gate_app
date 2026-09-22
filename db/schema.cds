@@ -251,10 +251,13 @@ entity FactoryGateEntries : cuid, managed {
     /* Factory Gate IN */
     factoryGateInDateTime   : Timestamp;
     factoryGateInOperator   : String(100);
+    factoryGateInRemarks    : String(500);
 
     /* Factory Gate OUT */
     factoryGateOutDateTime  : Timestamp;
     factoryGateOutOperator  : String(100);
+    factoryGateOutRemarks   : String(500);
+    gateOutType             : String(50); // STANDARD, RGP, NRGP, MATERIAL_RETURN, EMPTY_VEHICLE
 
     /* Delivery Consignment Details (Collected from Security Gate or operator) */
     poNumber                : String(30);

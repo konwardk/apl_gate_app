@@ -98,18 +98,44 @@
                         placeholder="Select Factory Gate IN Date &amp; Time"
                         width="100%" />
 
-                    <Label text="Factory Gate Operator" required="true" />
+                    <Label text="Factory Gate IN Operator" required="true" />
                     <Input
                         id="dialogFacInOperator"
                         value="{facModel>/form/factoryGateInOperator}"
-                        placeholder="Enter Factory Gate Operator name"
+                        placeholder="Enter Factory Gate IN Operator name"
                         required="true" />
 
                     <Label text="Factory Yard Area" />
                     <Input
                         id="dialogFacInArea"
                         value="{facModel>/form/factoryArea}"
-                        placeholder="e.g. Raw Material Yard, Silo Bay 1..." />
+                        placeholder="e.g. Raw Material Yard, Methanol Plant, Formalin Plant..." />
+
+                    <Label text="Unloading Bay / Point" />
+                    <Input
+                        id="dialogFacInUnloadingPoint"
+                        value="{facModel>/form/unloadingPoint}"
+                        placeholder="e.g. Bay 1, Silo 3, Storage Tank Farm T-02..." />
+
+                    <Label text="Material Description" />
+                    <Input
+                        id="dialogFacInMaterialDesc"
+                        value="{facModel>/form/materialDescription}"
+                        placeholder="e.g. Methanol Crude Feedstock, Packaging Material..." />
+
+                    <Label text="Delivery Note No" />
+                    <Input
+                        id="dialogFacInDeliveryNote"
+                        value="{facModel>/form/deliveryNoteNo}"
+                        placeholder="e.g. DN-2026-044" />
+
+                    <Label text="Factory Gate IN Remarks" />
+                    <TextArea
+                        id="dialogFacInRemarks"
+                        value="{facModel>/form/factoryGateInRemarks}"
+                        rows="2"
+                        maxLength="500"
+                        placeholder="Enter arrival observations, condition upon arrival, or bay instructions..." />
                 </form:content>
             </form:SimpleForm>
         </content>

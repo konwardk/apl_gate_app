@@ -16,8 +16,8 @@
                 press=".onHomePressed"
                 class="sapUiTinyMarginBegin sapUiTinyMarginEnd" />
                 <Image
-                src="/images/apl-logo.jpg"
-                height="24px"
+                src="/images/APL_Logo.jpg"
+                height="40px"
                 press=".onHomePressed"
                 class="sapUiTinyMarginBegin sapUiTinyMarginEnd" />
             <Title text="APL Gate In- Gate Out" level="H2" class="sapUiTinyMarginEnd" />

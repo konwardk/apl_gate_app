@@ -48,12 +48,16 @@ sap.ui.define([
                     factoryGateInDateTime: new Date().toISOString(),
                     factoryGateInDateTimeStr: new Date().toISOString().substring(0, 19),
                     factoryGateInOperator: models.getActiveUser(),
+                    factoryGateInRemarks: "",
                     factoryGateOutDateTime: null,
                     factoryGateOutDateTimeStr: "",
                     factoryGateOutOperator: "",
+                    factoryGateOutRemarks: "",
                     materialDescription: "",
                     deliveryNoteNo: "",
                     unloadingStatus: "COMPLETED",
+                    unloadedQuantity: "",
+                    quantityUnit: "KG",
                     goodsInspected: true,
                     sealVerified: true,
                     remarks: ""
@@ -84,8 +88,10 @@ sap.ui.define([
             }
 
             const driverName = tx.driverName || (tx.driver && tx.driver.driverName) || "";
-            const hasGateOut = Boolean(tx.factoryEntry && tx.factoryEntry.factoryGateOutDateTime) || tx.status === "FACTORY_OUT" || tx.status === "COMPLETED";
-            const hasGateIn = Boolean(tx.factoryEntry && tx.factoryEntry.factoryGateInDateTime);
+            const hasGateOut = Boolean(tx.factoryEntry && tx.factoryEntry.factoryGateOutDateTime) ||
+                               ["FACTORY_OUT", "WEIGHBRIDGE_OUT", "SECURITY_OUT", "COMPLETED"].includes(tx.status);
+            const hasGateIn = Boolean(tx.factoryEntry && tx.factoryEntry.factoryGateInDateTime) ||
+                              ["FACTORY_IN", "FACTORY_OUT", "WEIGHBRIDGE_OUT", "SECURITY_OUT", "COMPLETED"].includes(tx.status);
 
             // Cleared by security check: must NOT be GATE_IN (Main Gate only)
             const isClearedBySecurity = tx.status !== "GATE_IN" && (
@@ -100,10 +106,18 @@ sap.ui.define([
             const isEligibleForFactoryOps = isClearedBySecurity && !isStillAtWeighbridge && tx.status !== "CANCELLED";
 
             // Stage filters for queue table:
-            // Awaiting Factory IN: eligible, yard exit not recorded, and either arrived from weighbridge (WEIGHBRIDGE_IN) or routed directly to factory
-            const isWaitingIn = isEligibleForFactoryOps && !hasGateOut && (tx.status === "WEIGHBRIDGE_IN" || tx.assignedRoute === "FACTORY" || !hasGateIn);
-            const isInsideYard = isEligibleForFactoryOps && (tx.status === "FACTORY_IN" || hasGateIn) && !hasGateOut;
+            // 1. Awaiting Factory IN: eligible, Gate IN not yet done, and not already completed yard exit
+            const isWaitingIn = isEligibleForFactoryOps && !hasGateIn && !hasGateOut;
+            // 2. Inside Yard: eligible, Gate IN completed, but Gate OUT not yet done
+            const isInsideYard = isEligibleForFactoryOps && hasGateIn && !hasGateOut;
+            // 3. Yard Completed: eligible and yard exit recorded
             const isYardDone = isEligibleForFactoryOps && hasGateOut;
+
+            // Strict mutually exclusive row actions:
+            // Vehicle can only be Gate IN if it has not yet completed Gate IN
+            const canRowFactoryIn = isWaitingIn;
+            // Vehicle can only be Gate OUT if it has completed Gate IN and is inside the yard
+            const canRowFactoryOut = isInsideYard;
 
             return {
                 ...tx,
@@ -113,8 +127,10 @@ sap.ui.define([
                 deliveryFlowState: flowState,
                 inboundWeightFormatted: inboundWeightStr,
                 inboundWeightText: inboundWeightStr || "No Inbound Weight (Direct Delivery)",
-                canRowFactoryIn: isEligibleForFactoryOps && !hasGateOut,
-                canRowFactoryOut: isInsideYard,
+                hasGateIn: hasGateIn,
+                hasGateOut: hasGateOut,
+                canRowFactoryIn: canRowFactoryIn,
+                canRowFactoryOut: canRowFactoryOut,
                 isWaitingIn: isWaitingIn,
                 isInsideYard: isInsideYard,
                 isYardDone: isYardDone,
@@ -148,10 +164,11 @@ sap.ui.define([
 
                 this._oFacModel.setProperty("/allRecords", processed);
 
-                // For the Gate IN dropdown: ONLY active vehicles cleared by security that need Factory IN or Factory OUT
-                const activeEligible = processed.filter(t => !t.isYardDone);
-                const insideYard = processed.filter(t => t.isInsideYard);
-                this._oFacModel.setProperty("/eligibleVehicles", activeEligible);
+                // For the Gate IN dropdown: ONLY active vehicles awaiting Factory Gate IN
+                const awaitingInVehicles = processed.filter(t => t.canRowFactoryIn);
+                // For the Gate OUT dropdown: ONLY vehicles inside the yard awaiting Factory Gate OUT
+                const insideYard = processed.filter(t => t.canRowFactoryOut);
+                this._oFacModel.setProperty("/eligibleVehicles", awaitingInVehicles);
                 this._oFacModel.setProperty("/insideYardVehicles", insideYard);
 
                 // Compute counts
@@ -456,16 +473,22 @@ sap.ui.define([
             const facOutOp = (fac && fac.factoryGateOutOperator) || ((oTx.status === "FACTORY_IN" && (!fac || fac.remarks !== "Direct Factory Entry assigned at Security Gate IN")) ? models.getActiveUser() : "");
 
             // Determine Gate Out Type
-            let gateOutType = "STANDARD";
+            let gateOutType = (fac && fac.gateOutType) || "STANDARD";
             const rawRemarks = (fac && fac.remarks) || "";
-            if (sec && sec.gatePassType) {
+            if (sec && sec.gatePassType && (!fac || !fac.gateOutType)) {
                 gateOutType = sec.gatePassType;
             }
-            if (rawRemarks) {
+            if (rawRemarks && (!fac || !fac.gateOutType)) {
                 const match = rawRemarks.match(/\[Gate Out Type:\s*([^\]]+)\]/i);
                 if (match) {
                     gateOutType = match[1].trim();
                 }
+            }
+
+            const facInRemarks = (fac && fac.factoryGateInRemarks) || "";
+            let facOutRemarks = (fac && fac.factoryGateOutRemarks) || "";
+            if (!facOutRemarks && rawRemarks) {
+                facOutRemarks = rawRemarks.replace(/\[Gate Out Type:\s*[^\]]+\]\s*/i, "").trim();
             }
 
             const formObj = {
@@ -481,13 +504,16 @@ sap.ui.define([
                 factoryGateInDateTime: facInTimeIso,
                 factoryGateInDateTimeStr: facInTimeStr,
                 factoryGateInOperator: facInOp,
+                factoryGateInRemarks: facInRemarks,
                 factoryGateOutDateTime: facOutTimeIso,
                 factoryGateOutDateTimeStr: facOutTimeStr,
                 factoryGateOutOperator: facOutOp,
+                factoryGateOutRemarks: facOutRemarks,
                 materialDescription: (fac && fac.materialDescription) || "",
                 deliveryNoteNo: (fac && fac.deliveryNoteNo) || "",
                 unloadingStatus: (fac && fac.unloadingStatus) || "COMPLETED",
                 unloadedQuantity: (fac && fac.unloadedQuantity != null) ? String(fac.unloadedQuantity) : "",
+                quantityUnit: (fac && fac.quantityUnit) || "KG",
                 goodsInspected: fac ? Boolean(fac.goodsInspected) : true,
                 sealVerified: fac ? Boolean(fac.sealVerified) : true,
                 remarks: rawRemarks
@@ -568,9 +594,11 @@ sap.ui.define([
             }
 
             if (!form.factoryGateInOperator || !form.factoryGateInOperator.trim()) {
-                MessageBox.error("Factory Gate Operator name is mandatory. Please enter your name.");
+                MessageBox.error("Factory Gate IN Operator name is mandatory. Please enter your name.");
                 return;
             }
+
+            const inRemarks = (form.factoryGateInRemarks && form.factoryGateInRemarks.trim()) || (form.remarks && form.remarks.trim()) || "";
 
             const payload = {
                 gateInNumber: form.gateInNumber,
@@ -585,7 +613,8 @@ sap.ui.define([
                 transporterName: form.transporterName || "",
                 materialDescription: form.materialDescription || "",
                 deliveryNoteNo: form.deliveryNoteNo || "",
-                remarks: form.remarks || ""
+                factoryGateInRemarks: inRemarks,
+                remarks: inRemarks
             };
 
             const oForm = this.byId("factoryEntryForm");
@@ -657,10 +686,10 @@ sap.ui.define([
             }
 
             const outTime = form.factoryGateOutDateTime || (form.factoryGateOutDateTimeStr ? new Date(form.factoryGateOutDateTimeStr).toISOString() : new Date().toISOString());
-            const outOp = (form.factoryGateInOperator && form.factoryGateInOperator.trim()) || (form.factoryGateOutOperator && form.factoryGateOutOperator.trim()) || models.getActiveUser();
+            const outOp = (form.factoryGateOutOperator && form.factoryGateOutOperator.trim()) || models.getActiveUser();
 
             const sGateOutType = form.gateOutType || "STANDARD";
-            const sUserRemarks = (form.remarks && form.remarks.trim()) || "";
+            const sUserRemarks = (form.factoryGateOutRemarks && form.factoryGateOutRemarks.trim()) || (form.remarks && form.remarks.trim()) || "";
             const sPrefixedRemarks = sUserRemarks ? `[Gate Out Type: ${sGateOutType}] ${sUserRemarks}` : `[Gate Out Type: ${sGateOutType}] Factory yard operations completed`;
 
             const payload = {
@@ -669,9 +698,11 @@ sap.ui.define([
                 factoryGateOutOperator: outOp,
                 unloadingStatus: form.unloadingStatus || "COMPLETED",
                 unloadedQuantity: form.unloadedQuantity ? parseFloat(form.unloadedQuantity) : null,
-                quantityUnit: "KG",
+                quantityUnit: form.quantityUnit || "KG",
                 goodsInspected: form.goodsInspected !== undefined ? Boolean(form.goodsInspected) : true,
                 sealVerified: form.sealVerified !== undefined ? Boolean(form.sealVerified) : true,
+                gateOutType: sGateOutType,
+                factoryGateOutRemarks: sUserRemarks,
                 remarks: sPrefixedRemarks
             };
 
@@ -708,10 +739,13 @@ sap.ui.define([
                     poNumber: form.poNumber || "N/A",
                     supplierName: form.supplierName || "-",
                     gateOutType: sGateOutType,
-                    factoryGateInDateTime: form.factoryGateInDateTime,
-                    factoryGateInOperator: form.factoryGateInOperator,
+                    factoryGateInDateTime: form.factoryGateInDateTime || oVehicle?.factoryEntry?.factoryGateInDateTime,
+                    factoryGateInOperator: form.factoryGateInOperator || oVehicle?.factoryEntry?.factoryGateInOperator || "-",
                     factoryGateOutDateTime: outTime,
                     factoryGateOutOperator: outOp,
+                    unloadingStatus: form.unloadingStatus || "COMPLETED",
+                    unloadedQuantity: form.unloadedQuantity ? parseFloat(form.unloadedQuantity) : "",
+                    quantityUnit: form.quantityUnit || "KG",
                     remarks: sUserRemarks || "Factory yard operations completed"
                 };
                 this._oFacModel.setProperty("/gateOutSuccess", successData);
@@ -741,18 +775,22 @@ sap.ui.define([
             const inTime = form.factoryGateInDateTime || (form.factoryGateInDateTimeStr ? new Date(form.factoryGateInDateTimeStr).toISOString() : new Date().toISOString());
             const inOp = (form.factoryGateInOperator && form.factoryGateInOperator.trim()) || models.getActiveUser();
             const outTime = form.factoryGateOutDateTime || (form.factoryGateOutDateTimeStr ? new Date(form.factoryGateOutDateTimeStr).toISOString() : new Date().toISOString());
-            const outOp = (form.factoryGateOutOperator && form.factoryGateOutOperator.trim()) || inOp;
+            const outOp = (form.factoryGateOutOperator && form.factoryGateOutOperator.trim()) || models.getActiveUser();
 
             const sGateOutType = form.gateOutType || "STANDARD";
-            const sUserRemarks = (form.remarks && form.remarks.trim()) || "";
-            const sPrefixedRemarks = sUserRemarks ? `[Gate Out Type: ${sGateOutType}] ${sUserRemarks}` : `[Gate Out Type: ${sGateOutType}] Full Factory clearance completed`;
+            const sInRemarks = (form.factoryGateInRemarks && form.factoryGateInRemarks.trim()) || "";
+            const sOutRemarks = (form.factoryGateOutRemarks && form.factoryGateOutRemarks.trim()) || (form.remarks && form.remarks.trim()) || "";
+            const sPrefixedRemarks = sOutRemarks ? `[Gate Out Type: ${sGateOutType}] ${sOutRemarks}` : `[Gate Out Type: ${sGateOutType}] Full Factory clearance completed`;
 
             const payload = {
                 gateInNumber: form.gateInNumber,
                 factoryGateInDateTime: inTime,
                 factoryGateInOperator: inOp,
+                factoryGateInRemarks: sInRemarks,
                 factoryGateOutDateTime: outTime,
                 factoryGateOutOperator: outOp,
+                factoryGateOutRemarks: sOutRemarks,
+                gateOutType: sGateOutType,
                 factoryArea: form.factoryArea || "Raw Material Yard",
                 unloadingPoint: form.unloadingPoint || "",
                 poNumber: form.poNumber || "",
@@ -763,7 +801,7 @@ sap.ui.define([
                 materialDescription: form.materialDescription || "",
                 unloadingStatus: form.unloadingStatus || "COMPLETED",
                 unloadedQuantity: form.unloadedQuantity ? parseFloat(form.unloadedQuantity) : null,
-                quantityUnit: "KG",
+                quantityUnit: form.quantityUnit || "KG",
                 deliveryNoteNo: form.deliveryNoteNo || "",
                 goodsInspected: form.goodsInspected !== undefined ? Boolean(form.goodsInspected) : true,
                 sealVerified: form.sealVerified !== undefined ? Boolean(form.sealVerified) : true,
@@ -808,6 +846,9 @@ sap.ui.define([
                     factoryGateInOperator: inOp,
                     factoryGateOutDateTime: outTime,
                     factoryGateOutOperator: outOp,
+                    unloadingStatus: form.unloadingStatus || "COMPLETED",
+                    unloadedQuantity: form.unloadedQuantity ? parseFloat(form.unloadedQuantity) : "",
+                    quantityUnit: form.quantityUnit || "KG",
                     remarks: sUserRemarks || "Full Factory clearance completed"
                 };
                 this._oFacModel.setProperty("/gateOutSuccess", successData);
@@ -912,13 +953,16 @@ sap.ui.define([
                 factoryGateInDateTime: nowIso,
                 factoryGateInDateTimeStr: nowIso.substring(0, 19),
                 factoryGateInOperator: models.getActiveUser(),
+                factoryGateInRemarks: "",
                 factoryGateOutDateTime: null,
                 factoryGateOutDateTimeStr: "",
                 factoryGateOutOperator: "",
+                factoryGateOutRemarks: "",
                 materialDescription: "",
                 deliveryNoteNo: "",
                 unloadingStatus: "COMPLETED",
                 unloadedQuantity: "",
+                quantityUnit: "KG",
                 goodsInspected: true,
                 sealVerified: true,
                 remarks: ""
@@ -947,13 +991,24 @@ sap.ui.define([
             }
 
             if (oTx) {
+                if (!oTx.canRowFactoryIn) {
+                    MessageBox.warning(`Vehicle ${oTx.vehicleRegNo || oTx.gateInNumber} has already completed Factory Gate IN.`);
+                    return;
+                }
                 this._oFacModel.setProperty("/isVehicleSelectable", false);
                 await this._populateFormFromVehicle(oTx, false);
             } else {
                 this._oFacModel.setProperty("/isVehicleSelectable", true);
-                const currGateIn = this._oFacModel.getProperty("/selectedGateInNumber");
                 const eligible = this._oFacModel.getProperty("/eligibleVehicles") || [];
-                if (!currGateIn && eligible.length > 0) {
+                if (eligible.length === 0) {
+                    MessageBox.information("No security-cleared vehicles are currently awaiting Factory Gate IN.");
+                    return;
+                }
+                const currGateIn = this._oFacModel.getProperty("/selectedGateInNumber");
+                const currMatch = eligible.find(v => v.gateInNumber === currGateIn);
+                if (currMatch) {
+                    await this._populateFormFromVehicle(currMatch, false);
+                } else if (eligible.length > 0) {
                     await this._populateFormFromVehicle(eligible[0], false);
                 }
             }
@@ -998,11 +1053,19 @@ sap.ui.define([
             }
 
             if (oTx) {
+                if (!oTx.canRowFactoryOut) {
+                    MessageBox.warning(`Vehicle ${oTx.vehicleRegNo || oTx.gateInNumber} cannot be Gate OUT because Factory Gate IN has not been performed yet.`);
+                    return;
+                }
                 this._oFacModel.setProperty("/isOutVehicleSelectable", false);
                 await this._populateFormFromVehicle(oTx, false);
             } else {
                 this._oFacModel.setProperty("/isOutVehicleSelectable", true);
                 const inside = this._oFacModel.getProperty("/insideYardVehicles") || [];
+                if (inside.length === 0) {
+                    MessageBox.information("No vehicles are currently inside the factory yard awaiting Factory Gate OUT.");
+                    return;
+                }
                 const currGateIn = this._oFacModel.getProperty("/selectedGateInNumber");
                 const currMatch = inside.find(v => v.gateInNumber === currGateIn);
                 if (currMatch) {
@@ -1013,10 +1076,13 @@ sap.ui.define([
             }
 
             // Ensure out date is prefilled
+            const nowIso = new Date().toISOString();
             if (!this._oFacModel.getProperty("/form/factoryGateOutDateTimeStr")) {
-                const nowIso = new Date().toISOString();
                 this._oFacModel.setProperty("/form/factoryGateOutDateTime", nowIso);
                 this._oFacModel.setProperty("/form/factoryGateOutDateTimeStr", nowIso.substring(0, 19));
+            }
+            if (!this._oFacModel.getProperty("/form/factoryGateOutOperator")) {
+                this._oFacModel.setProperty("/form/factoryGateOutOperator", models.getActiveUser());
             }
 
             const oView = this.getView();
@@ -1047,10 +1113,26 @@ sap.ui.define([
         },
 
         onRowFactoryInPress: function (oEvt) {
+            const oCtx = oEvt.getSource().getBindingContext("facModel");
+            if (oCtx) {
+                const oTx = oCtx.getObject();
+                if (!oTx.canRowFactoryIn) {
+                    MessageToast.show("Factory Gate IN has already been completed for this vehicle.");
+                    return;
+                }
+            }
             this.onOpenFactoryGateInDialog(oEvt);
         },
 
         onRowFactoryOutPress: function (oEvt) {
+            const oCtx = oEvt.getSource().getBindingContext("facModel");
+            if (oCtx) {
+                const oTx = oCtx.getObject();
+                if (!oTx.canRowFactoryOut) {
+                    MessageToast.show("Vehicle must complete Factory Gate IN before Factory Gate OUT can be performed.");
+                    return;
+                }
+            }
             this.onOpenFactoryGateOutDialog(oEvt);
         },
 
@@ -1060,9 +1142,9 @@ sap.ui.define([
             const oTx = oCtx.getObject();
             const fac = oTx.factoryEntry;
 
-            let gateOutType = "STANDARD";
+            let gateOutType = (fac && fac.gateOutType) || "STANDARD";
             const rawRemarks = (fac && fac.remarks) || "";
-            if (rawRemarks) {
+            if (rawRemarks && (!fac || !fac.gateOutType)) {
                 const match = rawRemarks.match(/\[Gate Out Type:\s*([^\]]+)\]/i);
                 if (match) gateOutType = match[1].trim();
             }
@@ -1079,8 +1161,11 @@ sap.ui.define([
                 factoryGateInDateTime: fac ? fac.factoryGateInDateTime : null,
                 factoryGateInOperator: fac ? fac.factoryGateInOperator : "",
                 factoryGateOutDateTime: fac ? fac.factoryGateOutDateTime : new Date().toISOString(),
-                factoryGateOutOperator: fac ? fac.factoryGateOutOperator : models.getActiveUser(),
-                remarks: rawRemarks.replace(/\[Gate Out Type:\s*[^\]]+\]\s*/i, "") || "Factory yard operations completed"
+                factoryGateOutOperator: fac ? (fac.factoryGateOutOperator || models.getActiveUser()) : models.getActiveUser(),
+                unloadingStatus: fac ? fac.unloadingStatus : "COMPLETED",
+                unloadedQuantity: fac && fac.unloadedQuantity != null ? fac.unloadedQuantity : "",
+                quantityUnit: (fac && fac.quantityUnit) || "KG",
+                remarks: (fac && fac.factoryGateOutRemarks) || rawRemarks.replace(/\[Gate Out Type:\s*[^\]]+\]\s*/i, "") || "Factory yard operations completed"
             };
             this._oFacModel.setProperty("/gateOutSuccess", successData);
             this._openFactoryGateOutSuccessDialog();
