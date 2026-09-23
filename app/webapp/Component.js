@@ -60,6 +60,8 @@ sap.ui.define([
                         oCtrl.loadScaleQueue();
                     } else if (sPageId === "factoryGateOpsPage" && oCtrl && oCtrl.loadFactoryData) {
                         oCtrl.loadFactoryData();
+                    } else if (sPageId === "userManagementPage" && oCtrl && oCtrl.loadUsersData) {
+                        oCtrl.loadUsersData();
                     }
                 } else {
                     this._oNavContainer.to(sPageId, sTransition || "slide");
@@ -189,6 +191,7 @@ sap.ui.define([
                 oModel.setProperty("/canViewMasterData", perms.canViewMasterData);
                 oModel.setProperty("/canViewAuditTrail", perms.canViewAuditTrail);
                 oModel.setProperty("/canViewAudit", perms.canViewAuditTrail);
+                oModel.setProperty("/canManageUsers", perms.canManageUsers);
 
                 // 2. Fetch Transactions
                 const resTx = await fetch(`${ODATA_BASE}/GateTransactions?$orderby=createdAt desc`, { headers });
@@ -258,6 +261,7 @@ sap.ui.define([
             oModel.setProperty("/canViewMasterData", perms.canViewMasterData);
             oModel.setProperty("/canViewAuditTrail", perms.canViewAuditTrail);
             oModel.setProperty("/canViewAudit", perms.canViewAuditTrail);
+            oModel.setProperty("/canManageUsers", perms.canManageUsers);
 
             this.loadOverviewData();
 

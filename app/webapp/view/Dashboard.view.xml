@@ -273,6 +273,30 @@
                     </GenericTile>
                 </HBox>
             </VBox> -->
+            <!-- Group 4: Superadmin Console (Only visible for Superadmin) -->
+            <VBox class="flp-section" visible="{/canManageUsers}">
+                <Title
+                    text="Superadmin Console &amp; Administration"
+                    level="H2"
+                    titleStyle="H3"
+                    class="flp-section-title" />
+                <HBox class="flp-tiles-grid">
+                    <GenericTile
+                        header="User Management"
+                        subheader="Users, Credentials &amp; Multiple Roles"
+                        sizeBehavior="Responsive"
+                        press=".onOpenUserManagement"
+                        class="flp-tile flp-tile-superadmin">
+                        <tileContent>
+                            <TileContent footer="Accounts, Service Status &amp; RBAC">
+                                <content>
+                                    <NumericContent icon="sap-icon://user-settings" valueColor="Neutral" />
+                                </content>
+                            </TileContent>
+                        </tileContent>
+                    </GenericTile>
+                </HBox>
+            </VBox>
         </VBox>
     </Page>
 </mvc:View>

@@ -36,6 +36,13 @@
                 type="Transparent"
                 tooltip="View Fiori Launchpad Applications"
                 press=".onLaunchpadNav" />
+            <Button
+                text="User Management"
+                icon="sap-icon://user-settings"
+                type="Transparent"
+                tooltip="Superadmin User &amp; Role Management"
+                visible="{/canManageUsers}"
+                press=".onUserManagementNav" />
             <!-- <Button
                 text="Gate IN"
                 icon="sap-icon://log-in"
@@ -113,6 +120,7 @@
                 <mvc:XMLView id="editGateEntryPage" viewName="factory.gate.view.EditGateEntry" />
                 <mvc:XMLView id="editSecurityGateEntryPage" viewName="factory.gate.view.EditSecurityGateEntry" />
                 <mvc:XMLView id="factoryGateOpsPage" viewName="factory.gate.view.FactoryOperations" />
+                <mvc:XMLView id="userManagementPage" viewName="factory.gate.view.UserManagement" />
             </pages>
         </NavContainer>
     </VBox>

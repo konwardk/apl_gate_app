@@ -90,6 +90,19 @@ service GateService {
 
     /*
      * ============================================================
+     * USER MANAGEMENT & SUPERADMIN CONSOLE
+     * ============================================================
+     */
+
+    entity Users
+        as projection on db.Users;
+
+    entity UserRoles
+        as projection on db.UserRoles;
+
+
+    /*
+     * ============================================================
      * SAP S/4HANA CLOUD EXTERNAL PURCHASE ORDERS
      * ============================================================
      */
@@ -255,6 +268,51 @@ service GateService {
         gateInNumber    : String,
         gateOutOperator : String
     ) returns GateTransactions;
+
+
+    /*
+     * ============================================================
+     * SUPERADMIN USER MANAGEMENT ACTIONS
+     * ============================================================
+     */
+
+    action CreateUser(
+        username        : String,
+        password        : String,
+        name            : String,
+        designation     : String,
+        department      : String,
+        email           : String,
+        phoneNo         : String,
+        serviceStatus   : String,
+        status          : String,
+        assignedRoles   : String,
+        remarks         : String
+    ) returns Users;
+
+    action UpdateUser(
+        ID              : UUID,
+        username        : String,
+        password        : String,
+        name            : String,
+        designation     : String,
+        department      : String,
+        email           : String,
+        phoneNo         : String,
+        serviceStatus   : String,
+        status          : String,
+        assignedRoles   : String,
+        remarks         : String
+    ) returns Users;
+
+    action ToggleUserStatus(
+        ID              : UUID
+    ) returns Users;
+
+    action DeleteUser(
+        ID              : UUID
+    ) returns Boolean;
+
 
 
     /*

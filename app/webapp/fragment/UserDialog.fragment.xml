@@ -1,0 +1,151 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:core="sap.ui.core">
+    <Dialog
+        id="userDialog"
+        title="{= ${userModel>/isEdit} ? ('Edit User Profile: ' + ${userModel>/form/name} + ' (' + ${userModel>/form/username} + ')') : 'Create New System User' }"
+        contentWidth="560px">
+        <content>
+            <form:SimpleForm
+                editable="true"
+                layout="ResponsiveGridLayout"
+                labelSpanXL="4"
+                labelSpanL="4"
+                labelSpanM="4"
+                labelSpanS="12">
+                <form:content>
+                    <!-- Username -->
+                    <Label text="Username" required="true" />
+                    <Input
+                        id="inputUsername"
+                        value="{userModel>/form/username}"
+                        placeholder="e.g. r_sharma, maingate_user"
+                        editable="{= !${userModel>/isEdit} }"
+                        required="true"
+                        maxLength="50" />
+
+                    <!-- Full Name -->
+                    <Label text="Full Name" required="true" />
+                    <Input
+                        id="inputName"
+                        value="{userModel>/form/name}"
+                        placeholder="e.g. Ramesh Sharma"
+                        required="true"
+                        maxLength="100" />
+
+                    <!-- Password -->
+                    <Label text="Password" required="{= !${userModel>/isEdit} }" />
+                    <Input
+                        id="inputPassword"
+                        value="{userModel>/form/password}"
+                        type="Password"
+                        placeholder="{= ${userModel>/isEdit} ? 'Leave blank to keep existing password' : 'Enter login password' }"
+                        maxLength="100" />
+
+                    <!-- Designation -->
+                    <Label text="Designation" />
+                    <Input
+                        id="inputDesignation"
+                        value="{userModel>/form/designation}"
+                        placeholder="e.g. Chief Security Officer, Gate Operator"
+                        maxLength="100" />
+
+                    <!-- Department -->
+                    <Label text="Department" />
+                    <ComboBox
+                        id="comboDepartment"
+                        value="{userModel>/form/department}"
+                        placeholder="Select or enter department"
+                        width="100%">
+                        <core:Item key="Main Gate Operations" text="Main Gate Operations" />
+                        <core:Item key="Security Department" text="Security Department" />
+                        <core:Item key="Weighbridge &amp; Logistics" text="Weighbridge &amp; Logistics" />
+                        <core:Item key="Factory Yard" text="Factory Yard" />
+                        <core:Item key="Plant Administration" text="Plant Administration" />
+                        <core:Item key="IT &amp; Systems" text="IT &amp; Systems" />
+                        <core:Item key="Compliance &amp; Quality" text="Compliance &amp; Quality" />
+                    </ComboBox>
+
+                    <!-- Contact Email & Phone -->
+                    <Label text="Email Address" />
+                    <Input
+                        id="inputEmail"
+                        value="{userModel>/form/email}"
+                        type="Email"
+                        placeholder="e.g. ramesh.sharma@apl.com"
+                        maxLength="100" />
+
+                    <Label text="Phone Number" />
+                    <Input
+                        id="inputPhone"
+                        value="{userModel>/form/phoneNo}"
+                        type="Tel"
+                        placeholder="e.g. +91 98765 43210"
+                        maxLength="20" />
+
+                    <!-- Service Status -->
+                    <Label text="Service Status" required="true" />
+                    <Select
+                        id="selectServiceStatus"
+                        selectedKey="{userModel>/form/serviceStatus}"
+                        width="100%">
+                        <core:Item key="IN_SERVICE" text="In Service (Active on duty)" />
+                        <core:Item key="ON_LEAVE" text="On Leave (Temporary)" />
+                        <core:Item key="PROBATION" text="On Probation" />
+                        <core:Item key="SUSPENDED" text="Suspended" />
+                        <core:Item key="RESIGNED" text="Resigned / Terminated" />
+                    </Select>
+
+                    <!-- Account Status -->
+                    <Label text="Account Status" required="true" />
+                    <Select
+                        id="selectAccountStatus"
+                        selectedKey="{userModel>/form/status}"
+                        width="100%">
+                        <core:Item key="ACTIVE" text="Active (Can authenticate and access system)" />
+                        <core:Item key="INACTIVE" text="Inactive (Login disabled)" />
+                    </Select>
+
+                    <!-- Multiple Assigned Roles -->
+                    <Label text="Assigned Roles" required="true" />
+                    <MultiComboBox
+                        id="multiComboRoles"
+                        selectedKeys="{userModel>/form/selectedRoleKeys}"
+                        placeholder="Select one or multiple roles..."
+                        width="100%">
+                        <core:Item key="Superadmin" text="⚡ Superadmin (Full System Control &amp; User Mgmt)" />
+                        <core:Item key="MainGateUser" text="🚪 Main Gate User (Vehicle Entry &amp; Exit Passes)" />
+                        <core:Item key="SecurityGateUser" text="🛡️ Security Gate User (Vehicle Inspection &amp; Routing)" />
+                        <core:Item key="WeighbridgeUser" text="⚖️ Weighbridge User (Digital Scale &amp; Net Weight)" />
+                        <core:Item key="FactoryGateUser" text="🏭 Factory Gate User (Yard Operations &amp; Unloading)" />
+                        <core:Item key="Admin" text="👔 Admin (Operations &amp; Master Data Admin)" />
+                        <core:Item key="Auditor" text="📋 Auditor (Read-only Audit Trail &amp; Reports)" />
+                    </MultiComboBox>
+
+                    <!-- Remarks -->
+                    <Label text="Remarks / Notes" />
+                    <TextArea
+                        id="inputRemarks"
+                        value="{userModel>/form/remarks}"
+                        rows="2"
+                        placeholder="Optional internal remarks or authority details..."
+                        maxLength="500" />
+                </form:content>
+            </form:SimpleForm>
+        </content>
+        <beginButton>
+            <Button
+                id="btnSaveUser"
+                text="{= ${userModel>/isEdit} ? 'Update User' : 'Create User' }"
+                type="Emphasized"
+                icon="sap-icon://save"
+                press=".onSaveUser" />
+        </beginButton>
+        <endButton>
+            <Button
+                text="Cancel"
+                press=".onCancelUser" />
+        </endButton>
+    </Dialog>
+</core:FragmentDefinition>

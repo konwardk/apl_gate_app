@@ -17,7 +17,9 @@ export default cds.service.impl(async function () {
         Drivers,
         Transporters,
         Suppliers,
-        PurchaseOrders
+        PurchaseOrders,
+        Users,
+        UserRoles
     } = this.entities;
 
 
@@ -1782,6 +1784,260 @@ export default cds.service.impl(async function () {
                 ID: transaction.ID
             });
     });
+
+
+    /*
+     * ============================================================
+     * SUPERADMIN USER MANAGEMENT
+     * ============================================================
+     */
+
+    const ROLE_NAMES = {
+        'Superadmin': 'Superadministrator',
+        'Admin': 'Operations Administrator',
+        'MainGateUser': 'Main Gate Operator',
+        'SecurityGateUser': 'Security Gate Officer',
+        'WeighbridgeUser': 'Weighbridge Scale Operator',
+        'FactoryGateUser': 'Factory Yard Supervisor',
+        'Auditor': 'Internal Compliance Auditor'
+    };
+
+    this.on('CreateUser', async (req) => {
+        const {
+            username,
+            password,
+            name,
+            designation,
+            department,
+            email,
+            phoneNo,
+            serviceStatus,
+            status,
+            assignedRoles,
+            remarks
+        } = req.data;
+
+        if (!username || !username.trim()) {
+            return req.error(400, 'Username is mandatory.');
+        }
+        if (!name || !name.trim()) {
+            return req.error(400, 'Full Name is mandatory.');
+        }
+        if (!password || !password.trim()) {
+            return req.error(400, 'Password is mandatory.');
+        }
+
+        const sUsername = username.trim().toLowerCase();
+        const existing = await SELECT.one.from(Users).where({ username: sUsername });
+        if (existing) {
+            return req.error(400, `User with username '${sUsername}' already exists.`);
+        }
+
+        const sStatus = status || 'ACTIVE';
+        const bActive = (sStatus === 'ACTIVE');
+        const sServiceStatus = serviceStatus || 'IN_SERVICE';
+        const sRoles = (assignedRoles || '').trim();
+
+        const newUserId = cds.utils.uuid();
+        const userEntry = {
+            ID: newUserId,
+            username: sUsername,
+            password: password.trim(),
+            name: name.trim(),
+            designation: designation ? designation.trim() : null,
+            department: department ? department.trim() : null,
+            email: email ? email.trim() : null,
+            phoneNo: phoneNo ? phoneNo.trim() : null,
+            serviceStatus: sServiceStatus,
+            status: sStatus,
+            active: bActive,
+            assignedRoles: sRoles,
+            remarks: remarks ? remarks.trim() : null
+        };
+
+        await INSERT.into(Users).entries(userEntry);
+
+        if (sRoles) {
+            const roleArray = sRoles.split(',').map(r => r.trim()).filter(Boolean);
+            for (const rCode of roleArray) {
+                await INSERT.into(UserRoles).entries({
+                    ID: cds.utils.uuid(),
+                    user_ID: newUserId,
+                    roleCode: rCode,
+                    roleName: ROLE_NAMES[rCode] || rCode,
+                    assignedDate: new Date(),
+                    assignedBy: req.user?.id || 'SUPERADMIN'
+                });
+            }
+        }
+
+        await INSERT.into(GateAuditLogs).entries({
+            ID: cds.utils.uuid(),
+            action: 'USER_CREATED',
+            actionDateTime: new Date(),
+            userId: req.user?.id || 'SUPERADMIN',
+            userName: req.user?.id || 'SUPERADMIN',
+            remarks: `User created: ${sUsername} (${name}) with roles: ${sRoles || 'None'}`
+        });
+
+        return SELECT.one.from(Users).where({ ID: newUserId });
+    });
+
+    this.on('UpdateUser', async (req) => {
+        const {
+            ID,
+            username,
+            password,
+            name,
+            designation,
+            department,
+            email,
+            phoneNo,
+            serviceStatus,
+            status,
+            assignedRoles,
+            remarks
+        } = req.data;
+
+        if (!ID) {
+            return req.error(400, 'User ID is mandatory.');
+        }
+
+        const user = await SELECT.one.from(Users).where({ ID: ID });
+        if (!user) {
+            return req.error(404, 'User not found.');
+        }
+
+        const sUsername = username ? username.trim().toLowerCase() : user.username;
+        if (sUsername !== user.username) {
+            const existing = await SELECT.one.from(Users).where({ username: sUsername });
+            if (existing) {
+                return req.error(400, `Username '${sUsername}' is already in use by another account.`);
+            }
+        }
+
+        const sStatus = status || user.status || 'ACTIVE';
+        if (user.username === 'superadmin_user' && sStatus !== 'ACTIVE') {
+            return req.error(400, 'Primary Superadmin user cannot be deactivated.');
+        }
+
+        const sRoles = assignedRoles !== undefined ? assignedRoles.trim() : user.assignedRoles;
+        if (user.username === 'superadmin_user' && !sRoles.includes('Superadmin')) {
+            return req.error(400, 'Superadmin role cannot be removed from primary Superadmin user.');
+        }
+
+        const updateData = {
+            username: sUsername,
+            name: (name && name.trim()) || user.name,
+            designation: designation !== undefined ? designation.trim() : user.designation,
+            department: department !== undefined ? department.trim() : user.department,
+            email: email !== undefined ? email.trim() : user.email,
+            phoneNo: phoneNo !== undefined ? phoneNo.trim() : user.phoneNo,
+            serviceStatus: serviceStatus || user.serviceStatus || 'IN_SERVICE',
+            status: sStatus,
+            active: (sStatus === 'ACTIVE'),
+            assignedRoles: sRoles,
+            remarks: remarks !== undefined ? remarks.trim() : user.remarks
+        };
+
+        if (password && password.trim()) {
+            updateData.password = password.trim();
+        }
+
+        await UPDATE(Users).set(updateData).where({ ID: ID });
+
+        if (assignedRoles !== undefined) {
+            await DELETE.from(UserRoles).where({ user_ID: ID });
+            const roleArray = sRoles.split(',').map(r => r.trim()).filter(Boolean);
+            for (const rCode of roleArray) {
+                await INSERT.into(UserRoles).entries({
+                    ID: cds.utils.uuid(),
+                    user_ID: ID,
+                    roleCode: rCode,
+                    roleName: ROLE_NAMES[rCode] || rCode,
+                    assignedDate: new Date(),
+                    assignedBy: req.user?.id || 'SUPERADMIN'
+                });
+            }
+        }
+
+        await INSERT.into(GateAuditLogs).entries({
+            ID: cds.utils.uuid(),
+            action: 'USER_UPDATED',
+            actionDateTime: new Date(),
+            userId: req.user?.id || 'SUPERADMIN',
+            userName: req.user?.id || 'SUPERADMIN',
+            remarks: `User updated: ${sUsername} (${updateData.name}) - Status: ${sStatus}, Roles: ${sRoles}`
+        });
+
+        return SELECT.one.from(Users).where({ ID: ID });
+    });
+
+    this.on('ToggleUserStatus', async (req) => {
+        const { ID } = req.data;
+        if (!ID) {
+            return req.error(400, 'User ID is mandatory.');
+        }
+
+        const user = await SELECT.one.from(Users).where({ ID: ID });
+        if (!user) {
+            return req.error(404, 'User not found.');
+        }
+
+        if (user.username === 'superadmin_user' && user.status === 'ACTIVE') {
+            return req.error(400, 'Primary Superadmin user cannot be deactivated.');
+        }
+
+        const newStatus = (user.status === 'ACTIVE') ? 'INACTIVE' : 'ACTIVE';
+        const bActive = (newStatus === 'ACTIVE');
+
+        await UPDATE(Users).set({
+            status: newStatus,
+            active: bActive
+        }).where({ ID: ID });
+
+        await INSERT.into(GateAuditLogs).entries({
+            ID: cds.utils.uuid(),
+            action: 'USER_STATUS_TOGGLED',
+            actionDateTime: new Date(),
+            userId: req.user?.id || 'SUPERADMIN',
+            userName: req.user?.id || 'SUPERADMIN',
+            remarks: `User ${user.username} status toggled to ${newStatus}`
+        });
+
+        return SELECT.one.from(Users).where({ ID: ID });
+    });
+
+    this.on('DeleteUser', async (req) => {
+        const { ID } = req.data;
+        if (!ID) {
+            return req.error(400, 'User ID is mandatory.');
+        }
+
+        const user = await SELECT.one.from(Users).where({ ID: ID });
+        if (!user) {
+            return req.error(404, 'User not found.');
+        }
+
+        if (user.username === 'superadmin_user') {
+            return req.error(400, 'Primary Superadmin user cannot be deleted.');
+        }
+
+        await DELETE.from(UserRoles).where({ user_ID: ID });
+        await DELETE.from(Users).where({ ID: ID });
+
+        await INSERT.into(GateAuditLogs).entries({
+            ID: cds.utils.uuid(),
+            action: 'USER_DELETED',
+            actionDateTime: new Date(),
+            userId: req.user?.id || 'SUPERADMIN',
+            userName: req.user?.id || 'SUPERADMIN',
+            remarks: `User deleted: ${user.username} (${user.name})`
+        });
+
+        return true;
+    });
+
 
 
     /*

@@ -1,0 +1,8 @@
+ID;username;password;name;designation;department;email;phoneNo;serviceStatus;status;active;assignedRoles;remarks
+u0000001-0000-0000-0000-000000000001;superadmin_user;password;System Superadmin;Chief System Administrator;IT & Operations;superadmin@apl.com;+91 98765 00001;IN_SERVICE;ACTIVE;true;Superadmin, Admin;System Superadministrator with full privileges
+u0000001-0000-0000-0000-000000000002;maingate_user;password;Mahesh Verma;Main Gate Lead Operator;Main Gate Operations;m.verma@apl.com;+91 98765 00002;IN_SERVICE;ACTIVE;true;MainGateUser;Primary Main Gate Pass Issuer
+u0000001-0000-0000-0000-000000000003;security_user;password;Vikram Rathore;Security Incharge;Security Department;v.rathore@apl.com;+91 98765 00003;IN_SERVICE;ACTIVE;true;SecurityGateUser;Chief Security Officer for Verification
+u0000001-0000-0000-0000-000000000004;weighbridge_user;password;Suresh Patil;Weighbridge Operator;Logistics & Scale;s.patil@apl.com;+91 98765 00004;IN_SERVICE;ACTIVE;true;WeighbridgeUser;Digital Scale Operator
+u0000001-0000-0000-0000-000000000005;factory_user;password;Sunil Nair;Plant Yard Supervisor;Factory Yard;s.nair@apl.com;+91 98765 00005;IN_SERVICE;ACTIVE;true;FactoryGateUser;Unloading Yard Inspector
+u0000001-0000-0000-0000-000000000006;admin_user;password;Amit Roy;Operations Admin Manager;Plant Administration;a.roy@apl.com;+91 98765 00006;IN_SERVICE;ACTIVE;true;Admin;Operations & Master Data Administrator
+u0000001-0000-0000-0000-000000000007;auditor_user;password;Pooja Hegde;Internal Compliance Auditor;Quality & Audit;p.hegde@apl.com;+91 98765 00007;IN_SERVICE;ACTIVE;true;Auditor;Read-only compliance auditor

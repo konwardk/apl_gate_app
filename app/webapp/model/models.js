@@ -57,8 +57,15 @@ sap.ui.define([
                 canViewFactoryGateOps: isSuper || isAdmin || isFactory,
                 canViewFactoryOps: isSuper || isAdmin || isFactory,
                 canViewMasterData: isSuper || isAdmin,
-                canViewAuditTrail: isSuper || isAdmin || isAuditor
+                canViewAuditTrail: isSuper || isAdmin || isAuditor,
+                canManageUsers: isSuper
             };
+        },
+
+        setPasswordForUser: function (username, password) {
+            if (username && password) {
+                userPasswords[username] = password;
+            }
         },
 
         createAppModel: function () {
@@ -97,6 +104,7 @@ sap.ui.define([
                 canViewMasterData: perms.canViewMasterData,
                 canViewAuditTrail: perms.canViewAuditTrail,
                 canViewAudit: perms.canViewAuditTrail,
+                canManageUsers: perms.canManageUsers,
                 currentFeAppTitle: "",
                 currentFeAppUrl: ""
             });

@@ -25,6 +25,10 @@ sap.ui.define([
             this.getOwnerComponent().navigateTo("launchpadPage", "slide");
         },
 
+        onUserManagementNav: function () {
+            this.getOwnerComponent().navigateTo("userManagementPage", "slide");
+        },
+
         onGateInPress: function () {
             this.getOwnerComponent().openGateInDialog();
         },

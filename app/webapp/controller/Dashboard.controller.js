@@ -111,6 +111,15 @@ sap.ui.define([
                 return;
             }
             this.getOwnerComponent().openFioriElementsApp("GateAuditLogs", "Gate Audit Trail Logs (SAP Fiori Elements)");
+        },
+
+        onOpenUserManagement: function () {
+            const oModel = this.getOwnerComponent().getModel();
+            if (!oModel.getProperty("/canManageUsers")) {
+                MessageBox.error("Access Restricted: User Management requires Superadmin role.");
+                return;
+            }
+            this.getOwnerComponent().navigateTo("userManagementPage", "slide");
         }
     });
 });

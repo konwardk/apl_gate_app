@@ -19,7 +19,12 @@ annotate GateService.FactoryGateOut          with @(requires: ['SecurityGateUser
 annotate GateService.RecordFactoryOperation  with @(requires: ['SecurityGateUser', 'FactoryGateUser', 'Superadmin']);
 annotate GateService.SecurityGateOut         with @(requires: ['SecurityGateUser', 'Superadmin']);
 annotate GateService.MainGateOut             with @(requires: ['MainGateUser', 'Superadmin']);
+annotate GateService.CreateUser             with @(requires: 'Superadmin');
+annotate GateService.UpdateUser             with @(requires: 'Superadmin');
+annotate GateService.ToggleUserStatus       with @(requires: 'Superadmin');
+annotate GateService.DeleteUser             with @(requires: 'Superadmin');
 annotate GateService.userInfo                with @(requires: 'authenticated-user');
+
 
 // 3. Entity Level Authorization
 
@@ -97,3 +102,15 @@ annotate GateService.FactoryGateEvents with @(restrict: [
 annotate GateService.GateAuditLogs with @(restrict: [
     { grant: 'READ', to: ['Admin', 'Superadmin', 'Auditor', 'MainGateUser'] }
 ]);
+
+// Superadmin User Management: Superadmin has full CRUD, authenticated users can read
+annotate GateService.Users with @(restrict: [
+    { grant: 'READ', to: 'authenticated-user' },
+    { grant: '*',    to: 'Superadmin' }
+]);
+
+annotate GateService.UserRoles with @(restrict: [
+    { grant: 'READ', to: 'authenticated-user' },
+    { grant: '*',    to: 'Superadmin' }
+]);
+

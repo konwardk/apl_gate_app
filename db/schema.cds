@@ -410,8 +410,7 @@ entity Suppliers : cuid, managed {
 
 entity GateAuditLogs : cuid {
 
-    gateTransaction         : Association to GateTransactions
-                                not null;
+    gateTransaction         : Association to GateTransactions;
 
     action                  : String(50) @mandatory;
 
@@ -498,3 +497,47 @@ type VerificationStatus : String enum {
     VERIFIED;
     REJECTED;
 }
+
+
+/* ============================================================
+   14. SUPERADMIN USER MANAGEMENT
+   ============================================================ */
+
+entity Users : cuid, managed {
+    username        : String(50) @mandatory;
+    password        : String(100) @mandatory;
+    name            : String(100) @mandatory;
+    designation     : String(100);
+    department      : String(100);
+    email           : String(100);
+    phoneNo         : String(20);
+    serviceStatus   : ServiceStatus default 'IN_SERVICE';
+    status          : UserStatus default 'ACTIVE';
+    active          : Boolean default true;
+    assignedRoles   : String(250);
+    remarks         : String(500);
+
+    /* Relational composition for multiple roles */
+    userRoles       : Composition of many UserRoles on userRoles.user = $self;
+}
+
+entity UserRoles : cuid {
+    user            : Association to Users not null;
+    roleCode        : String(50) @mandatory;
+    roleName        : String(100);
+    assignedDate    : Timestamp;
+    assignedBy      : String(100);
+}
+
+type ServiceStatus : String enum {
+    IN_SERVICE;
+    ON_LEAVE;
+    PROBATION;
+    SUSPENDED;
+    RESIGNED;
+}
+
+type UserStatus : String enum {
+    ACTIVE;
+    INACTIVE;
+}
