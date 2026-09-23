@@ -4,8 +4,8 @@
     xmlns:core="sap.ui.core">
     <Dialog
         id="gateOutDialog"
-        title="Main Gate Exit - Authorize Gate OUT"
-        contentWidth="500px">
+        title="{= ${gateOutModel>/isRowAction} ? ('Main Gate Exit - ' + ${gateOutModel>/selectedVehicle/gateInNumber} + ' (' + ${gateOutModel>/selectedVehicle/vehicleRegNo} + ')') : 'Main Gate Exit - Authorize Gate OUT' }"
+        contentWidth="520px">
         <content>
             <form:SimpleForm
                 editable="true"
@@ -23,6 +23,7 @@
                         change=".onGateOutPassChange"
                         filterSecondaryValues="true"
                         showSecondaryValues="true"
+                        editable="{= !${gateOutModel>/isRowAction} }"
                         items="{
                             path: 'gateOutModel>/eligibleVehicles',
                             templateShareable: false
@@ -47,6 +48,15 @@
                         text="{gateOutModel>/selectedVehicle/status}"
                         state="{path: 'gateOutModel>/selectedVehicle/status', formatter: '.formatter.getStatusState'}"
                         visible="{= !!${gateOutModel>/selectedVehicle} }" />
+
+                    <!-- Main Gate Operator -->
+                    <Label text="Main Gate Operator" required="true" />
+                    <Input
+                        id="inputGateOutOperator"
+                        value="{gateOutModel>/operator}"
+                        placeholder="Enter Main Gate Operator Name / ID"
+                        maxLength="100"
+                        required="true" />
                 </form:content>
             </form:SimpleForm>
         </content>

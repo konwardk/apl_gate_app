@@ -21,6 +21,12 @@
                 <Text
                     text="Vehicle {gateOutSuccess>/vehicleRegNo} has cleared the Main Gate and exited factory premises."
                     class="sapUiSmallMarginTop" />
+                <ObjectStatus
+                    text="{= 'Main Gate Operator: ' + (${gateOutSuccess>/gateOutOperator} || '-') }"
+                    state="Information"
+                    icon="sap-icon://person-placeholder"
+                    visible="{= !!${gateOutSuccess>/gateOutOperator} }"
+                    class="sapUiTinyMarginTop" />
             </VBox>
         </content>
         <beginButton>

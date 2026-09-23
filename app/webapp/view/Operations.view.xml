@@ -101,25 +101,35 @@
                 class="sapUiMediumMarginTop">
                 <headerToolbar>
                     <OverflowToolbar>
-                        <Title text="Active Gate Transactions ({= ${/transactions}.length })" />
+                        <Title text="Main Gate Scale &amp; Entry Records ({= ${/transactions} ? ${/transactions}.length : 0 })" />
                         <ToolbarSpacer />
+                        <SegmentedButton
+                            id="opsFilterSegmentedBtn"
+                            selectedKey="ALL"
+                            selectionChange=".onFilterCategoryChange">
+                            <items>
+                                <SegmentedButtonItem key="ALL" text="All ({= ${/counts/TOTAL} || 0 })" />
+                                <SegmentedButtonItem key="GATE_IN" text="Main Gate IN ({= ${/counts/GATE_IN} || 0 })" />
+                                <SegmentedButtonItem key="IN_PLANT" text="In Plant ({= ${/counts/IN_PLANT} || 0 })" />
+                                <SegmentedButtonItem key="READY_OUT" text="Ready for Gate OUT ({= ${/counts/READY_OUT} || 0 })" />
+                                <SegmentedButtonItem key="COMPLETED" text="Completed ({= ${/counts/COMPLETED} || 0 })" />
+                            </items>
+                        </SegmentedButton>
                         <SearchField
                             id="opsSearchField"
-                            width="280px"
-                            placeholder="Search by Gate IN #, Vehicle, Driver..."
+                            width="240px"
+                            placeholder="Search Gate IN #, Vehicle, Driver..."
                             liveChange=".onSearchLiveChange"
                             search=".onSearch" />
                         <Button
                             icon="sap-icon://clear-filter"
-                            tooltip="Reset Search"
+                            tooltip="Reset Search &amp; Filters"
                             press=".onResetSearch" />
                         <ToolbarSeparator />
                         <Button
-                            text="Fiori Elements App"
-                            icon="sap-icon://table-view"
-                            type="Ghost"
-                            tooltip="Open standard Fiori Elements List Report &amp; Object Page with full CRUD"
-                            press=".onOpenFioriElementsApp" />
+                            icon="sap-icon://refresh"
+                            tooltip="Refresh Gate Entries Queue"
+                            press=".onRefreshQueue" />
                     </OverflowToolbar>
                 </headerToolbar>
                 <columns>
@@ -130,7 +140,7 @@
                     <Column><header><Text text="Current Stage" /></header></Column>
                     <Column><header><Text text="Gate IN Time" /></header></Column>
                     <Column><header><Text text="Gate OUT Time" /></header></Column>
-                    <Column hAlign="End" width="210px"><header><Text text="Actions" /></header></Column>
+                    <Column hAlign="End" width="220px"><header><Text text="Actions" /></header></Column>
                 </columns>
                 <items>
                     <ColumnListItem type="Navigation" press=".onTxRowPress">
@@ -148,15 +158,32 @@
                             <Text text="{currentStage}" />
                             <Text text="{path: 'gateInDateTime', formatter: '.formatter.formatDateTime'}" />
                             <Text text="{path: 'gateOutDateTime', formatter: '.formatter.formatDateTime'}" />
-                            <HBox justifyContent="End" class="sapUiTinyMarginBeginEnd">
+                            <HBox justifyContent="End" alignItems="Center" wrap="NoWrap" class="sapUiTinyMarginBeginEnd">
+                                <!-- Gate OUT button: ONLY shown and clickable if all other operations are performed completely (status: SECURITY_OUT) -->
                                 <Button
-                                    text="Print"
+                                    text="Gate OUT"
+                                    icon="sap-icon://log-out"
+                                    type="Success"
+                                    tooltip="Authorize and record final Main Gate OUT exit clearance"
+                                    visible="{= ${status} === 'SECURITY_OUT' }"
+                                    enabled="{= ${status} === 'SECURITY_OUT' }"
+                                    press=".onRowGateOutPress"
+                                    class="sapUiTinyMarginEnd" />
+
+                                <!-- Gated OUT Status Badge -->
+                                <ObjectStatus
+                                    text="Gated OUT"
+                                    state="Success"
+                                    icon="sap-icon://sys-enter-2"
+                                    visible="{= ${status} === 'COMPLETED' }"
+                                    class="sapUiTinyMarginEnd" />
+
+                                <Button
                                     icon="sap-icon://print"
                                     type="Transparent"
                                     tooltip="Print Gate IN Pass"
                                     press=".onTxPrintPress" />
                                 <Button
-                                    text="Edit"
                                     icon="sap-icon://edit"
                                     type="Transparent"
                                     tooltip="Edit Gate Entry"

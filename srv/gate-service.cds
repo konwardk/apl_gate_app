@@ -252,7 +252,8 @@ service GateService {
 
 
     action MainGateOut(
-        gateInNumber : String
+        gateInNumber    : String,
+        gateOutOperator : String
     ) returns GateTransactions;
 
 

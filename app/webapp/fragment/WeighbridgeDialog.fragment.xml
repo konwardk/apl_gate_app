@@ -94,12 +94,23 @@
                         id="dialogWbTypeSelect"
                         width="100%"
                         selectedKey="{wbModel>/weighmentType}"
-                        change=".onWeighmentTypeChange">
-                        <core:Item key="GROSS_IN" text="GROSS_IN - Gross Inbound (Truck + Cargo)" />
-                        <core:Item key="TARE_IN" text="TARE_IN - Tare Inbound (Empty Truck)" />
-                        <core:Item key="TARE_OUT" text="TARE_OUT - Tare Outbound (Empty Truck)" />
-                        <core:Item key="GROSS_OUT" text="GROSS_OUT - Gross Outbound (Loaded Truck)" />
+                        change=".onWeighmentTypeChange"
+                        items="{
+                            path: 'wbModel>/availableWeighmentTypes',
+                            templateShareable: false
+                        }">
+                        <core:Item key="{wbModel>key}" text="{wbModel>text}" />
                     </Select>
+
+                    <Label text="1st Scale (Inbound)" visible="{wbModel>/isOutboundStage}" />
+                    <HBox alignItems="Center" visible="{wbModel>/isOutboundStage}">
+                        <ObjectStatus
+                            text="{= ${wbModel>/inboundWeightRecord} ? (${wbModel>/inboundWeightRecord/weighmentType} + ': ' + ${wbModel>/inboundWeightRecord/weight} + ' KG') : 'No prior inbound record' }"
+                            state="{= ${wbModel>/inboundWeightRecord} ? 'Information' : 'Warning' }"
+                            icon="sap-icon://history"
+                            class="sapUiTinyMarginEnd" />
+                        <Text text="{= ${wbModel>/inboundWeightRecord} ? ('(' + ${path: 'wbModel>/inboundWeightRecord/weighbridgeDateTime', formatter: '.formatter.formatDateTime'} + ')') : '' }" />
+                    </HBox>
 
                     <Label text="Weight (KG)" required="true" />
                     <Input
@@ -110,12 +121,23 @@
                         liveChange=".onWeightLiveChange"
                         required="true" />
 
-                    <Label text="Net Weight Result" visible="{= Boolean(${wbModel>/calculatedNetWeight}) }" />
-                    <ObjectStatus
-                        text="{= 'Net Consignment: ' + ${wbModel>/calculatedNetWeight} + ' KG (' + ${wbModel>/calculatedNetWeightMT} + ' MT)' }"
-                        state="{wbModel>/netWeightStatusState}"
-                        icon="sap-icon://dimension"
-                        visible="{= Boolean(${wbModel>/calculatedNetWeight}) }" />
+                    <Label text="Net Weight" />
+                    <VBox>
+                        <Input
+                            id="dialogWbNetWeightInput"
+                            value="{wbModel>/netWeightDisplay}"
+                            editable="false"
+                            description="{= ${wbModel>/calculatedNetWeightMT} &amp;&amp; ${wbModel>/calculatedNetWeightMT} !== '0.00' ? (${wbModel>/calculatedNetWeightMT} + ' MT') : '' }"
+                            placeholder="Auto-calculated (Gross - Tare)"
+                            valueState="{wbModel>/netWeightStatusState}"
+                            valueStateText="{wbModel>/netWeightStatusText}" />
+                        <ObjectStatus
+                            visible="{= Boolean(${wbModel>/calculatedNetWeight}) &amp;&amp; ${wbModel>/calculatedNetWeight} > 0 }"
+                            text="{= 'Verified Net Consignment: ' + ${wbModel>/calculatedNetWeight} + ' KG (' + ${wbModel>/calculatedNetWeightMT} + ' MT)' }"
+                            state="{wbModel>/netWeightStatusState}"
+                            icon="sap-icon://dimension"
+                            class="sapUiTinyMarginTop" />
+                    </VBox>
 
                     <Label text="Date &amp; Time" required="true" />
                     <DateTimePicker

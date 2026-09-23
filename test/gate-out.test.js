@@ -69,11 +69,15 @@ async function runGateOutTests() {
             .where({ ID: created2.ID })
     );
 
-    const outRes2 = await srv.tx({ user: mainGateUser }).send('MainGateOut', { gateInNumber: created2.gateInNumber });
+    const outRes2 = await srv.tx({ user: mainGateUser }).send('MainGateOut', {
+        gateInNumber: created2.gateInNumber,
+        gateOutOperator: 'Ramesh Sharma'
+    });
     assert.strictEqual(outRes2.status, 'COMPLETED');
     assert.strictEqual(outRes2.currentStage, 'COMPLETED');
+    assert.strictEqual(outRes2.gateOutOperator, 'Ramesh Sharma');
     assert.ok(outRes2.gateOutDateTime);
-    console.log(`  [PASS] Gate OUT succeeded for SECURITY_OUT vehicle. Status: ${outRes2.status}`);
+    console.log(`  [PASS] Gate OUT succeeded with custom operator: ${outRes2.gateOutOperator}. Status: ${outRes2.status}`);
 
     const audit2 = await srv.tx({ user: mainGateUser }).run(
         SELECT.one.from(GateAuditLogs).where({ gateTransaction_ID: created2.ID, action: 'MAIN_GATE_OUT' })
@@ -81,7 +85,8 @@ async function runGateOutTests() {
     assert.strictEqual(audit2.oldStatus, 'SECURITY_OUT');
     assert.strictEqual(audit2.newStatus, 'COMPLETED');
     assert.strictEqual(audit2.oldStage, 'SECURITY_GATE_OUT');
-    console.log(`  [PASS] Audit log verified: oldStatus=${audit2.oldStatus}, newStatus=${audit2.newStatus}`);
+    assert.strictEqual(audit2.userName, 'Ramesh Sharma');
+    console.log(`  [PASS] Audit log verified: oldStatus=${audit2.oldStatus}, newStatus=${audit2.newStatus}, userName=${audit2.userName}`);
 
     // ----------------------------------------------------
     // TEST 3: Block Gate OUT on already COMPLETED vehicle

@@ -33,6 +33,10 @@ sap.ui.define([
                 isVehicleSelectable: true,
                 weighbridgeNumber: "WB-01",
                 weighmentType: "GROSS_IN",
+                availableWeighmentTypes: [
+                    { key: "GROSS_IN", text: "Gross IN (Truck + Cargo)" },
+                    { key: "TARE_OUT", text: "Tare OUT (Empty Truck)" }
+                ],
                 weightUnit: "KG",
                 weighbridgeDateTimeStr: nowIso,
                 operator: activeUser.includes("weighbridge") ? activeUser : "weighbridge_user",
@@ -46,6 +50,7 @@ sap.ui.define([
                 inputWeight: "",
                 calculatedNetWeight: 0,
                 calculatedNetWeightMT: "0.00",
+                netWeightDisplay: "",
                 netWeightStatusText: "",
                 netWeightStatusState: ValueState.None,
                 remarks: "",
@@ -243,6 +248,40 @@ sap.ui.define([
             this.selectVehicleByGateIn(sKey);
         },
 
+        _getWeighmentTypeOptions: function (sPurpose) {
+            if (sPurpose === "PICKUP") {
+                return [
+                    { key: "TARE_IN", text: "Tare IN (Empty Truck)" },
+                    { key: "GROSS_OUT", text: "Gross OUT (Loaded Truck)" }
+                ];
+            }
+            if (sPurpose === "DELIVERY") {
+                return [
+                    { key: "GROSS_IN", text: "Gross IN (Truck + Cargo)" },
+                    { key: "TARE_OUT", text: "Tare OUT (Empty Truck)" }
+                ];
+            }
+            return [
+                { key: "GROSS_IN", text: "Gross IN (Truck + Cargo)" },
+                { key: "TARE_OUT", text: "Tare OUT (Empty Truck)" },
+                { key: "TARE_IN", text: "Tare IN (Empty Truck)" },
+                { key: "GROSS_OUT", text: "Gross OUT (Loaded Truck)" }
+            ];
+        },
+
+        _updateAvailableWeighmentTypes: function (vehicle) {
+            const oWbModel = this.getView().getModel("wbModel");
+            const sPurpose = vehicle ? vehicle.purpose : "DELIVERY";
+            const aOptions = this._getWeighmentTypeOptions(sPurpose);
+            oWbModel.setProperty("/availableWeighmentTypes", aOptions);
+
+            const currentType = oWbModel.getProperty("/weighmentType");
+            const isCurrentValid = aOptions.some(opt => opt.key === currentType);
+            if (!isCurrentValid && aOptions.length > 0) {
+                oWbModel.setProperty("/weighmentType", aOptions[0].key);
+            }
+        },
+
         selectVehicleByGateIn: async function (gateInNumber) {
             const oWbModel = this.getView().getModel("wbModel");
             const aEligible = oWbModel.getProperty("/eligibleVehicles") || [];
@@ -274,11 +313,17 @@ sap.ui.define([
             oWbModel.setProperty("/selectedGateInNumber", vehicle ? vehicle.gateInNumber : (gateInNumber || ""));
             oWbModel.setProperty("/selectedVehicle", vehicle || null);
 
+            // Update dropdown options according to vehicle purpose
+            this._updateAvailableWeighmentTypes(vehicle);
+
             if (!vehicle) {
                 oWbModel.setProperty("/isOutboundStage", false);
                 oWbModel.setProperty("/inboundWeightRecord", null);
                 oWbModel.setProperty("/expectedWeighmentType", "GROSS_IN");
                 oWbModel.setProperty("/weighmentType", "GROSS_IN");
+                oWbModel.setProperty("/netWeightDisplay", "");
+                oWbModel.setProperty("/calculatedNetWeight", 0);
+                oWbModel.setProperty("/calculatedNetWeightMT", "0.00");
                 oWbModel.setProperty("/expectedOperationDescription", "Select a valid vehicle to determine weighment type.");
                 oWbModel.setProperty("/expectedOperationType", "Information");
                 return;
@@ -294,39 +339,46 @@ sap.ui.define([
             let bOutbound = false;
             let oInboundRecord = null;
 
+            // Locate previous inbound weighment
+            if (vehicle.weighments && vehicle.weighments.length > 0) {
+                oInboundRecord = vehicle.weighments.find(w => w.weighmentType === "GROSS_IN" || w.weighmentType === "TARE_IN") || vehicle.weighments[0];
+            } else if (vehicle.inboundWeighment) {
+                oInboundRecord = vehicle.inboundWeighment;
+            }
+
             if (isSecurityIn) {
                 bOutbound = false;
                 if (isDelivery) {
                     sExpectedType = "GROSS_IN";
-                    sDesc = "Stage 1 (First Weighment - DELIVERY): Vehicle arriving with raw materials. Default Weighment Type: GROSS_IN - Gross Inbound (Truck + Load).";
+                    sDesc = "Stage 1 (First Weighment - DELIVERY): Vehicle arriving with raw materials. Default Weighment Type: Gross IN (Truck + Cargo).";
                     sOpType = "Information";
                 } else {
                     sExpectedType = "TARE_IN";
-                    sDesc = "Stage 1 (First Weighment - PICKUP): Empty vehicle arriving for material dispatch. Default Weighment Type: TARE_IN - Tare Inbound (Empty Truck).";
+                    sDesc = "Stage 1 (First Weighment - PICKUP): Empty vehicle arriving for material dispatch. Default Weighment Type: Tare IN (Empty Truck).";
                     sOpType = "Information";
                 }
             } else if (isFactoryOut) {
                 bOutbound = true;
-                // Locate previous inbound weighment
-                if (vehicle.weighments && vehicle.weighments.length > 0) {
-                    oInboundRecord = vehicle.weighments.find(w => w.weighmentType === "GROSS_IN" || w.weighmentType === "TARE_IN") || vehicle.weighments[0];
-                } else if (vehicle.inboundWeighment) {
-                    oInboundRecord = vehicle.inboundWeighment;
-                }
-
                 if (isDelivery) {
                     sExpectedType = "TARE_OUT";
-                    sDesc = "Stage 2 (Second Weighment - DELIVERY): Vehicle has unloaded materials in factory. Default Weighment Type: TARE_OUT - Tare Outbound (Empty Truck) to calculate Net Material Delivered.";
+                    sDesc = "Stage 2 (Second Weighment - DELIVERY): Vehicle has unloaded materials in factory. Default Weighment Type: Tare OUT (Empty Truck) to calculate Net Material Delivered.";
                     sOpType = "Warning";
                 } else {
                     sExpectedType = "GROSS_OUT";
-                    sDesc = "Stage 2 (Second Weighment - PICKUP): Vehicle has been loaded in factory. Default Weighment Type: GROSS_OUT - Gross Outbound (Loaded Truck) to calculate Net Material Picked Up.";
+                    sDesc = "Stage 2 (Second Weighment - PICKUP): Vehicle has been loaded in factory. Default Weighment Type: Gross OUT (Loaded Truck) to calculate Net Material Picked Up.";
                     sOpType = "Warning";
                 }
             } else {
-                sExpectedType = isDelivery ? "GROSS_IN" : "TARE_IN";
-                sDesc = `Stage 1 (First Weighment): Purpose is ${vehicle.purpose}. Default Weighment Type: ${isDelivery ? "GROSS_IN - Gross Inbound" : "TARE_IN - Tare Inbound (Empty Truck)"}.`;
-                sOpType = "Information";
+                if (oInboundRecord) {
+                    bOutbound = true;
+                    sExpectedType = isDelivery ? "TARE_OUT" : "GROSS_OUT";
+                    sDesc = `Stage 2 (Second Weighment - ${vehicle.purpose}): Prior inbound recorded. Default Weighment Type: ${sExpectedType}.`;
+                    sOpType = "Warning";
+                } else {
+                    sExpectedType = isDelivery ? "GROSS_IN" : "TARE_IN";
+                    sDesc = `Stage 1 (First Weighment - ${vehicle.purpose}): Default Weighment Type: ${sExpectedType}.`;
+                    sOpType = "Information";
+                }
             }
 
             oWbModel.setProperty("/isOutboundStage", bOutbound);
@@ -369,6 +421,16 @@ sap.ui.define([
             const oWbModel = this.getView().getModel("wbModel");
             oWbModel.setProperty("/weighmentType", sType);
             oWbModel.setProperty("/expectedWeighmentType", sType);
+
+            // Inbound vs Outbound determination
+            const bOutbound = (sType === "TARE_OUT" || sType === "GROSS_OUT");
+            oWbModel.setProperty("/isOutboundStage", bOutbound);
+
+            const oVehicle = oWbModel.getProperty("/selectedVehicle");
+            const oInbound = oWbModel.getProperty("/inboundWeightRecord");
+            const estWeight = this.getEstimatedWeight(oVehicle, sType, oInbound);
+            oWbModel.setProperty("/inputWeight", String(estWeight));
+
             this.recalculateNetWeight();
         },
 
@@ -398,45 +460,85 @@ sap.ui.define([
 
         recalculateNetWeight: function () {
             const oWbModel = this.getView().getModel("wbModel");
-            const bOutbound = oWbModel.getProperty("/isOutboundStage");
+            const sType = oWbModel.getProperty("/weighmentType") || "GROSS_IN";
+            const bOutbound = (sType === "TARE_OUT" || sType === "GROSS_OUT");
             const oInbound = oWbModel.getProperty("/inboundWeightRecord");
             const sInput = oWbModel.getProperty("/inputWeight");
             const currentWeight = parseFloat(sInput);
+            const oVehicle = oWbModel.getProperty("/selectedVehicle");
+            const isDelivery = oVehicle ? (oVehicle.purpose === "DELIVERY") : (sType === "GROSS_IN" || sType === "TARE_OUT");
 
-            if (!bOutbound || !oInbound || isNaN(currentWeight) || currentWeight <= 0) {
+            // For Stage 1 (First scale: GROSS_IN or TARE_IN)
+            if (!bOutbound) {
                 oWbModel.setProperty("/calculatedNetWeight", 0);
                 oWbModel.setProperty("/calculatedNetWeightMT", "0.00");
-                oWbModel.setProperty("/netWeightStatusText", "");
+                const sPendingStage = isDelivery ? "Pending Tare OUT (Stage 2)" : "Pending Gross OUT (Stage 2)";
+                oWbModel.setProperty("/netWeightDisplay", sPendingStage);
+                oWbModel.setProperty("/netWeightStatusText", "Net Cargo Weight will be auto-calculated upon 2nd weighment.");
+                oWbModel.setProperty("/netWeightStatusState", ValueState.Information);
+                return;
+            }
+
+            // For Stage 2 (Outbound: TARE_OUT or GROSS_OUT)
+            if (!oInbound) {
+                oWbModel.setProperty("/calculatedNetWeight", 0);
+                oWbModel.setProperty("/calculatedNetWeightMT", "0.00");
+                oWbModel.setProperty("/netWeightDisplay", "No Inbound Record Available");
+                oWbModel.setProperty("/netWeightStatusText", "Cannot compute net weight without 1st scale inbound reading.");
+                oWbModel.setProperty("/netWeightStatusState", ValueState.Warning);
+                return;
+            }
+
+            if (isNaN(currentWeight) || currentWeight <= 0) {
+                oWbModel.setProperty("/calculatedNetWeight", 0);
+                oWbModel.setProperty("/calculatedNetWeightMT", "0.00");
+                oWbModel.setProperty("/netWeightDisplay", "Enter scale weight (KG)");
+                oWbModel.setProperty("/netWeightStatusText", "Enter current scale weight in KG to calculate net weight.");
                 oWbModel.setProperty("/netWeightStatusState", ValueState.None);
                 return;
             }
 
             const inWeight = Number(oInbound.weight);
-            const sExpectedType = oWbModel.getProperty("/expectedWeighmentType");
             let net = 0;
             let isValid = true;
+            let sErrorMsg = "";
 
-            if (sExpectedType === "TARE_OUT") {
-                // Inbound was Gross, current is Tare. Net = Gross - Tare
+            if (sType === "TARE_OUT") {
+                // DELIVERY: Net Weight = Gross IN - Tare OUT
                 net = inWeight - currentWeight;
-                isValid = net > 0;
-            } else if (sExpectedType === "GROSS_OUT") {
-                // Inbound was Tare, current is Gross. Net = Gross - Tare
+                isValid = (net > 0);
+                if (!isValid) {
+                    sErrorMsg = "Tare OUT weight cannot exceed or equal Gross IN weight!";
+                }
+            } else if (sType === "GROSS_OUT") {
+                // PICKUP: Net Weight = Gross OUT - Tare IN
                 net = currentWeight - inWeight;
-                isValid = net > 0;
+                isValid = (net > 0);
+                if (!isValid) {
+                    sErrorMsg = "Gross OUT weight must be greater than Tare IN weight!";
+                }
             }
 
-            const netRounded = Math.round(net * 100) / 100;
-            const netMT = (netRounded / 1000).toFixed(2);
-
-            oWbModel.setProperty("/calculatedNetWeight", netRounded);
-            oWbModel.setProperty("/calculatedNetWeightMT", netMT);
-
             if (isValid) {
-                oWbModel.setProperty("/netWeightStatusText", `Valid Net Consignment: ${netMT} MT`);
+                const netRounded = Math.round(net * 100) / 100;
+                const netMT = (netRounded / 1000).toFixed(2);
+                const sFormattedKg = formatter.formatWeight(netRounded, "KG");
+
+                oWbModel.setProperty("/calculatedNetWeight", netRounded);
+                oWbModel.setProperty("/calculatedNetWeightMT", netMT);
+                oWbModel.setProperty("/netWeightDisplay", `${sFormattedKg} (${netMT} MT)`);
+
+                const sFormulaNote = sType === "TARE_OUT"
+                    ? `Gross IN (${formatter.formatWeight(inWeight, "KG")}) − Tare OUT (${formatter.formatWeight(currentWeight, "KG")})`
+                    : `Gross OUT (${formatter.formatWeight(currentWeight, "KG")}) − Tare IN (${formatter.formatWeight(inWeight, "KG")})`;
+
+                oWbModel.setProperty("/netWeightStatusText", `Valid Net Consignment: ${netMT} MT [${sFormulaNote}]`);
                 oWbModel.setProperty("/netWeightStatusState", ValueState.Success);
             } else {
-                oWbModel.setProperty("/netWeightStatusText", "Tare exceeds Gross! Check scale positioning.");
+                oWbModel.setProperty("/calculatedNetWeight", 0);
+                oWbModel.setProperty("/calculatedNetWeightMT", "0.00");
+                oWbModel.setProperty("/netWeightDisplay", "Invalid Weight: Scale discrepancy");
+                oWbModel.setProperty("/netWeightStatusText", sErrorMsg);
                 oWbModel.setProperty("/netWeightStatusState", ValueState.Error);
             }
         },
@@ -445,6 +547,8 @@ sap.ui.define([
             const oWbModel = this.getView().getModel("wbModel");
             const activeUser = models.getActiveUser();
             const oVehicle = oWbModel.getProperty("/selectedVehicle");
+
+            this._updateAvailableWeighmentTypes(oVehicle);
 
             let sDefaultType = "GROSS_IN";
             if (oVehicle) {
@@ -468,6 +572,7 @@ sap.ui.define([
             oWbModel.setProperty("/remarks", "");
             oWbModel.setProperty("/calculatedNetWeight", 0);
             oWbModel.setProperty("/calculatedNetWeightMT", "0.00");
+            oWbModel.setProperty("/netWeightDisplay", "");
             oWbModel.setProperty("/netWeightStatusText", "");
             oWbModel.setProperty("/netWeightStatusState", ValueState.None);
 
@@ -479,15 +584,20 @@ sap.ui.define([
                 oWbModel.setProperty("/inputWeight", "");
             }
 
-            const oWeightInput = this.byId("wbWeightInput");
+            const oWeightInput = this._getDialogControl("dialogWbWeightInput") || this.byId("wbWeightInput");
             if (oWeightInput) oWeightInput.setValueState(ValueState.None);
-            const oWbNumInput = this.byId("wbNumberInput");
+            const oWbNumInput = this._getDialogControl("dialogWbNumberInput") || this.byId("wbNumberInput");
             if (oWbNumInput) oWbNumInput.setValueState(ValueState.None);
-            const oOpInput = this.byId("wbOperatorInput");
+            const oOpInput = this._getDialogControl("dialogWbOperatorInput") || this.byId("wbOperatorInput");
             if (oOpInput) oOpInput.setValueState(ValueState.None);
 
             this.recalculateNetWeight();
             MessageToast.show("Weighbridge entry form reset");
+        },
+
+        _getDialogControl: function (sLocalId) {
+            const oView = this.getView();
+            return Fragment.byId(oView.createId("wbFrag"), sLocalId) || this.byId(sLocalId);
         },
 
         // ============================================================
@@ -504,7 +614,7 @@ sap.ui.define([
             }
 
             // 2. Validate weighbridge number (String(30) @mandatory)
-            const oWbNumInput = this.byId("wbNumberInput");
+            const oWbNumInput = this._getDialogControl("dialogWbNumberInput") || this.byId("wbNumberInput");
             if (!m.weighbridgeNumber || !m.weighbridgeNumber.trim()) {
                 if (oWbNumInput) oWbNumInput.setValueState(ValueState.Error);
                 MessageBox.error("Weighbridge Number is mandatory.");
@@ -513,7 +623,7 @@ sap.ui.define([
             if (oWbNumInput) oWbNumInput.setValueState(ValueState.None);
 
             // 3. Validate weight (Decimal(15,3) @mandatory)
-            const oWeightInput = this.byId("wbWeightInput");
+            const oWeightInput = this._getDialogControl("dialogWbWeightInput") || this.byId("wbWeightInput");
             const fWeight = parseFloat(m.inputWeight);
             if (isNaN(fWeight) || fWeight <= 0) {
                 if (oWeightInput) oWeightInput.setValueState(ValueState.Error);
@@ -523,7 +633,7 @@ sap.ui.define([
             if (oWeightInput) oWeightInput.setValueState(ValueState.None);
 
             // 4. Validate operator (String(100) @mandatory)
-            const oOpInput = this.byId("wbOperatorInput");
+            const oOpInput = this._getDialogControl("dialogWbOperatorInput") || this.byId("wbOperatorInput");
             if (!m.operator || !m.operator.trim()) {
                 if (oOpInput) oOpInput.setValueState(ValueState.Error);
                 MessageBox.error("Weighbridge Operator identifier is mandatory.");
@@ -1057,6 +1167,19 @@ sap.ui.define([
                 }
             }
 
+            const oVehicle = oWbModel.getProperty("/selectedVehicle");
+            this._updateAvailableWeighmentTypes(oVehicle);
+            if (oVehicle) {
+                const isDelivery = (oVehicle.purpose === "DELIVERY");
+                const inType = isDelivery ? "GROSS_IN" : "TARE_IN";
+                oWbModel.setProperty("/weighmentType", inType);
+                oWbModel.setProperty("/expectedWeighmentType", inType);
+                oWbModel.setProperty("/isOutboundStage", false);
+                const estWeight = this.getEstimatedWeight(oVehicle, inType, null);
+                oWbModel.setProperty("/inputWeight", String(estWeight));
+                this.recalculateNetWeight();
+            }
+
             this._openWeighbridgeDialog();
         },
 
@@ -1083,6 +1206,19 @@ sap.ui.define([
                 if (target) {
                     await this.selectVehicleByGateIn(target.gateInNumber);
                 }
+            }
+
+            const oVehicle = oWbModel.getProperty("/selectedVehicle");
+            this._updateAvailableWeighmentTypes(oVehicle);
+            if (oVehicle) {
+                const isDelivery = (oVehicle.purpose === "DELIVERY");
+                const outType = isDelivery ? "TARE_OUT" : "GROSS_OUT";
+                oWbModel.setProperty("/weighmentType", outType);
+                oWbModel.setProperty("/expectedWeighmentType", outType);
+                oWbModel.setProperty("/isOutboundStage", true);
+                const estWeight = this.getEstimatedWeight(oVehicle, outType, oWbModel.getProperty("/inboundWeightRecord"));
+                oWbModel.setProperty("/inputWeight", String(estWeight));
+                this.recalculateNetWeight();
             }
 
             this._openWeighbridgeDialog();

@@ -199,6 +199,8 @@ sap.ui.define([
 
                     const counts = {
                         TOTAL: this._rawTransactions.length,
+                        GATE_IN: 0,
+                        IN_PLANT: 0,
                         ACTIVE: 0,
                         READY_OUT: 0,
                         COMPLETED: 0
@@ -209,6 +211,12 @@ sap.ui.define([
                             counts.COMPLETED++;
                         } else if (tx.status === "SECURITY_OUT") {
                             counts.READY_OUT++;
+                            counts.ACTIVE++;
+                        } else if (tx.status === "GATE_IN") {
+                            counts.GATE_IN++;
+                            counts.ACTIVE++;
+                        } else if (["SECURITY_IN", "WEIGHBRIDGE_IN", "FACTORY_IN", "FACTORY_OUT", "WEIGHBRIDGE_OUT"].includes(tx.status)) {
+                            counts.IN_PLANT++;
                             counts.ACTIVE++;
                         } else if (tx.status !== "CANCELLED") {
                             counts.ACTIVE++;
@@ -664,7 +672,7 @@ sap.ui.define([
         // ============================================================
         // Dialog: Gate OUT
         // ============================================================
-        openGateOutDialog: function () {
+        openGateOutDialog: function (targetTx) {
             let eligible = (this._rawTransactions || []).filter(tx => tx.status !== "COMPLETED" && tx.status !== "CANCELLED");
 
             if (eligible.length === 0) {
@@ -681,10 +689,17 @@ sap.ui.define([
                 return tB - tA;
             });
 
+            const targetVehicle = targetTx ? (eligible.find(v => v.gateInNumber === targetTx.gateInNumber) || targetTx) : (eligible.find(v => v.status === "SECURITY_OUT") || null);
+
+            const activeUser = models.getActiveUser();
+            const defaultOperator = activeUser.includes("maingate") ? activeUser : (activeUser === "superadmin_user" ? "MainGateOperator" : (activeUser || "maingate_user"));
+
             const sId = this.createId("gateOutFrag");
             const oGateOutModel = new JSONModel({
-                eligibleVehicles: eligible,
-                selectedVehicle: null
+                isRowAction: !!targetTx,
+                eligibleVehicles: targetTx ? [targetVehicle] : eligible,
+                selectedVehicle: targetVehicle,
+                operator: defaultOperator
             });
 
             if (!this._pGateOutDialog) {
@@ -702,8 +717,14 @@ sap.ui.define([
                 oDialog.setModel(oGateOutModel, "gateOutModel");
                 const oSelect = Fragment.byId(sId, "selectGateInPass");
                 if (oSelect) {
-                    oSelect.setSelectedKey("");
-                    oSelect.setValue("");
+                    const sKey = targetVehicle ? targetVehicle.gateInNumber : "";
+                    oSelect.setSelectedKey(sKey);
+                    oSelect.setValue(sKey);
+                }
+                const oOpInput = Fragment.byId(sId, "inputGateOutOperator");
+                if (oOpInput) {
+                    oOpInput.setValueState(ValueState.None);
+                    oOpInput.setValueStateText("");
                 }
                 oDialog.open();
             });
@@ -766,6 +787,30 @@ sap.ui.define([
                 return MessageToast.show("Please enter or select a Gate IN #");
             }
 
+            const selectedVehicle = oModel ? oModel.getProperty("/selectedVehicle") : null;
+            const currentSelected = selectedVehicle || eligible.find(v => v.gateInNumber === gateIn);
+            if (currentSelected && currentSelected.status !== "SECURITY_OUT") {
+                MessageBox.warning(
+                    `Vehicle ${currentSelected.vehicleRegNo || gateIn} cannot be Gate OUT yet (Current Status: ${currentSelected.status}).\n\nMain Gate OUT is only permitted once all intermediate operations (Security / Weighbridge / Factory) are performed completely and Security Gate OUT clearance has been granted.`
+                );
+                return;
+            }
+
+            const oOpInput = Fragment.byId(sId, "inputGateOutOperator");
+            const sOperator = (oModel && oModel.getProperty("/operator") || "").trim();
+
+            if (!sOperator) {
+                if (oOpInput) {
+                    oOpInput.setValueState(ValueState.Error);
+                    oOpInput.setValueStateText("Main Gate Operator is mandatory.");
+                }
+                return MessageToast.show("Please enter Main Gate Operator name.");
+            }
+            if (oOpInput) {
+                oOpInput.setValueState(ValueState.None);
+                oOpInput.setValueStateText("");
+            }
+
             try {
                 oDialog.setBusy(true);
                 const res = await fetch(`${ODATA_BASE}/MainGateOut`, {
@@ -774,7 +819,10 @@ sap.ui.define([
                         "Authorization": models.getAuthHeaderValue(),
                         "Content-Type": "application/json"
                     },
-                    body: JSON.stringify({ gateInNumber: gateIn })
+                    body: JSON.stringify({
+                        gateInNumber: gateIn,
+                        gateOutOperator: sOperator
+                    })
                 });
 
                 const data = await res.json();

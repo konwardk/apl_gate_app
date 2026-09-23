@@ -1685,7 +1685,8 @@ export default cds.service.impl(async function () {
     this.on('MainGateOut', async (req) => {
 
         const {
-            gateInNumber
+            gateInNumber,
+            gateOutOperator
         } = req.data;
 
 
@@ -1714,6 +1715,7 @@ export default cds.service.impl(async function () {
         const exitDateTime =
             new Date();
 
+        const operatorName = (gateOutOperator && gateOutOperator.trim()) ? gateOutOperator.trim() : (req.user?.id || 'SYSTEM');
 
         await UPDATE(GateTransactions)
             .set({
@@ -1728,7 +1730,7 @@ export default cds.service.impl(async function () {
                     exitDateTime,
 
                 gateOutOperator:
-                    req.user?.id || 'SYSTEM'
+                    operatorName
 
             })
             .where({
@@ -1767,7 +1769,10 @@ export default cds.service.impl(async function () {
                 req.user?.id || 'SYSTEM',
 
             userName:
-                req.user?.id || 'SYSTEM'
+                operatorName,
+
+            remarks:
+                `Main Gate OUT clearance recorded by ${operatorName}`
         });
 
 
