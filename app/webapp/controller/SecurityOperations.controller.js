@@ -655,7 +655,7 @@ sap.ui.define([
             oDialog.open();
 
             try {
-                const res = await fetch(`${ODATA_BASE}/PurchaseOrders?$top=50&$orderby=PurchaseOrderDate desc`, {
+                const res = await fetch(`${ODATA_BASE}/PurchaseOrders?$top=100&$orderby=PurchaseOrderDate desc`, {
                     headers: {
                         "Authorization": models.getAuthHeaderValue(),
                         "Content-Type": "application/json"
@@ -697,7 +697,9 @@ sap.ui.define([
                     new Filter({ path: "PurchaseOrder", operator: FilterOperator.Contains, value1: sValue, caseSensitive: false }),
                     new Filter({ path: "PurchaseOrderType", operator: FilterOperator.Contains, value1: sValue, caseSensitive: false }),
                     new Filter({ path: "Supplier", operator: FilterOperator.Contains, value1: sValue, caseSensitive: false }),
-                    new Filter({ path: "CompanyCode", operator: FilterOperator.Contains, value1: sValue, caseSensitive: false })
+                    new Filter({ path: "CompanyCode", operator: FilterOperator.Contains, value1: sValue, caseSensitive: false }),
+                    new Filter({ path: "PurchasingOrganization", operator: FilterOperator.Contains, value1: sValue, caseSensitive: false }),
+                    new Filter({ path: "PurchasingGroup", operator: FilterOperator.Contains, value1: sValue, caseSensitive: false })
                 ],
                 and: false
             });
@@ -710,6 +712,7 @@ sap.ui.define([
                 const oContext = oSelectedItem.getBindingContext("poModel");
                 if (oContext) {
                     const sSelectedPo = oContext.getProperty("PurchaseOrder");
+                    const sSupplier = oContext.getProperty("Supplier");
                     const oSecModel = this.getView().getModel("secModel");
                     oSecModel.setProperty("/poNumber", sSelectedPo);
 
@@ -720,7 +723,8 @@ sap.ui.define([
                         oPoInput.setValueState(ValueState.None);
                     }
 
-                    MessageToast.show(`Selected Purchase Order: ${sSelectedPo}`);
+                    const sMsg = sSupplier ? `Selected Purchase Order: ${sSelectedPo} (${sSupplier})` : `Selected Purchase Order: ${sSelectedPo}`;
+                    MessageToast.show(sMsg);
                 }
             }
         },

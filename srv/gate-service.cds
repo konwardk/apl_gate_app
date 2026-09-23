@@ -103,7 +103,8 @@ service GateService {
                 CompanyCode,
                 PurchasingOrganization,
                 PurchasingGroup,
-                PurchaseOrderDate
+                PurchaseOrderDate,
+                DocumentCurrency
         };
 
 

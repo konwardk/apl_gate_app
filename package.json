@@ -31,6 +31,12 @@
             "destination": "S4HANA_CLOUD_PO",
             "path": "/sap/opu/odata4/sap/api_purchaseorder_2/srvd_a2x/sap/purchaseorder/0001"
           }
+        },
+        "[development]": {
+          "credentials": {
+            "url": "https://my443544-api.s4hana.cloud.sap/sap/opu/odata4/sap/api_purchaseorder_2/srvd_a2x/sap/purchaseorder/0001",
+            "authentication": "BasicAuthentication"
+          }
         }
       }
     }

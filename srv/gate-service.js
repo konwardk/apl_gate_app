@@ -374,37 +374,17 @@ export default cds.service.impl(async function () {
     this.on('READ', 'PurchaseOrders', async (req) => {
         try {
             const externalPO = await cds.connect.to('CE_PURCHASEORDER_0001');
-            return await externalPO.run(req.query);
+            const delegatedQuery = SELECT.from(externalPO.entities.PurchaseOrder);
+            if (req.query.SELECT.columns) delegatedQuery.SELECT.columns = req.query.SELECT.columns;
+            if (req.query.SELECT.where) delegatedQuery.SELECT.where = req.query.SELECT.where;
+            if (req.query.SELECT.orderBy) delegatedQuery.SELECT.orderBy = req.query.SELECT.orderBy;
+            if (req.query.SELECT.limit) delegatedQuery.SELECT.limit = req.query.SELECT.limit;
+            if (req.query.SELECT.count) delegatedQuery.SELECT.count = req.query.SELECT.count;
+            return await externalPO.run(delegatedQuery);
         } catch (err) {
             console.warn('[GateService] External S/4HANA PO service not reachable, serving fallback data:', err.message);
             const fallbackPOs = [
-                {
-                    PurchaseOrder: "4500001001",
-                    PurchaseOrderType: "NB",
-                    Supplier: "SUPP-01",
-                    CompanyCode: "1000",
-                    PurchasingOrganization: "1010",
-                    PurchasingGroup: "001",
-                    PurchaseOrderDate: "2026-09-10"
-                },
-                {
-                    PurchaseOrder: "4500001002",
-                    PurchaseOrderType: "NB",
-                    Supplier: "SUPP-02",
-                    CompanyCode: "1000",
-                    PurchasingOrganization: "1010",
-                    PurchasingGroup: "001",
-                    PurchaseOrderDate: "2026-09-12"
-                },
-                {
-                    PurchaseOrder: "4500001003",
-                    PurchaseOrderType: "NB",
-                    Supplier: "SUPP-03",
-                    CompanyCode: "1000",
-                    PurchasingOrganization: "1010",
-                    PurchasingGroup: "002",
-                    PurchaseOrderDate: "2026-09-14"
-                },
+                
                 {
                     PurchaseOrder: "PO-4500112233",
                     PurchaseOrderType: "NB",
@@ -412,7 +392,8 @@ export default cds.service.impl(async function () {
                     CompanyCode: "1000",
                     PurchasingOrganization: "1010",
                     PurchasingGroup: "001",
-                    PurchaseOrderDate: "2026-09-15"
+                    PurchaseOrderDate: "2026-09-15",
+                    DocumentCurrency: "INR"
                 },
                 {
                     PurchaseOrder: "PO-APL-7788",
@@ -421,7 +402,8 @@ export default cds.service.impl(async function () {
                     CompanyCode: "1000",
                     PurchasingOrganization: "1010",
                     PurchasingGroup: "001",
-                    PurchaseOrderDate: "2026-09-16"
+                    PurchaseOrderDate: "2026-09-16",
+                    DocumentCurrency: "INR"
                 },
                 {
                     PurchaseOrder: "PO-DIRECT-8899",
@@ -430,7 +412,8 @@ export default cds.service.impl(async function () {
                     CompanyCode: "1000",
                     PurchasingOrganization: "1010",
                     PurchasingGroup: "002",
-                    PurchaseOrderDate: "2026-09-16"
+                    PurchaseOrderDate: "2026-09-16",
+                    DocumentCurrency: "INR"
                 }
             ];
 

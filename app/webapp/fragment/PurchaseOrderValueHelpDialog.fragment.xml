@@ -9,46 +9,57 @@
         liveChange=".onPoValueHelpSearch"
         confirm=".onPoValueHelpConfirm"
         cancel=".onPoValueHelpCancel"
-        contentWidth="750px"
+        contentWidth="900px"
         items="{
             path: 'poModel>/',
             templateShareable: false
         }">
         <columns>
-            <Column width="25%">
+            <Column width="22%">
                 <header>
-                    <Text text="PO Number" />
+                    <Text text="PO Number / Type" />
                 </header>
             </Column>
-            <Column width="15%">
-                <header>
-                    <Text text="PO Type" />
-                </header>
-            </Column>
-            <Column width="25%">
+            <Column width="18%">
                 <header>
                     <Text text="Supplier Code" />
                 </header>
             </Column>
-            <Column width="15%">
+            <Column width="12%">
                 <header>
                     <Text text="Company" />
                 </header>
             </Column>
             <Column width="20%">
                 <header>
+                    <Text text="Purchasing Org / Group" />
+                </header>
+            </Column>
+            <Column width="16%">
+                <header>
                     <Text text="PO Date" />
+                </header>
+            </Column>
+            <Column width="12%">
+                <header>
+                    <Text text="Currency" />
                 </header>
             </Column>
         </columns>
         <items>
             <ColumnListItem type="Active">
                 <cells>
-                    <ObjectIdentifier title="{poModel>PurchaseOrder}" />
-                    <Text text="{poModel>PurchaseOrderType}" />
+                    <ObjectIdentifier
+                        title="{poModel>PurchaseOrder}"
+                        text="{= ${poModel>PurchaseOrderType} ? ('Type: ' + ${poModel>PurchaseOrderType}) : '' }" />
                     <Text text="{poModel>Supplier}" />
                     <Text text="{poModel>CompanyCode}" />
+                    <VBox>
+                        <Text text="{= ${poModel>PurchasingOrganization} ? ('Org: ' + ${poModel>PurchasingOrganization}) : '-' }" />
+                        <Text text="{= ${poModel>PurchasingGroup} ? ('Grp: ' + ${poModel>PurchasingGroup}) : '-' }" />
+                    </VBox>
                     <Text text="{poModel>PurchaseOrderDate}" />
+                    <Text text="{= ${poModel>DocumentCurrency} || 'INR' }" />
                 </cells>
             </ColumnListItem>
         </items>
