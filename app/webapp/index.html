@@ -23,11 +23,14 @@
         };
 
         function getActiveUser() {
-            return localStorage.getItem('gate_active_user') || 'superadmin_user';
+            return sessionStorage.getItem('gate_active_user') || localStorage.getItem('gate_active_user') || '';
         }
 
         function getAuthHeaderValue(user) {
+            const savedHeader = sessionStorage.getItem('gate_auth_header') || localStorage.getItem('gate_auth_header');
+            if (savedHeader) return savedHeader;
             const u = user || getActiveUser();
+            if (!u) return '';
             const p = userPasswords[u] || 'password';
             return 'Basic ' + btoa(u + ':' + p);
         }
@@ -43,9 +46,12 @@
             const origSend = XMLHttpRequest.prototype.send;
             XMLHttpRequest.prototype.send = function(data) {
                 if (this._url && (this._url.startsWith('/gate') || this._url.includes('$fiori-preview') || this._url.includes('GateService'))) {
-                    try {
-                        this.setRequestHeader('Authorization', getAuthHeaderValue());
-                    } catch (e) {}
+                    const header = getAuthHeaderValue();
+                    if (header) {
+                        try {
+                            this.setRequestHeader('Authorization', header);
+                        } catch (e) {}
+                    }
                 }
                 return origSend.apply(this, arguments);
             };
@@ -54,10 +60,13 @@
             window.fetch = function(input, init) {
                 let url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
                 if (url && (url.startsWith('/gate') || url.includes('$fiori-preview') || url.includes('GateService'))) {
-                    init = init || {};
-                    init.headers = new Headers(init.headers || {});
-                    if (!init.headers.has('Authorization')) {
-                        init.headers.set('Authorization', getAuthHeaderValue());
+                    const header = getAuthHeaderValue();
+                    if (header) {
+                        init = init || {};
+                        init.headers = new Headers(init.headers || {});
+                        if (!init.headers.has('Authorization')) {
+                            init.headers.set('Authorization', header);
+                        }
                     }
                 }
                 return origFetch.call(this, input, init);

@@ -7,14 +7,34 @@ sap.ui.define([
         onInit: function () {
             const oNavContainer = this.byId("navContainer");
             this.getOwnerComponent().setNavContainer(oNavContainer);
-            const oLandingPage = this.byId("landingPage");
-            if (oNavContainer && oLandingPage) {
-                oNavContainer.to(oLandingPage);
+
+            // Determine opening page based on authentication status
+            const oModel = this.getOwnerComponent().getModel();
+            const bAuth = oModel ? oModel.getProperty("/isAuthenticated") : false;
+
+            if (bAuth) {
+                const sAssigned = oModel.getProperty("/assignedScreen") || "launchpadPage";
+                this.getOwnerComponent().navigateTo(sAssigned, "show");
+            } else {
+                this.getOwnerComponent().navigateTo("loginPage", "show");
             }
         },
 
         onHomePressed: function () {
-            this.getOwnerComponent().navigateTo("launchpadPage", "slide");
+            const oModel = this.getOwnerComponent().getModel();
+            const bAuth = oModel ? oModel.getProperty("/isAuthenticated") : false;
+            if (!bAuth) {
+                this.getOwnerComponent().navigateTo("loginPage", "slide");
+                return;
+            }
+            const sAssigned = oModel.getProperty("/assignedScreen") || "launchpadPage";
+            this.getOwnerComponent().navigateTo(sAssigned, "slide");
+        },
+
+        onAssignedWorkspaceNav: function () {
+            const oModel = this.getOwnerComponent().getModel();
+            const sAssigned = oModel ? (oModel.getProperty("/assignedScreen") || "launchpadPage") : "launchpadPage";
+            this.getOwnerComponent().navigateTo(sAssigned, "slide");
         },
 
         onVehicleSelectionNav: function () {
@@ -29,38 +49,21 @@ sap.ui.define([
             this.getOwnerComponent().navigateTo("userManagementPage", "slide");
         },
 
-        onGateInPress: function () {
-            this.getOwnerComponent().openGateInDialog();
-        },
-
-        onGateOutPress: function () {
-            this.getOwnerComponent().openGateOutDialog();
-        },
-
-        onPersonaChange: function (oEvt) {
-            const oSelectedItem = oEvt.getParameter("selectedItem");
-            const sKey = oSelectedItem ? oSelectedItem.getKey() : oEvt.getSource().getSelectedKey();
-            if (sKey) {
-                this.getOwnerComponent().handlePersonaChange(sKey);
-            }
-        },
-
         onProfilePressed: function (oEvt) {
             const oSource = oEvt.getSource();
             this.getOwnerComponent().openUserProfilePopover(oSource);
         },
 
-        onSignInPress: function (oEvt) {
-            const oSource = oEvt.getSource();
-            this.getOwnerComponent().openUserProfilePopover(oSource);
+        onSignInNav: function () {
+            this.getOwnerComponent().navigateTo("loginPage", "slide");
+        },
+
+        onSignOutPress: function () {
+            this.getOwnerComponent().handleSignOut();
         },
 
         onToggleTheme: function () {
             this.getOwnerComponent().toggleTheme();
-        },
-
-        onRefreshPress: function () {
-            this.getOwnerComponent().loadOverviewData();
         }
     });
 });

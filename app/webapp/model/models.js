@@ -4,7 +4,7 @@ sap.ui.define([
 ], function (JSONModel, formatter) {
     "use strict";
 
-    const userPasswords = {
+    const defaultPasswords = {
         "superadmin_user": "password",
         "maingate_user": "password",
         "security_user": "password",
@@ -14,22 +14,88 @@ sap.ui.define([
         "auditor_user": "password"
     };
 
+    const ROLE_TITLES = {
+        "MainGateUser": "Main Gate Operator",
+        "SecurityGateUser": "Security Gate Officer",
+        "WeighbridgeUser": "Weighbridge Scale Operator",
+        "FactoryGateUser": "Factory Yard Supervisor",
+        "Admin": "Operations Administrator",
+        "Superadmin": "System Superadministrator",
+        "Auditor": "Compliance Auditor"
+    };
+
+    const ROLE_ICONS = {
+        "MainGateUser": "sap-icon://log-in",
+        "SecurityGateUser": "sap-icon://shield",
+        "WeighbridgeUser": "sap-icon://dimension",
+        "FactoryGateUser": "sap-icon://factory",
+        "Admin": "sap-icon://home",
+        "Superadmin": "sap-icon://shield",
+        "Auditor": "sap-icon://history"
+    };
+
+    const ROLE_SCREENS = {
+        "MainGateUser": { pageId: "mainGateOpsPage", title: "Main Gate Operations", icon: "sap-icon://log-in" },
+        "SecurityGateUser": { pageId: "securityGateOpsPage", title: "Security Gate Operations", icon: "sap-icon://shield" },
+        "WeighbridgeUser": { pageId: "weighbridgeOpsPage", title: "Weighbridge Operations", icon: "sap-icon://dimension" },
+        "FactoryGateUser": { pageId: "factoryGateOpsPage", title: "Factory Yard Operations", icon: "sap-icon://factory" },
+        "Admin": { pageId: "launchpadPage", title: "Launchpad Dashboard", icon: "sap-icon://home" },
+        "Superadmin": { pageId: "launchpadPage", title: "Superadmin Dashboard", icon: "sap-icon://shield" },
+        "Auditor": { pageId: "launchpadPage", title: "Compliance Dashboard", icon: "sap-icon://history" }
+    };
+
     return {
-        userPasswords: userPasswords,
+        defaultPasswords: defaultPasswords,
+        ROLE_TITLES: ROLE_TITLES,
+        ROLE_ICONS: ROLE_ICONS,
+        ROLE_SCREENS: ROLE_SCREENS,
 
         getActiveUser: function () {
-            return localStorage.getItem("gate_active_user") || "superadmin_user";
+            return sessionStorage.getItem("gate_active_user") || localStorage.getItem("gate_active_user") || "";
         },
 
-        getAuthHeaderValue: function (user) {
-            const u = user || this.getActiveUser();
-            const p = userPasswords[u] || "password";
-            return "Basic " + btoa(u + ":" + p);
+        getAuthHeaderValue: function () {
+            return sessionStorage.getItem("gate_auth_header") || localStorage.getItem("gate_auth_header") || "";
+        },
+
+        getSavedUserInfo: function () {
+            const raw = sessionStorage.getItem("gate_user_info") || localStorage.getItem("gate_user_info");
+            if (raw) {
+                try {
+                    return JSON.parse(raw);
+                } catch (e) {}
+            }
+            return null;
+        },
+
+        setSession: function (userInfo, authHeader) {
+            if (!userInfo) return;
+            const sUsername = (userInfo.id || "").toLowerCase();
+            sessionStorage.setItem("gate_active_user", sUsername);
+            localStorage.setItem("gate_active_user", sUsername);
+
+            if (authHeader) {
+                sessionStorage.setItem("gate_auth_header", authHeader);
+                localStorage.setItem("gate_auth_header", authHeader);
+            }
+
+            sessionStorage.setItem("gate_user_info", JSON.stringify(userInfo));
+            localStorage.setItem("gate_user_info", JSON.stringify(userInfo));
+        },
+
+        clearSession: function () {
+            sessionStorage.removeItem("gate_active_user");
+            sessionStorage.removeItem("gate_auth_header");
+            sessionStorage.removeItem("gate_user_info");
+            localStorage.removeItem("gate_active_user");
+            localStorage.removeItem("gate_auth_header");
+            localStorage.removeItem("gate_user_info");
         },
 
         getPermissionsForUser: function (roles, username) {
             const aRoles = roles || [];
-            const u = username || this.getActiveUser();
+            const u = (username || this.getActiveUser() || "").toLowerCase();
+
             const isSuper = aRoles.includes("Superadmin") || u === "superadmin_user";
             const isAdmin = aRoles.includes("Admin") || u === "admin_user";
             const isMainGate = aRoles.includes("MainGateUser") || u === "maingate_user";
@@ -38,6 +104,49 @@ sap.ui.define([
             const isFactory = aRoles.includes("FactoryGateUser") || u === "factory_user";
             const isAuditor = aRoles.includes("Auditor") || u === "auditor_user";
 
+            // Determine primary role & assigned workspace screen
+            let primaryRole = "Authenticated";
+            let assignedScreen = "launchpadPage";
+            let assignedScreenTitle = "Launchpad Dashboard";
+            let assignedScreenIcon = "sap-icon://home";
+
+            if (isMainGate) {
+                primaryRole = "MainGateUser";
+                assignedScreen = "mainGateOpsPage";
+                assignedScreenTitle = "Main Gate Operations";
+                assignedScreenIcon = "sap-icon://log-in";
+            } else if (isSecurity) {
+                primaryRole = "SecurityGateUser";
+                assignedScreen = "securityGateOpsPage";
+                assignedScreenTitle = "Security Gate Operations";
+                assignedScreenIcon = "sap-icon://shield";
+            } else if (isWeighbridge) {
+                primaryRole = "WeighbridgeUser";
+                assignedScreen = "weighbridgeOpsPage";
+                assignedScreenTitle = "Weighbridge Operations";
+                assignedScreenIcon = "sap-icon://dimension";
+            } else if (isFactory) {
+                primaryRole = "FactoryGateUser";
+                assignedScreen = "factoryGateOpsPage";
+                assignedScreenTitle = "Factory Yard Operations";
+                assignedScreenIcon = "sap-icon://factory";
+            } else if (isSuper) {
+                primaryRole = "Superadmin";
+                assignedScreen = "launchpadPage";
+                assignedScreenTitle = "Superadmin Console";
+                assignedScreenIcon = "sap-icon://shield";
+            } else if (isAdmin) {
+                primaryRole = "Admin";
+                assignedScreen = "launchpadPage";
+                assignedScreenTitle = "Operations Dashboard";
+                assignedScreenIcon = "sap-icon://home";
+            } else if (isAuditor) {
+                primaryRole = "Auditor";
+                assignedScreen = "launchpadPage";
+                assignedScreenTitle = "Compliance Dashboard";
+                assignedScreenIcon = "sap-icon://history";
+            }
+
             return {
                 isSuper: isSuper,
                 isAdmin: isAdmin,
@@ -45,39 +154,58 @@ sap.ui.define([
                 isSecurity: isSecurity,
                 isWeighbridge: isWeighbridge,
                 isFactory: isFactory,
-                canCreateGateIn: isSuper || isMainGate,
-                canMainGateOut: isSuper || isMainGate,
-                canViewLiveOps: isSuper || isMainGate || isAdmin || isSecurity || isWeighbridge || isFactory || isAuditor,
-                canViewGateOps: isSuper || isAdmin || isMainGate || isSecurity || isWeighbridge || isFactory,
+                isAuditor: isAuditor,
+                primaryRole: primaryRole,
+                primaryRoleTitle: ROLE_TITLES[primaryRole] || primaryRole,
+                assignedScreen: assignedScreen,
+                assignedScreenTitle: assignedScreenTitle,
+                assignedScreenIcon: assignedScreenIcon,
+
+                // Screen Visibility Flags
                 canViewMainGateOps: isSuper || isAdmin || isMainGate,
                 canViewSecurityGateOps: isSuper || isAdmin || isSecurity,
-                canRecordWeighment: isSuper || isWeighbridge,
                 canViewWeighbridgeOps: isSuper || isAdmin || isWeighbridge,
-                canRecordFactoryOps: isSuper || isFactory,
                 canViewFactoryGateOps: isSuper || isAdmin || isFactory,
-                canViewFactoryOps: isSuper || isAdmin || isFactory,
                 canViewMasterData: isSuper || isAdmin,
                 canViewAuditTrail: isSuper || isAdmin || isAuditor,
-                canManageUsers: isSuper
+                canManageUsers: isSuper,
+                canViewLiveOps: isSuper || isMainGate || isAdmin || isSecurity || isWeighbridge || isFactory || isAuditor,
+                canViewGateOps: isSuper || isAdmin || isMainGate || isSecurity || isWeighbridge || isFactory,
+
+                // Action Authorization Flags
+                canCreateGateIn: isSuper || isAdmin || isMainGate,
+                canMainGateOut: isSuper || isAdmin || isMainGate,
+                canRecordWeighment: isSuper || isAdmin || isWeighbridge,
+                canRecordFactoryOps: isSuper || isAdmin || isFactory
             };
         },
 
-        setPasswordForUser: function (username, password) {
-            if (username && password) {
-                userPasswords[username] = password;
-            }
-        },
-
         createAppModel: function () {
-            const activeUser = this.getActiveUser();
-            const perms = this.getPermissionsForUser([], activeUser);
+            const savedInfo = this.getSavedUserInfo();
+            const activeUser = savedInfo ? savedInfo.id : this.getActiveUser();
+            const savedRoles = savedInfo ? (savedInfo.roles || []) : [];
+            const bAuth = !!(activeUser && this.getAuthHeaderValue());
+            const perms = bAuth ? this.getPermissionsForUser(savedRoles, activeUser) : this.getPermissionsForUser([], "");
+
             const oModel = new JSONModel({
                 activeUser: activeUser,
-                userInitials: formatter.getUserInitials(activeUser),
-                userAvatarColor: formatter.getUserAvatarColor(activeUser),
-                isAuthenticated: true,
-                userRolesText: activeUser === "superadmin_user" ? "Superadmin" : (activeUser === "maingate_user" ? "MainGateUser" : (activeUser === "security_user" ? "SecurityGateUser" : (activeUser === "weighbridge_user" ? "WeighbridgeUser" : (activeUser === "factory_user" ? "FactoryGateUser" : (activeUser === "admin_user" ? "Admin" : (activeUser === "auditor_user" ? "Auditor" : "Authenticated")))))),
+                userName: savedInfo?.name || activeUser || "",
+                userDesignation: savedInfo?.designation || perms.primaryRoleTitle || "",
+                userDepartment: savedInfo?.department || "",
+                userRoles: savedRoles,
+                userInitials: activeUser ? formatter.getUserInitials(savedInfo?.name || activeUser) : "?",
+                userAvatarColor: activeUser ? formatter.getUserAvatarColor(activeUser) : "Accent1",
+                isAuthenticated: bAuth,
+                userRolesText: savedRoles.length ? savedRoles.map(r => ROLE_TITLES[r] || r).join(", ") : (bAuth ? perms.primaryRoleTitle : "Not Authenticated"),
+                userPrimaryRoleTitle: perms.primaryRoleTitle,
+                assignedScreen: perms.assignedScreen,
+                assignedScreenTitle: perms.assignedScreenTitle,
+                assignedScreenIcon: perms.assignedScreenIcon,
                 currentTheme: "sap_horizon",
+                loginUsername: "",
+                loginPassword: "",
+                loginError: "",
+                isLoginBusy: false,
                 counts: {
                     TOTAL: 0,
                     ACTIVE: 0,
@@ -100,7 +228,7 @@ sap.ui.define([
                 canViewWeighbridgeOps: perms.canViewWeighbridgeOps,
                 canRecordFactoryOps: perms.canRecordFactoryOps,
                 canViewFactoryGateOps: perms.canViewFactoryGateOps,
-                canViewFactoryOps: perms.canViewFactoryOps,
+                canViewFactoryOps: perms.canViewFactoryGateOps,
                 canViewMasterData: perms.canViewMasterData,
                 canViewAuditTrail: perms.canViewAuditTrail,
                 canViewAudit: perms.canViewAuditTrail,

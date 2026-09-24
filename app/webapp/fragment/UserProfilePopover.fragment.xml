@@ -3,30 +3,41 @@
     xmlns:f="sap.f"
     xmlns:core="sap.ui.core">
     <Popover
-        title="User Account &amp; Security"
+        title="User Account &amp; RBAC Profile"
         placement="Bottom"
-        contentWidth="340px">
+        contentWidth="360px">
         <VBox alignItems="Center" class="sapUiSmallMargin">
             <f:Avatar
                 initials="{/userInitials}"
                 backgroundColor="{/userAvatarColor}"
                 displaySize="L"
-                class="sapUiSmallMarginTop sapUiSmallMarginBottom" />
-            <Title text="{/activeUser}" level="H3" />
-            <Text text="Authentication: SAP CAP Mocked Basic Auth" class="sapUiTinyMarginBottom" />
-            <ObjectStatus
-                title="Security Roles"
-                text="{/userRolesText}"
-                state="Information"
-                class="sapUiSmallMarginBottom" />
-            <MessageStrip
-                text="Production Target: SAP BTP XSUAA OAuth2 / JWT via Approuter."
-                type="Information"
-                showIcon="true"
-                class="sapUiSmallMarginBottom" />
-            <HBox justifyContent="Center" class="sapUiSmallMarginBottom">
+                class="sapUiSmallMarginTop sapUiTinyMarginBottom" />
+            <Title text="{/userName}" level="H3" />
+            <Text text="{/userDesignation}" class="text-muted sapUiTinyMarginBottom" />
+            <Text text="{= ${/userDepartment} ? 'Department: ' + ${/userDepartment} : '' }" class="text-hint sapUiTinyMarginBottom" visible="{= !!${/userDepartment} }" />
+
+            <VBox width="100%" class="sapUiSmallMarginTop sapUiSmallMarginBottom profile-info-box">
+                <HBox justifyContent="SpaceBetween" class="sapUiTinyMarginBottom">
+                    <Text text="Username:" design="Bold" />
+                    <Text text="{/activeUser}" />
+                </HBox>
+                <HBox justifyContent="SpaceBetween" class="sapUiTinyMarginBottom">
+                    <Text text="Primary Role:" design="Bold" />
+                    <Text text="{/userPrimaryRoleTitle}" />
+                </HBox>
+                <HBox justifyContent="SpaceBetween" class="sapUiTinyMarginBottom">
+                    <Text text="Assigned Workspace:" design="Bold" />
+                    <Text text="{/assignedScreenTitle}" />
+                </HBox>
+                <HBox justifyContent="SpaceBetween" class="sapUiTinyMarginBottom">
+                    <Text text="All Assigned Roles:" design="Bold" />
+                    <Text text="{/userRolesText}" wrapping="true" />
+                </HBox>
+            </VBox>
+
+            <HBox justifyContent="Center" class="sapUiSmallMarginTop">
                 <Button
-                    text="Sign In / Switch User"
+                    text="Switch Account"
                     icon="sap-icon://user-switch"
                     type="Emphasized"
                     press=".onSwitchUserPress"

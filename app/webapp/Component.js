@@ -33,8 +33,11 @@ sap.ui.define([
             const oModel = models.createAppModel();
             this.setModel(oModel);
 
-            // Initial load of overview data
-            this.loadOverviewData();
+            // If session is restored, validate session and load overview data
+            if (oModel.getProperty("/isAuthenticated")) {
+                this.loadOverviewData();
+                this.validateCurrentSession();
+            }
         },
 
         setNavContainer: function (oNavContainer) {
@@ -46,26 +49,52 @@ sap.ui.define([
         },
 
         navigateTo: function (sPageId, sTransition) {
-            if (this._oNavContainer) {
-                const aPages = this._oNavContainer.getPages();
-                const oTarget = aPages.find(function (p) {
-                    return p.getId().endsWith(sPageId);
-                });
-                if (oTarget) {
-                    this._oNavContainer.to(oTarget, sTransition || "slide");
-                    const oCtrl = oTarget.getController && oTarget.getController();
-                    if (sPageId === "securityGateOpsPage" && oCtrl && oCtrl.loadSecurityData) {
-                        oCtrl.loadSecurityData();
-                    } else if (sPageId === "weighbridgeOpsPage" && oCtrl && oCtrl.loadScaleQueue) {
-                        oCtrl.loadScaleQueue();
-                    } else if (sPageId === "factoryGateOpsPage" && oCtrl && oCtrl.loadFactoryData) {
-                        oCtrl.loadFactoryData();
-                    } else if (sPageId === "userManagementPage" && oCtrl && oCtrl.loadUsersData) {
-                        oCtrl.loadUsersData();
-                    }
-                } else {
-                    this._oNavContainer.to(sPageId, sTransition || "slide");
+            if (!this._oNavContainer) return;
+
+            const oModel = this.getModel();
+            const bAuth = oModel ? oModel.getProperty("/isAuthenticated") : false;
+
+            // Authentication & Authorization Route Guard
+            if (!bAuth && sPageId !== "loginPage") {
+                sPageId = "loginPage";
+            } else if (bAuth) {
+                if (sPageId === "userManagementPage" && !oModel.getProperty("/canManageUsers")) {
+                    MessageBox.warning("Access Denied: Only Superadmin has authorization to manage user accounts and system roles.");
+                    sPageId = oModel.getProperty("/assignedScreen") || "launchpadPage";
+                } else if (sPageId === "weighbridgeOpsPage" && !oModel.getProperty("/canViewWeighbridgeOps")) {
+                    MessageBox.warning("Access Denied: Your account role does not have authorization to access Weighbridge Operations.");
+                    sPageId = oModel.getProperty("/assignedScreen") || "launchpadPage";
+                } else if (sPageId === "securityGateOpsPage" && !oModel.getProperty("/canViewSecurityGateOps")) {
+                    MessageBox.warning("Access Denied: Your account role does not have authorization to access Security Gate Operations.");
+                    sPageId = oModel.getProperty("/assignedScreen") || "launchpadPage";
+                } else if (sPageId === "factoryGateOpsPage" && !oModel.getProperty("/canViewFactoryGateOps")) {
+                    MessageBox.warning("Access Denied: Your account role does not have authorization to access Factory Yard Operations.");
+                    sPageId = oModel.getProperty("/assignedScreen") || "launchpadPage";
+                } else if (sPageId === "mainGateOpsPage" && !oModel.getProperty("/canViewMainGateOps")) {
+                    MessageBox.warning("Access Denied: Your account role does not have authorization to access Main Gate Operations.");
+                    sPageId = oModel.getProperty("/assignedScreen") || "launchpadPage";
                 }
+            }
+
+            const aPages = this._oNavContainer.getPages();
+            const oTarget = aPages.find(function (p) {
+                return p.getId().endsWith(sPageId);
+            });
+
+            if (oTarget) {
+                this._oNavContainer.to(oTarget, sTransition || "slide");
+                const oCtrl = oTarget.getController && oTarget.getController();
+                if (sPageId === "securityGateOpsPage" && oCtrl && oCtrl.loadSecurityData) {
+                    oCtrl.loadSecurityData();
+                } else if (sPageId === "weighbridgeOpsPage" && oCtrl && oCtrl.loadScaleQueue) {
+                    oCtrl.loadScaleQueue();
+                } else if (sPageId === "factoryGateOpsPage" && oCtrl && oCtrl.loadFactoryData) {
+                    oCtrl.loadFactoryData();
+                } else if (sPageId === "userManagementPage" && oCtrl && oCtrl.loadUsersData) {
+                    oCtrl.loadUsersData();
+                }
+            } else {
+                this._oNavContainer.to(sPageId, sTransition || "slide");
             }
         },
 
@@ -143,13 +172,60 @@ sap.ui.define([
         },
 
         // ============================================================
-        // Data Loading & Role Check
+        // Session Validation & Overview Data Loading
         // ============================================================
+        validateCurrentSession: async function () {
+            const authHeader = models.getAuthHeaderValue();
+            if (!authHeader) {
+                this.handleSignOut();
+                return;
+            }
+
+            try {
+                const res = await fetch(`${ODATA_BASE}/userInfo()`, {
+                    headers: {
+                        "Authorization": authHeader,
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                if (!res.ok) {
+                    this.handleSignOut();
+                    return;
+                }
+
+                const info = await res.json();
+                if (info && info.status === "INACTIVE") {
+                    this.handleSignOut();
+                    return;
+                }
+
+                // Update session info
+                models.setSession(info, authHeader);
+                const perms = models.getPermissionsForUser(info.roles || [], info.id);
+                const oModel = this.getModel();
+                oModel.setProperty("/userName", info.name || info.id);
+                oModel.setProperty("/userDesignation", info.designation || perms.primaryRoleTitle);
+                oModel.setProperty("/userDepartment", info.department || "");
+                oModel.setProperty("/userRoles", info.roles || []);
+                oModel.setProperty("/userRolesText", (info.roles || []).map(r => models.ROLE_TITLES[r] || r).join(", "));
+                oModel.setProperty("/userPrimaryRoleTitle", perms.primaryRoleTitle);
+                oModel.setProperty("/assignedScreen", perms.assignedScreen);
+                oModel.setProperty("/assignedScreenTitle", perms.assignedScreenTitle);
+                oModel.setProperty("/assignedScreenIcon", perms.assignedScreenIcon);
+            } catch (e) {
+                console.warn("Session check failed:", e);
+            }
+        },
+
         loadOverviewData: async function () {
             const oModel = this.getModel();
+            const authHeader = models.getAuthHeaderValue();
+            if (!authHeader) return;
+
             try {
                 const headers = {
-                    "Authorization": models.getAuthHeaderValue(),
+                    "Authorization": authHeader,
                     "Content-Type": "application/json"
                 };
 
@@ -160,6 +236,9 @@ sap.ui.define([
                     if (resUser.ok) {
                         const info = await resUser.json();
                         currentRoles = info.roles || [];
+                        if (info.name) oModel.setProperty("/userName", info.name);
+                        if (info.designation) oModel.setProperty("/userDesignation", info.designation);
+                        if (info.department) oModel.setProperty("/userDepartment", info.department);
                     }
                 } catch (e) {
                     console.warn("User info fetch failed:", e);
@@ -168,15 +247,13 @@ sap.ui.define([
                 const activeUser = oModel.getProperty("/activeUser");
                 const perms = models.getPermissionsForUser(currentRoles, activeUser);
 
-                const sRoleText = currentRoles.length ? currentRoles.join(", ") : 
-                    (activeUser === "superadmin_user" ? "Superadmin" : 
-                    (activeUser === "maingate_user" ? "MainGateUser" : 
-                    (activeUser === "security_user" ? "SecurityGateUser" : 
-                    (activeUser === "weighbridge_user" ? "WeighbridgeUser" : 
-                    (activeUser === "factory_user" ? "FactoryGateUser" : 
-                    (activeUser === "admin_user" ? "Admin" : 
-                    (activeUser === "auditor_user" ? "Auditor" : "Authenticated")))))));
-                oModel.setProperty("/userRolesText", sRoleText);
+                oModel.setProperty("/userRoles", currentRoles);
+                oModel.setProperty("/userRolesText", currentRoles.length ? currentRoles.map(r => models.ROLE_TITLES[r] || r).join(", ") : perms.primaryRoleTitle);
+                oModel.setProperty("/userPrimaryRoleTitle", perms.primaryRoleTitle);
+                oModel.setProperty("/assignedScreen", perms.assignedScreen);
+                oModel.setProperty("/assignedScreenTitle", perms.assignedScreenTitle);
+                oModel.setProperty("/assignedScreenIcon", perms.assignedScreenIcon);
+
                 oModel.setProperty("/canCreateGateIn", perms.canCreateGateIn);
                 oModel.setProperty("/canMainGateOut", perms.canMainGateOut);
                 oModel.setProperty("/canViewLiveOps", perms.canViewLiveOps);
@@ -187,45 +264,47 @@ sap.ui.define([
                 oModel.setProperty("/canViewWeighbridgeOps", perms.canViewWeighbridgeOps);
                 oModel.setProperty("/canRecordFactoryOps", perms.canRecordFactoryOps);
                 oModel.setProperty("/canViewFactoryGateOps", perms.canViewFactoryGateOps);
-                oModel.setProperty("/canViewFactoryOps", perms.canViewFactoryOps);
+                oModel.setProperty("/canViewFactoryOps", perms.canViewFactoryGateOps);
                 oModel.setProperty("/canViewMasterData", perms.canViewMasterData);
                 oModel.setProperty("/canViewAuditTrail", perms.canViewAuditTrail);
                 oModel.setProperty("/canViewAudit", perms.canViewAuditTrail);
                 oModel.setProperty("/canManageUsers", perms.canManageUsers);
 
-                // 2. Fetch Transactions
-                const resTx = await fetch(`${ODATA_BASE}/GateTransactions?$orderby=createdAt desc`, { headers });
-                if (resTx.ok) {
-                    const txData = await resTx.json();
-                    this._rawTransactions = txData.value || [];
-                    oModel.setProperty("/transactions", this._rawTransactions);
+                // 2. Fetch Transactions if authorized
+                if (perms.canViewGateOps || perms.canViewLiveOps) {
+                    const resTx = await fetch(`${ODATA_BASE}/GateTransactions?$orderby=createdAt desc`, { headers });
+                    if (resTx.ok) {
+                        const txData = await resTx.json();
+                        this._rawTransactions = txData.value || [];
+                        oModel.setProperty("/transactions", this._rawTransactions);
 
-                    const counts = {
-                        TOTAL: this._rawTransactions.length,
-                        GATE_IN: 0,
-                        IN_PLANT: 0,
-                        ACTIVE: 0,
-                        READY_OUT: 0,
-                        COMPLETED: 0
-                    };
+                        const counts = {
+                            TOTAL: this._rawTransactions.length,
+                            GATE_IN: 0,
+                            IN_PLANT: 0,
+                            ACTIVE: 0,
+                            READY_OUT: 0,
+                            COMPLETED: 0
+                        };
 
-                    this._rawTransactions.forEach(function (tx) {
-                        if (tx.status === "COMPLETED") {
-                            counts.COMPLETED++;
-                        } else if (tx.status === "SECURITY_OUT") {
-                            counts.READY_OUT++;
-                            counts.ACTIVE++;
-                        } else if (tx.status === "GATE_IN") {
-                            counts.GATE_IN++;
-                            counts.ACTIVE++;
-                        } else if (["SECURITY_IN", "WEIGHBRIDGE_IN", "FACTORY_IN", "FACTORY_OUT", "WEIGHBRIDGE_OUT"].includes(tx.status)) {
-                            counts.IN_PLANT++;
-                            counts.ACTIVE++;
-                        } else if (tx.status !== "CANCELLED") {
-                            counts.ACTIVE++;
-                        }
-                    });
-                    oModel.setProperty("/counts", counts);
+                        this._rawTransactions.forEach(function (tx) {
+                            if (tx.status === "COMPLETED") {
+                                counts.COMPLETED++;
+                            } else if (tx.status === "SECURITY_OUT") {
+                                counts.READY_OUT++;
+                                counts.ACTIVE++;
+                            } else if (tx.status === "GATE_IN") {
+                                counts.GATE_IN++;
+                                counts.ACTIVE++;
+                            } else if (["SECURITY_IN", "WEIGHBRIDGE_IN", "FACTORY_IN", "FACTORY_OUT", "WEIGHBRIDGE_OUT"].includes(tx.status)) {
+                                counts.IN_PLANT++;
+                                counts.ACTIVE++;
+                            } else if (tx.status !== "CANCELLED") {
+                                counts.ACTIVE++;
+                            }
+                        });
+                        oModel.setProperty("/counts", counts);
+                    }
                 }
             } catch (err) {
                 console.error("Error loading overview data:", err);
@@ -233,20 +312,53 @@ sap.ui.define([
         },
 
         // ============================================================
-        // Persona Switcher & Authentication Handlers
+        // Authentication & Role-Based Entry Handlers
         // ============================================================
-        handlePersonaChange: function (newKey) {
+        authenticateUser: async function (username, password) {
+            const u = (username || "").trim();
+            const p = (password || "").trim();
+
+            if (!u || !p) {
+                throw new Error("Username and password are required.");
+            }
+
+            const authHeader = "Basic " + btoa(u + ":" + p);
+            const res = await fetch(`${ODATA_BASE}/userInfo()`, {
+                headers: {
+                    "Authorization": authHeader,
+                    "Content-Type": "application/json"
+                }
+            });
+
+            if (!res.ok) {
+                throw new Error("Authentication failed: Invalid username or password.");
+            }
+
+            const info = await res.json();
+            if (info && info.status === "INACTIVE") {
+                throw new Error("Account is currently INACTIVE. Please contact System Superadmin.");
+            }
+
+            // Save authenticated session
+            models.setSession(info, authHeader);
+            const perms = models.getPermissionsForUser(info.roles || [], info.id);
+
             const oModel = this.getModel();
-            localStorage.setItem("gate_active_user", newKey);
-            oModel.setProperty("/activeUser", newKey);
-            oModel.setProperty("/userInitials", formatter.getUserInitials(newKey));
-            oModel.setProperty("/userAvatarColor", formatter.getUserAvatarColor(newKey));
             oModel.setProperty("/isAuthenticated", true);
+            oModel.setProperty("/activeUser", info.id);
+            oModel.setProperty("/userName", info.name || info.id);
+            oModel.setProperty("/userDesignation", info.designation || perms.primaryRoleTitle);
+            oModel.setProperty("/userDepartment", info.department || "");
+            oModel.setProperty("/userRoles", info.roles || []);
+            oModel.setProperty("/userInitials", formatter.getUserInitials(info.name || info.id));
+            oModel.setProperty("/userAvatarColor", formatter.getUserAvatarColor(info.id));
+            oModel.setProperty("/userRolesText", (info.roles || []).map(r => models.ROLE_TITLES[r] || r).join(", "));
+            oModel.setProperty("/userPrimaryRoleTitle", perms.primaryRoleTitle);
+            oModel.setProperty("/assignedScreen", perms.assignedScreen);
+            oModel.setProperty("/assignedScreenTitle", perms.assignedScreenTitle);
+            oModel.setProperty("/assignedScreenIcon", perms.assignedScreenIcon);
 
-            MessageToast.show("Authenticated as: " + newKey);
-
-            // Optimistic permissions update for instant UI feedback
-            const perms = models.getPermissionsForUser([], newKey);
+            // Set permissions
             oModel.setProperty("/canCreateGateIn", perms.canCreateGateIn);
             oModel.setProperty("/canMainGateOut", perms.canMainGateOut);
             oModel.setProperty("/canViewLiveOps", perms.canViewLiveOps);
@@ -257,47 +369,19 @@ sap.ui.define([
             oModel.setProperty("/canViewWeighbridgeOps", perms.canViewWeighbridgeOps);
             oModel.setProperty("/canRecordFactoryOps", perms.canRecordFactoryOps);
             oModel.setProperty("/canViewFactoryGateOps", perms.canViewFactoryGateOps);
-            oModel.setProperty("/canViewFactoryOps", perms.canViewFactoryOps);
+            oModel.setProperty("/canViewFactoryOps", perms.canViewFactoryGateOps);
             oModel.setProperty("/canViewMasterData", perms.canViewMasterData);
             oModel.setProperty("/canViewAuditTrail", perms.canViewAuditTrail);
             oModel.setProperty("/canViewAudit", perms.canViewAuditTrail);
             oModel.setProperty("/canManageUsers", perms.canManageUsers);
 
-            this.loadOverviewData();
+            // Load data
+            await this.loadOverviewData();
 
-            // Automatic role-based view navigation
-            if (newKey === "weighbridge_user") {
-                this.navigateTo("weighbridgeOpsPage", "slide");
-                const aPages = this._oNavContainer ? this._oNavContainer.getPages() : [];
-                const oWbPage = aPages.find(p => p.getId().endsWith("weighbridgeOpsPage"));
-                if (oWbPage && oWbPage.getController && oWbPage.getController().loadWeighbridgeData) {
-                    oWbPage.getController().loadWeighbridgeData();
-                }
-            } else if (newKey === "security_user") {
-                this.navigateTo("securityGateOpsPage", "slide");
-                const aPages = this._oNavContainer ? this._oNavContainer.getPages() : [];
-                const oSecPage = aPages.find(p => p.getId().endsWith("securityGateOpsPage"));
-                if (oSecPage && oSecPage.getController && oSecPage.getController().loadSecurityData) {
-                    oSecPage.getController().loadSecurityData();
-                }
-            } else if (newKey === "factory_user") {
-                this.navigateTo("factoryGateOpsPage", "slide");
-                const aPages = this._oNavContainer ? this._oNavContainer.getPages() : [];
-                const oFacPage = aPages.find(p => p.getId().endsWith("factoryGateOpsPage"));
-                if (oFacPage && oFacPage.getController && oFacPage.getController().loadFactoryData) {
-                    oFacPage.getController().loadFactoryData();
-                }
-            } else if (newKey === "maingate_user") {
-                this.navigateTo("mainGateOpsPage", "slide");
-            }
+            // Automatically navigate directly to the user's assigned screen
+            this.navigateTo(perms.assignedScreen, "slide");
 
-            // If inside Fiori Elements viewer, reload frame
-            if (this._oNavContainer) {
-                const oCurrentPage = this._oNavContainer.getCurrentPage();
-                if (oCurrentPage && oCurrentPage.getId().includes("feViewerPage")) {
-                    this.reloadFeFrame();
-                }
-            }
+            MessageToast.show("Welcome, " + (info.name || info.id) + "! Signed in as " + perms.primaryRoleTitle);
         },
 
         toggleTheme: function () {
@@ -311,12 +395,19 @@ sap.ui.define([
 
         handleSignOut: function () {
             const oModel = this.getModel();
-            localStorage.removeItem("gate_active_user");
-            oModel.setProperty("/activeUser", "Signed Out");
-            oModel.setProperty("/userInitials", "??");
+            models.clearSession();
+
+            oModel.setProperty("/activeUser", "");
+            oModel.setProperty("/userName", "");
+            oModel.setProperty("/userDesignation", "");
+            oModel.setProperty("/userDepartment", "");
+            oModel.setProperty("/userRoles", []);
+            oModel.setProperty("/userInitials", "?");
             oModel.setProperty("/userAvatarColor", "Accent1");
-            oModel.setProperty("/userRolesText", "None");
+            oModel.setProperty("/userRolesText", "Not Authenticated");
+            oModel.setProperty("/userPrimaryRoleTitle", "Not Authenticated");
             oModel.setProperty("/isAuthenticated", false);
+
             oModel.setProperty("/canCreateGateIn", false);
             oModel.setProperty("/canMainGateOut", false);
             oModel.setProperty("/canViewLiveOps", false);
@@ -331,11 +422,13 @@ sap.ui.define([
             oModel.setProperty("/canViewMasterData", false);
             oModel.setProperty("/canViewAuditTrail", false);
             oModel.setProperty("/canViewAudit", false);
+            oModel.setProperty("/canManageUsers", false);
             oModel.setProperty("/transactions", []);
             oModel.setProperty("/counts", { TOTAL: 0, ACTIVE: 0, READY_OUT: 0, COMPLETED: 0 });
 
-            MessageToast.show("You have signed out.");
-            this.openSignInDialog();
+            // Navigate to login page
+            this.navigateTo("loginPage", "slide");
+            MessageToast.show("You have signed out successfully.");
         },
 
         // ============================================================
@@ -362,7 +455,7 @@ sap.ui.define([
             if (this._pProfilePopover) {
                 this._pProfilePopover.then(oPopover => oPopover.close());
             }
-            this.openSignInDialog();
+            this.handleSignOut();
         },
 
         onSignOutPress: function () {

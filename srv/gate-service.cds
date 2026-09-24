@@ -322,8 +322,12 @@ service GateService {
      */
 
     type UserInfo {
-        id    : String;
-        roles : array of String;
+        id          : String;
+        roles       : array of String;
+        name        : String;
+        designation : String;
+        department  : String;
+        status      : String;
     };
 
     function userInfo() returns UserInfo;

@@ -1,0 +1,177 @@
+<mvc:View
+    controllerName="factory.gate.controller.Login"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:f="sap.f"
+    xmlns:core="sap.ui.core"
+    xmlns:layout="sap.ui.layout"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:custom="http://schemas.sap.com/sapui5/extension/sap.ui.core.CustomData/1"
+    displayBlock="true"
+    height="100%">
+    <Page showHeader="false" enableScrolling="true" class="login-page-container">
+        <VBox alignItems="Center" justifyContent="Center" class="login-wrapper sapUiMediumMarginTop sapUiMediumMarginBottom">
+
+            <!-- Brand Header -->
+            <VBox alignItems="Center" class="login-brand-header sapUiSmallMarginBottom">
+                <HBox alignItems="Center" justifyContent="Center" class="sapUiTinyMarginBottom">
+                    <Image
+                        src="https://www.sap.com/dam/application/shared/logos/sap-logo-svg.svg"
+                        height="32px"
+                        class="sapUiTinyMarginEnd" />
+                    <Image
+                        src="/images/APL_Logo.jpg"
+                        height="44px"
+                        class="sapUiTinyMarginBegin" />
+                </HBox>
+                <Title text="APL Gate In - Gate Out" level="H1" titleStyle="H1" class="login-main-title" />
+                <Text text="Enterprise Plant Logistics &amp; Role-Based Gate Operations Workspace" class="login-sub-title sapUiTinyMarginTop" />
+            </VBox>
+
+            <!-- Main Login Card -->
+            <VBox class="login-card sapUiResponsiveMargin" width="100%">
+                <layoutData>
+                    <FlexItemData maxWidth="540px" />
+                </layoutData>
+
+                <HBox alignItems="Center" class="login-card-header sapUiSmallMarginBottom">
+                    <core:Icon src="sap-icon://user-settings" size="24px" color="#0070f2" class="sapUiTinyMarginEnd" />
+                    <VBox>
+                        <Title text="Sign In to Your Workspace" level="H2" titleStyle="H3" />
+                        <Text text="Enter your user credentials to access your assigned operational screen." class="sapUiTinyMarginTop text-muted" />
+                    </VBox>
+                </HBox>
+
+                <!-- Dynamic Error Notification -->
+                <MessageStrip
+                    id="loginErrorStrip"
+                    text="{/loginError}"
+                    type="Error"
+                    showIcon="true"
+                    showCloseButton="true"
+                    close=".onClearError"
+                    visible="{= !!${/loginError} }"
+                    class="sapUiSmallMarginBottom" />
+
+                <!-- Login Form -->
+                <VBox class="sapUiSmallMarginTop">
+                    <Label text="Username / User ID" required="true" labelFor="inputLoginUsername" class="login-field-label" />
+                    <Input
+                        id="inputLoginUsername"
+                        value="{/loginUsername}"
+                        placeholder="Enter username (e.g. maingate_user)"
+                        width="100%"
+                        submit=".onLoginPress"
+                        valueLiveUpdate="true"
+                        class="sapUiTinyMarginBottom" />
+
+                    <Label text="Password" required="true" labelFor="inputLoginPassword" class="login-field-label sapUiSmallMarginTop" />
+                    <Input
+                        id="inputLoginPassword"
+                        type="Password"
+                        value="{/loginPassword}"
+                        placeholder="Enter password"
+                        width="100%"
+                        submit=".onLoginPress"
+                        valueLiveUpdate="true"
+                        class="sapUiMediumMarginBottom" />
+
+                    <Button
+                        id="btnLoginSubmit"
+                        text="Sign In to Workspace"
+                        icon="sap-icon://log-in"
+                        type="Emphasized"
+                        press=".onLoginPress"
+                        width="100%"
+                        class="login-submit-btn" />
+                </VBox>
+
+                <ToolbarSeparator class="sapUiMediumMarginTop sapUiMediumMarginBottom" />
+
+                <!-- Quick Persona Sign-in Grid for Evaluators & Operators -->
+                <VBox class="login-quick-section">
+                    <HBox alignItems="Center" justifyContent="SpaceBetween" class="sapUiTinyMarginBottom">
+                        <Title text="Role-Based Demo Sign-In" level="H4" titleStyle="H4" />
+                        <ObjectStatus text="7 Roles Available" state="Information" inverted="true" />
+                    </HBox>
+                    <Text text="Select any operational role below to auto-fill credentials and enter its assigned workspace:" class="sapUiTinyMarginBottom text-muted" />
+
+                    <layout:Grid defaultSpan="XL6 L6 M6 S12" hSpacing="0.5" vSpacing="0.5" class="login-persona-grid">
+                        <!-- 1. Main Gate -->
+                        <VBox class="login-persona-tile" press=".onQuickPersonaSelect" custom:user="maingate_user" custom:pass="password">
+                            <HBox alignItems="Center">
+                                <core:Icon src="sap-icon://log-in" size="20px" class="persona-icon-maingate sapUiTinyMarginEnd" />
+                                <VBox>
+                                    <Text text="Main Gate Operator" class="persona-title" />
+                                    <Text text="Workspace: Main Gate Ops" class="persona-sub" />
+                                </VBox>
+                            </HBox>
+                        </VBox>
+
+                        <!-- 2. Security Gate -->
+                        <VBox class="login-persona-tile" press=".onQuickPersonaSelect" custom:user="security_user" custom:pass="password">
+                            <HBox alignItems="Center">
+                                <core:Icon src="sap-icon://shield" size="20px" class="persona-icon-security sapUiTinyMarginEnd" />
+                                <VBox>
+                                    <Text text="Security Gate Officer" class="persona-title" />
+                                    <Text text="Workspace: Security Ops" class="persona-sub" />
+                                </VBox>
+                            </HBox>
+                        </VBox>
+
+                        <!-- 3. Weighbridge -->
+                        <VBox class="login-persona-tile" press=".onQuickPersonaSelect" custom:user="weighbridge_user" custom:pass="password">
+                            <HBox alignItems="Center">
+                                <core:Icon src="sap-icon://dimension" size="20px" class="persona-icon-weighbridge sapUiTinyMarginEnd" />
+                                <VBox>
+                                    <Text text="Weighbridge Operator" class="persona-title" />
+                                    <Text text="Workspace: Weighbridge" class="persona-sub" />
+                                </VBox>
+                            </HBox>
+                        </VBox>
+
+                        <!-- 4. Factory Yard -->
+                        <VBox class="login-persona-tile" press=".onQuickPersonaSelect" custom:user="factory_user" custom:pass="password">
+                            <HBox alignItems="Center">
+                                <core:Icon src="sap-icon://factory" size="20px" class="persona-icon-factory sapUiTinyMarginEnd" />
+                                <VBox>
+                                    <Text text="Factory Yard Supervisor" class="persona-title" />
+                                    <Text text="Workspace: Factory Ops" class="persona-sub" />
+                                </VBox>
+                            </HBox>
+                        </VBox>
+
+                        <!-- 5. Operations Admin -->
+                        <VBox class="login-persona-tile" press=".onQuickPersonaSelect" custom:user="admin_user" custom:pass="password">
+                            <HBox alignItems="Center">
+                                <core:Icon src="sap-icon://home" size="20px" class="persona-icon-admin sapUiTinyMarginEnd" />
+                                <VBox>
+                                    <Text text="Operations Admin" class="persona-title" />
+                                    <Text text="Workspace: Operations Admin" class="persona-sub" />
+                                </VBox>
+                            </HBox>
+                        </VBox>
+
+                        <!-- 6. Superadmin -->
+                        <VBox class="login-persona-tile" press=".onQuickPersonaSelect" custom:user="superadmin_user" custom:pass="password">
+                            <HBox alignItems="Center">
+                                <core:Icon src="sap-icon://user-settings" size="20px" class="persona-icon-superadmin sapUiTinyMarginEnd" />
+                                <VBox>
+                                    <Text text="System Superadmin" class="persona-title" />
+                                    <Text text="Workspace: Full Access + Users" class="persona-sub" />
+                                </VBox>
+                            </HBox>
+                        </VBox>
+                    </layout:Grid>
+
+                    <HBox justifyContent="Center" class="sapUiSmallMarginTop">
+                        <Text text="💡 Custom users created in Superadmin User Management can log in directly." class="text-hint" />
+                    </HBox>
+                </VBox>
+
+            </VBox>
+
+            <Text text="SAP Cloud Application Programming Model (CAP) • Role-Based Access Control (RBAC)" class="login-footer-text sapUiSmallMarginTop" />
+        </VBox>
+    </Page>
+</mvc:View>

@@ -8,101 +8,100 @@
     displayBlock="true"
     height="100%">
     <VBox fitContainer="true" height="100%" class="app-root-container">
-        <!-- Clean Fiori Shell ToolHeader: Persona + Sign In only, no roles -->
+        <!-- Secure Enterprise Fiori Shell ToolHeader -->
         <tnt:ToolHeader class="fiori-shellbar">
             <Image
                 src="https://www.sap.com/dam/application/shared/logos/sap-logo-svg.svg"
                 height="24px"
                 press=".onHomePressed"
                 class="sapUiTinyMarginBegin sapUiTinyMarginEnd" />
-                <Image
+            <Image
                 src="/images/APL_Logo.jpg"
-                height="40px"
+                height="38px"
                 press=".onHomePressed"
                 class="sapUiTinyMarginBegin sapUiTinyMarginEnd" />
-            <Title text="APL Gate In- Gate Out" level="H2" class="sapUiTinyMarginEnd" />
-            <Text text="| SAP Fiori Launchpad" class="sapUiTinyMarginEnd" />
+            <Title text="APL Gate In - Gate Out" level="H2" class="sapUiTinyMarginEnd" />
+            <Text text="| Plant Logistics Workspace" class="sapUiTinyMarginEnd text-muted" />
             <ToolbarSpacer />
 
+            <!-- Authenticated Workspace Navigation -->
             <Button
-                text="Vehicle Selection"
-                icon="sap-icon://shipping-status"
-                type="Transparent"
-                tooltip="Return to Vehicle Category Selection Screen"
-                press=".onVehicleSelectionNav" />
+                text="{/assignedScreenTitle}"
+                icon="{/assignedScreenIcon}"
+                type="Emphasized"
+                tooltip="Go to your assigned operational workspace"
+                visible="{/isAuthenticated}"
+                press=".onAssignedWorkspaceNav"
+                class="sapUiTinyMarginEnd" />
+
             <Button
-                text="Launchpad Dashboard"
+                text="Dashboard"
                 icon="sap-icon://home"
                 type="Transparent"
-                tooltip="View Fiori Launchpad Applications"
+                tooltip="Launchpad Operations Dashboard"
+                visible="{= ${/isAuthenticated} &amp;&amp; ${/canViewGateOps} }"
                 press=".onLaunchpadNav" />
+
+            <Button
+                text="Vehicle Stream"
+                icon="sap-icon://shipping-status"
+                type="Transparent"
+                tooltip="Vehicle Category Stream Selection"
+                visible="{= ${/isAuthenticated} &amp;&amp; ${/canViewGateOps} }"
+                press=".onVehicleSelectionNav" />
+
             <Button
                 text="User Management"
                 icon="sap-icon://user-settings"
                 type="Transparent"
                 tooltip="Superadmin User &amp; Role Management"
-                visible="{/canManageUsers}"
+                visible="{= ${/isAuthenticated} &amp;&amp; ${/canManageUsers} }"
                 press=".onUserManagementNav" />
-            <!-- <Button
-                text="Gate IN"
-                icon="sap-icon://log-in"
-                type="Emphasized"
-                visible="{/canCreateGateIn}"
-                press=".onGateInPress" />
-            <Button
-                text="Gate OUT"
-                icon="sap-icon://log-out"
-                type="Success"
-                visible="{/canMainGateOut}"
-                press=".onGateOutPress" /> -->
 
-            <ToolbarSeparator />
+            <ToolbarSeparator visible="{/isAuthenticated}" />
 
-            <Label text="Select Role:" design="Bold" class="sapUiTinyMarginBegin sapUiTinyMarginEnd" />
-            <Select
-                id="personaSelect"
-                width="270px"
-                autoAdjustWidth="true"
-                selectedKey="{/activeUser}"
-                change=".onPersonaChange"
-                class="sapUiTinyMarginEnd">
-                <items>
-                    <core:Item key="superadmin_user" text="⚡ superadmin_user (Superadmin)" />
-                    <core:Item key="maingate_user" text="🚪 maingate_user (MainGateUser)" />
-                    <core:Item key="security_user" text="🛡️ security_user (SecurityGateUser)" />
-                    <core:Item key="weighbridge_user" text="⚖️ weighbridge_user (WeighbridgeUser)" />
-                    <core:Item key="factory_user" text="🏭 factory_user (FactoryGateUser)" />
-                    <!-- <core:Item key="admin_user" text="👔 admin_user (Admin)" /> -->
-                    <!-- <core:Item key="auditor_user" text="📋 auditor_user (Auditor)" /> -->
-                </items>
-            </Select>
-            <!-- <Button
-                text="Sign In"
-                icon="sap-icon://account"
-                tooltip="User Profile &amp; Sign In Options"
-                type="Transparent"
-                press=".onSignInPress" /> -->
+            <!-- Role Badge / User Identification -->
+            <HBox alignItems="Center" visible="{/isAuthenticated}" class="shell-user-badge sapUiTinyMarginEnd">
+                <core:Icon src="sap-icon://badge" size="14px" color="#0070f2" class="sapUiTinyMarginEnd" />
+                <Text text="{/userPrimaryRoleTitle}" class="shell-role-text" />
+            </HBox>
+
+            <!-- Theme Toggle -->
             <Button
                 icon="sap-icon://palette"
-                tooltip="Toggle Horizon Light / Dark Theme"
+                tooltip="Toggle Morning Light / Evening Dark Theme"
                 type="Transparent"
                 press=".onToggleTheme" />
-            <!-- <Button
-                icon="sap-icon://refresh"
-                tooltip="Refresh Data"
-                type="Transparent"
-                press=".onRefreshPress" /> -->
+
+            <!-- User Profile Avatar & Sign Out -->
             <f:Avatar
                 id="shellAvatar"
                 initials="{/userInitials}"
                 backgroundColor="{/userAvatarColor}"
                 displaySize="XS"
-                tooltip="User Profile &amp; Authentication (Click to Open)"
+                tooltip="User Account &amp; RBAC Roles (Click to View)"
+                visible="{/isAuthenticated}"
                 press=".onProfilePressed"
-                class="sapUiTinyMarginBegin" />
+                class="sapUiTinyMarginBegin sapUiTinyMarginEnd cursor-pointer" />
+
+            <Button
+                icon="sap-icon://log-out"
+                tooltip="Sign Out from Current Session"
+                type="Transparent"
+                visible="{/isAuthenticated}"
+                press=".onSignOutPress" />
+
+            <!-- Sign In button when unauthenticated -->
+            <Button
+                text="Sign In"
+                icon="sap-icon://account"
+                type="Emphasized"
+                tooltip="Sign In to Operational Workspace"
+                visible="{= !${/isAuthenticated} }"
+                press=".onSignInNav" />
         </tnt:ToolHeader>
 
-        <!-- Navigation Container: landingPage is the opening screen -->
+        <!-- Navigation Container: pages registered here -->
         <NavContainer
             id="navContainer"
             autoFocus="false"
@@ -111,6 +110,7 @@
                 <FlexItemData growFactor="1" baseSize="0" />
             </layoutData>
             <pages>
+                <mvc:XMLView id="loginPage" viewName="factory.gate.view.Login" />
                 <mvc:XMLView id="landingPage" viewName="factory.gate.view.Landing" />
                 <mvc:XMLView id="launchpadPage" viewName="factory.gate.view.Dashboard" />
                 <mvc:XMLView id="feViewerPage" viewName="factory.gate.view.Viewer" />

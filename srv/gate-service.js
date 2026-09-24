@@ -22,6 +22,49 @@ export default cds.service.impl(async function () {
         UserRoles
     } = this.entities;
 
+    // Sync active users from DB into in-memory auth cache for real-time authentication
+    async function syncAuthUsersFromDb() {
+        try {
+            cds.env.requires ??= {};
+            cds.env.requires.auth ??= { kind: 'mocked', users: {} };
+            const authUsers = cds.env.requires.auth.users;
+            delete authUsers['*'];
+
+            const defaultSeedUsers = {
+                'superadmin_user': { password: 'password', roles: ['Superadmin', 'Admin', 'MainGateUser', 'SecurityGateUser', 'WeighbridgeUser', 'FactoryGateUser', 'Auditor'] },
+                'maingate_user': { password: 'password', roles: ['MainGateUser'] },
+                'security_user': { password: 'password', roles: ['SecurityGateUser'] },
+                'weighbridge_user': { password: 'password', roles: ['WeighbridgeUser'] },
+                'factory_user': { password: 'password', roles: ['FactoryGateUser'] },
+                'admin_user': { password: 'password', roles: ['Admin'] },
+                'auditor_user': { password: 'password', roles: ['Auditor'] }
+            };
+
+            for (const [uname, udata] of Object.entries(defaultSeedUsers)) {
+                authUsers[uname] = new cds.User({ id: uname, ...udata });
+            }
+
+            const dbUsers = await SELECT.from(Users).where({ status: 'ACTIVE' });
+            for (const u of dbUsers) {
+                const sUsername = u.username.toLowerCase();
+                let roles = [];
+                if (u.assignedRoles) {
+                    roles = u.assignedRoles.split(',').map(r => r.trim()).filter(Boolean);
+                }
+                const dbRoles = await SELECT.from(UserRoles).where({ user_ID: u.ID });
+                for (const r of dbRoles) {
+                    if (!roles.includes(r.roleCode)) roles.push(r.roleCode);
+                }
+                authUsers[sUsername] = new cds.User({
+                    id: sUsername,
+                    password: u.password,
+                    roles: roles
+                });
+            }
+        } catch (_) {}
+    }
+    syncAuthUsersFromDb().catch(() => {});
+
 
     /*
      * ============================================================
@@ -1871,6 +1914,16 @@ export default cds.service.impl(async function () {
             }
         }
 
+        // Real-time auth cache registration for immediate login
+        if (cds.env?.requires?.auth?.users) {
+            const roleArray = sRoles ? sRoles.split(',').map(r => r.trim()).filter(Boolean) : [];
+            cds.env.requires.auth.users[sUsername] = new cds.User({
+                id: sUsername,
+                password: password.trim(),
+                roles: roleArray
+            });
+        }
+
         await INSERT.into(GateAuditLogs).entries({
             ID: cds.utils.uuid(),
             action: 'USER_CREATED',
@@ -1961,6 +2014,16 @@ export default cds.service.impl(async function () {
             }
         }
 
+        // Real-time auth cache update for immediate login
+        if (cds.env?.requires?.auth?.users) {
+            const roleArray = (sRoles !== undefined ? sRoles : (user.assignedRoles || '')).split(',').map(r => r.trim()).filter(Boolean);
+            cds.env.requires.auth.users[sUsername] = new cds.User({
+                id: sUsername,
+                password: updateData.password || user.password,
+                roles: roleArray
+            });
+        }
+
         await INSERT.into(GateAuditLogs).entries({
             ID: cds.utils.uuid(),
             action: 'USER_UPDATED',
@@ -1996,6 +2059,20 @@ export default cds.service.impl(async function () {
             active: bActive
         }).where({ ID: ID });
 
+        // Update auth cache
+        if (cds.env?.requires?.auth?.users) {
+            if (newStatus === 'ACTIVE') {
+                const roleArray = (user.assignedRoles || '').split(',').map(r => r.trim()).filter(Boolean);
+                cds.env.requires.auth.users[user.username] = new cds.User({
+                    id: user.username,
+                    password: user.password,
+                    roles: roleArray
+                });
+            } else {
+                delete cds.env.requires.auth.users[user.username];
+            }
+        }
+
         await INSERT.into(GateAuditLogs).entries({
             ID: cds.utils.uuid(),
             action: 'USER_STATUS_TOGGLED',
@@ -2026,6 +2103,11 @@ export default cds.service.impl(async function () {
         await DELETE.from(UserRoles).where({ user_ID: ID });
         await DELETE.from(Users).where({ ID: ID });
 
+        // Remove from auth cache
+        if (cds.env?.requires?.auth?.users) {
+            delete cds.env.requires.auth.users[user.username];
+        }
+
         await INSERT.into(GateAuditLogs).entries({
             ID: cds.utils.uuid(),
             action: 'USER_DELETED',
@@ -2046,8 +2128,8 @@ export default cds.service.impl(async function () {
      * ============================================================
      */
 
-    this.on('userInfo', (req) => {
-        const roles = [];
+    this.on('userInfo', async (req) => {
+        let roles = [];
         const checkRoles = [
             'Superadmin',
             'Admin',
@@ -2058,15 +2140,68 @@ export default cds.service.impl(async function () {
             'Auditor'
         ];
 
-        for (const role of checkRoles) {
-            if (req.user?.is(role)) {
-                roles.push(role);
+        if (typeof req.user?.is === 'function') {
+            for (const role of checkRoles) {
+                if (req.user.is(role)) {
+                    roles.push(role);
+                }
             }
         }
 
+        if (Array.isArray(req.user?.roles)) {
+            for (const r of req.user.roles) {
+                if (checkRoles.includes(r) && !roles.includes(r)) {
+                    roles.push(r);
+                }
+            }
+        } else if (req.user?.roles && typeof req.user.roles === 'object') {
+            for (const r of Object.keys(req.user.roles)) {
+                if (checkRoles.includes(r) && !roles.includes(r)) {
+                    roles.push(r);
+                }
+            }
+        }
+
+        const username = req.user?.id ? req.user.id.toLowerCase() : '';
+        let userDb = null;
+        if (username) {
+            try {
+                userDb = await SELECT.one.from(Users).where({ username: username });
+                if (roles.length === 0 && userDb) {
+                    if (userDb.assignedRoles) {
+                        const dbRoles = userDb.assignedRoles.split(',').map(r => r.trim());
+                        roles.push(...dbRoles.filter(r => checkRoles.includes(r)));
+                    }
+                    const assigned = await SELECT.from(UserRoles).where({ user_ID: userDb.ID });
+                    for (const a of assigned) {
+                        if (checkRoles.includes(a.roleCode) && !roles.includes(a.roleCode)) {
+                            roles.push(a.roleCode);
+                        }
+                    }
+                }
+            } catch (_) {}
+        }
+
+        const primaryRole = roles[0] || '';
+        const fallbackName = username === 'superadmin_user' ? 'System Superadmin' :
+            (username === 'maingate_user' ? 'Mahesh Verma' :
+            (username === 'security_user' ? 'Vikram Rathore' :
+            (username === 'weighbridge_user' ? 'Suresh Patil' :
+            (username === 'factory_user' ? 'Sunil Nair' :
+            (username === 'admin_user' ? 'Amit Roy' :
+            (username === 'auditor_user' ? 'Pooja Hegde' : (req.user?.id || 'User')))))));
+
+        if (!req.user?.id || req.user.id === 'anonymous' || roles.length === 0) {
+            return req.reject(401, 'Invalid username or password.');
+        }
+
         return {
-            id: req.user?.id || 'anonymous',
-            roles: roles
+            id: req.user.id,
+            roles: roles,
+            name: userDb?.name || fallbackName,
+            designation: userDb?.designation || ROLE_NAMES[primaryRole] || '',
+            department: userDb?.department || '',
+            status: userDb?.status || 'ACTIVE'
         };
     });
 
