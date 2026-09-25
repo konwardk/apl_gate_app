@@ -136,6 +136,14 @@
                         enabled="{= !${secModel>/withoutPO} }"
                         required="{= ${secModel>/isDelivery} &amp;&amp; !${secModel>/withoutPO} }" />
 
+                    <Label text="Verified PO Details" visible="{= ${secModel>/isDelivery} &amp;&amp; !!${secModel>/selectedPoInfo} }" />
+                    <ObjectStatus
+                        id="dialogSecPoInfoStatus"
+                        text="{secModel>/selectedPoInfo}"
+                        state="Information"
+                        icon="sap-icon://sales-order"
+                        visible="{= ${secModel>/isDelivery} &amp;&amp; !!${secModel>/selectedPoInfo} }" />
+
                     <Label text="Vendor Invoice Number" visible="{secModel>/isDelivery}" />
                     <Input
                         id="dialogSecInvoiceNumber"

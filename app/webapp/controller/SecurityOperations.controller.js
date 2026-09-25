@@ -50,6 +50,7 @@ sap.ui.define([
                 documentsVerified: false,
                 withoutPO: false,
                 poNumber: "",
+                selectedPoInfo: "",
                 soNumber: "",
                 invoiceNumber: "",
                 invoiceDate: null,
@@ -282,6 +283,7 @@ sap.ui.define([
             oSecModel.setProperty("/securityPersonnel", defaultOfficer);
             oSecModel.setProperty("/withoutPO", false);
             oSecModel.setProperty("/poNumber", "");
+            oSecModel.setProperty("/selectedPoInfo", "");
             oSecModel.setProperty("/soNumber", "");
             oSecModel.setProperty("/invoiceNumber", "");
             oSecModel.setProperty("/invoiceDate", null);
@@ -385,6 +387,7 @@ sap.ui.define([
             oSecModel.setProperty("/emptyInspectionVerified", false);
             oSecModel.setProperty("/withoutPO", false);
             oSecModel.setProperty("/poNumber", "");
+            oSecModel.setProperty("/selectedPoInfo", "");
             oSecModel.setProperty("/soNumber", "");
             oSecModel.setProperty("/invoiceNumber", "");
             oSecModel.setProperty("/invoiceDate", null);
@@ -651,36 +654,49 @@ sap.ui.define([
             }
 
             const oDialog = await this._pPoValueHelpDialog;
-            oDialog.setBusy(true);
             oDialog.open();
+            oDialog.setBusy(true);
 
             try {
+                let authHeader = models.getAuthHeaderValue();
+                if (!authHeader) {
+                    const active = models.getActiveUser() || "security_user";
+                    const pass = models.defaultPasswords[active] || "password";
+                    authHeader = "Basic " + btoa(active + ":" + pass);
+                }
+
                 const res = await fetch(`${ODATA_BASE}/PurchaseOrders?$top=100&$orderby=PurchaseOrderDate desc`, {
                     headers: {
-                        "Authorization": models.getAuthHeaderValue(),
+                        "Authorization": authHeader,
                         "Content-Type": "application/json"
                     }
                 });
 
-                if (res.ok) {
-                    const data = await res.json();
-                    const aPOs = data.value || [];
-                    const oPoModel = new JSONModel(aPOs);
+            if (res.ok) {
+                const data = await res.json();
+                const aPOs = Array.isArray(data) ? data : (data.value || []);
+                let oPoModel = oDialog.getModel("poModel");
+                if (!oPoModel) {
+                    oPoModel = new JSONModel(aPOs);
                     oDialog.setModel(oPoModel, "poModel");
-                    const oBinding = oDialog.getBinding("items");
-                    if (oBinding) {
-                        oBinding.filter([]);
-                    }
                 } else {
-                    MessageToast.show("Failed to fetch Purchase Orders from server.");
+                    oPoModel.setData(aPOs);
                 }
-            } catch (err) {
-                console.error("Error loading Purchase Orders:", err);
-                MessageToast.show("Could not load POs: " + err.message);
-            } finally {
-                oDialog.setBusy(false);
+
+                const oBinding = oDialog.getBinding("items");
+                if (oBinding) {
+                    oBinding.filter([]);
+                }
+            } else {
+                MessageToast.show("Failed to fetch Purchase Orders from server.");
             }
-        },
+        } catch (err) {
+            console.error("Error fetching purchase orders:", err);
+            MessageToast.show("An error occurred while retrieving data.");
+        } finally {
+            oDialog.setBusy(false); // Crucial to prevent UI from being permanently locked
+        }
+    },
 
         onPoValueHelpSearch: function (oEvt) {
             const sValue = (oEvt.getParameter("value") || "").trim();
@@ -692,17 +708,14 @@ sap.ui.define([
                 return;
             }
 
-            const oFilter = new Filter({
-                filters: [
-                    new Filter({ path: "PurchaseOrder", operator: FilterOperator.Contains, value1: sValue, caseSensitive: false }),
-                    new Filter({ path: "PurchaseOrderType", operator: FilterOperator.Contains, value1: sValue, caseSensitive: false }),
-                    new Filter({ path: "Supplier", operator: FilterOperator.Contains, value1: sValue, caseSensitive: false }),
-                    new Filter({ path: "CompanyCode", operator: FilterOperator.Contains, value1: sValue, caseSensitive: false }),
-                    new Filter({ path: "PurchasingOrganization", operator: FilterOperator.Contains, value1: sValue, caseSensitive: false }),
-                    new Filter({ path: "PurchasingGroup", operator: FilterOperator.Contains, value1: sValue, caseSensitive: false })
-                ],
-                and: false
-            });
+            const oFilter = new Filter([
+                new Filter("PurchaseOrder", FilterOperator.Contains, sValue),
+                new Filter("PurchaseOrderType", FilterOperator.Contains, sValue),
+                new Filter("Supplier", FilterOperator.Contains, sValue),
+                new Filter("CompanyCode", FilterOperator.Contains, sValue),
+                new Filter("PurchasingOrganization", FilterOperator.Contains, sValue),
+                new Filter("PurchasingGroup", FilterOperator.Contains, sValue)
+            ], false);
             oBinding.filter([oFilter]);
         },
 
@@ -713,14 +726,17 @@ sap.ui.define([
                 if (oContext) {
                     const sSelectedPo = oContext.getProperty("PurchaseOrder");
                     const sSupplier = oContext.getProperty("Supplier");
+                    const sDate = oContext.getProperty("PurchaseOrderDate");
                     const oSecModel = this.getView().getModel("secModel");
                     oSecModel.setProperty("/poNumber", sSelectedPo);
+                    oSecModel.setProperty("/selectedPoInfo", `Supplier: ${sSupplier || '-'} • Date: ${sDate || '-'} • Verified S/4HANA PO`);
 
                     // Clear error state if set
                     const sId = this.getView().createId("secGateInFrag");
                     const oPoInput = Fragment.byId(sId, "dialogSecPoNumber");
                     if (oPoInput) {
                         oPoInput.setValueState(ValueState.None);
+                        oPoInput.setValueStateText("");
                     }
 
                     const sMsg = sSupplier ? `Selected Purchase Order: ${sSelectedPo} (${sSupplier})` : `Selected Purchase Order: ${sSelectedPo}`;

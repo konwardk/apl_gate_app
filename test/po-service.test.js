@@ -28,6 +28,25 @@ async function testPurchaseOrders() {
     console.log(`[PASS] Filtered ${filtered.length} POs for SUPP-01`);
     assert.ok(filtered.every(p => p.Supplier === 'SUPP-01'));
 
+    console.log('\n[TEST 3] Order Purchase Orders by Date desc with limit 5...');
+    const sorted = await tx.run(SELECT.from(PurchaseOrders).orderBy('PurchaseOrderDate desc').limit(5));
+    console.log(`[PASS] Retrieved ${sorted.length} sorted POs`);
+    assert.strictEqual(sorted.length, 5, 'Should return exactly 5 POs');
+    for (let i = 0; i < sorted.length - 1; i++) {
+        assert.ok(sorted[i].PurchaseOrderDate >= sorted[i + 1].PurchaseOrderDate, 'Dates should be descending');
+    }
+
+    console.log('\n[TEST 4] Single PO lookup using SELECT.one...');
+    const single = await tx.run(SELECT.one.from(PurchaseOrders).where({ PurchaseOrder: '4500001001' }));
+    console.log(`[PASS] Retrieved single PO: ${single?.PurchaseOrder} (${single?.Supplier})`);
+    assert.ok(single && single.PurchaseOrder === '4500001001', 'Should return specific PO object');
+    assert.strictEqual(Array.isArray(single), false, 'SELECT.one must return an object, not an array');
+
+    console.log('\n[TEST 5] Search with contains and OR expressions...');
+    const searchMatch = await tx.run(SELECT.from(PurchaseOrders).where(`contains(PurchaseOrder, '1122') or Supplier = 'SUP002'`));
+    console.log(`[PASS] Search match count: ${searchMatch.length}`);
+    assert.ok(searchMatch.length >= 2, 'Should match PO containing 1122 and SUP002 POs');
+
     console.log('\n========================================================');
     console.log(' ALL PURCHASE ORDER TESTS PASSED SUCCESSFULLY!');
     console.log('========================================================\n');

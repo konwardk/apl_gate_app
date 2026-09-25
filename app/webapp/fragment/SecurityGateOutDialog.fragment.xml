@@ -90,6 +90,13 @@
                     <Label text="Weighment Summary" />
                     <Text text="{= ${secModel>/outWeighmentSummary} || 'Outbound scale clearance verified' }" />
 
+                    <Label text="Inbound Purchase Order (PO)" visible="{= ${secModel>/outSelectedVehicle/purpose} === 'DELIVERY' }" />
+                    <ObjectStatus
+                        text="{= ${secModel>/outInboundRecord/poNumber} ? ('PO: ' + ${secModel>/outInboundRecord/poNumber}) : (${secModel>/outInboundRecord/withoutPO} ? 'Admitted Without PO' : 'No PO Recorded') }"
+                        state="{= ${secModel>/outInboundRecord/poNumber} ? 'Information' : (${secModel>/outInboundRecord/withoutPO} ? 'Warning' : 'None') }"
+                        icon="{= ${secModel>/outInboundRecord/poNumber} ? 'sap-icon://sales-order' : '' }"
+                        visible="{= ${secModel>/outSelectedVehicle/purpose} === 'DELIVERY' }" />
+
                     <!-- Section 3: Exit Physical & Cargo Inspection -->
                     <core:Title text="3. Exit Physical &amp; Cargo Inspection" />
 

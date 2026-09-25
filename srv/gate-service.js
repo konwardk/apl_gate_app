@@ -408,103 +408,138 @@ export default cds.service.impl(async function () {
             }
         }
     });
-
-
     /*
      * ============================================================
      * SAP S/4HANA CLOUD EXTERNAL PURCHASE ORDERS
      * ============================================================
      */
 
-    this.on('READ', 'PurchaseOrders', async (req) => {
-        try {
-            const externalPO = await cds.connect.to('CE_PURCHASEORDER_0001');
-            const delegatedQuery = SELECT.from(externalPO.entities.PurchaseOrder);
-            if (req.query.SELECT.columns) delegatedQuery.SELECT.columns = req.query.SELECT.columns;
-            if (req.query.SELECT.where) delegatedQuery.SELECT.where = req.query.SELECT.where;
-            if (req.query.SELECT.orderBy) delegatedQuery.SELECT.orderBy = req.query.SELECT.orderBy;
-            if (req.query.SELECT.limit) delegatedQuery.SELECT.limit = req.query.SELECT.limit;
-            if (req.query.SELECT.count) delegatedQuery.SELECT.count = req.query.SELECT.count;
-            return await externalPO.run(delegatedQuery);
-        } catch (err) {
-            console.warn('[GateService] External S/4HANA PO service not reachable, serving fallback data:', err.message);
-            const fallbackPOs = [
-                
-                {
-                    PurchaseOrder: "PO-4500112233",
-                    PurchaseOrderType: "NB",
-                    Supplier: "SUPP-01",
-                    CompanyCode: "1000",
-                    PurchasingOrganization: "1010",
-                    PurchasingGroup: "001",
-                    PurchaseOrderDate: "2026-09-15",
-                    DocumentCurrency: "INR"
-                },
-                {
-                    PurchaseOrder: "PO-APL-7788",
-                    PurchaseOrderType: "NB",
-                    Supplier: "SUPP-02",
-                    CompanyCode: "1000",
-                    PurchasingOrganization: "1010",
-                    PurchasingGroup: "001",
-                    PurchaseOrderDate: "2026-09-16",
-                    DocumentCurrency: "INR"
-                },
-                {
-                    PurchaseOrder: "PO-DIRECT-8899",
-                    PurchaseOrderType: "NB",
-                    Supplier: "SUPP-03",
-                    CompanyCode: "1000",
-                    PurchasingOrganization: "1010",
-                    PurchasingGroup: "002",
-                    PurchaseOrderDate: "2026-09-16",
-                    DocumentCurrency: "INR"
-                }
-            ];
-
-            let result = [...fallbackPOs];
-
-            // Apply WHERE filtering if provided in CQN
-            if (req.query?.SELECT?.where) {
-                const where = req.query.SELECT.where;
-                for (let i = 0; i < where.length; i++) {
-                    const col = where[i]?.ref?.[0] || (typeof where[i] === 'string' ? where[i] : null);
-                    const op = where[i + 1];
-                    const val = where[i + 2]?.val ?? where[i + 2];
-                    if (col && op === '=' && val !== undefined) {
-                        result = result.filter(item => String(item[col]).toLowerCase() === String(val).toLowerCase());
-                        i += 2;
-                    }
-                }
+ this.on('READ', 'PurchaseOrders', async (req) => {
+    try {
+        const externalPO = await cds.connect.to('CE_PURCHASEORDER_0001');
+        
+        // FIX: Wrap the original query incoming from the request, 
+        // but explicitly bind it to the external entity definition.
+        const delegatedQuery = SELECT.from(externalPO.entities.PurchaseOrder);
+        
+        // Safely apply query modifiers from the incoming request structure
+        if (req.query.SELECT.columns) delegatedQuery.SELECT.columns = req.query.SELECT.columns;
+        if (req.query.SELECT.where) delegatedQuery.SELECT.where = req.query.SELECT.where;
+        if (req.query.SELECT.orderBy) delegatedQuery.SELECT.orderBy = req.query.SELECT.orderBy;
+        if (req.query.SELECT.limit) delegatedQuery.SELECT.limit = req.query.SELECT.limit;
+        if (req.query.SELECT.count) delegatedQuery.SELECT.count = req.query.SELECT.count;
+        
+        // Execute the bound query against the external system
+        return await externalPO.run(delegatedQuery);
+    } catch (err) {
+        console.warn('[GateService] External S/4HANA PO service not reachable, serving fallback data:', err.message);
+        
+        const fallbackPOs = [
+            {
+                PurchaseOrder: "PO-SPARE-2026-08",
+                PurchaseOrderType: "FO",
+                Supplier: "SUP002",
+                CompanyCode: "1000",
+                PurchasingOrganization: "1010",
+                PurchasingGroup: "003",
+                PurchaseOrderDate: "2026-09-11",
+                DocumentCurrency: "INR"
             }
+        ];
 
-            // Apply ORDER BY sorting if provided
-            if (req.query?.SELECT?.orderBy && req.query.SELECT.orderBy.length > 0) {
-                const orderItem = req.query.SELECT.orderBy[0];
-                const sortCol = orderItem?.ref?.[0];
-                const isDesc = orderItem?.sort === 'desc';
-                if (sortCol) {
-                    result.sort((a, b) => {
-                        if (a[sortCol] < b[sortCol]) return isDesc ? 1 : -1;
-                        if (a[sortCol] > b[sortCol]) return isDesc ? -1 : 1;
-                        return 0;
-                    });
-                }
-            }
+        let result = [...fallbackPOs];
 
-            // Apply LIMIT / TOP if provided
-            if (req.query?.SELECT?.limit?.rows?.val) {
-                result = result.slice(0, req.query.SELECT.limit.rows.val);
-            }
-
-            if (req.query?.SELECT?.count) {
-                result.$count = result.length;
-            }
-
-            return result;
+        // 1. Filter by key if single entity requested by key
+        if (req.data?.PurchaseOrder) {
+            result = result.filter(item => String(item.PurchaseOrder).toLowerCase() === String(req.data.PurchaseOrder).toLowerCase());
         }
-    });
 
+        // 2. Apply WHERE filtering if provided in CQN
+        if (req.query?.SELECT?.where) {
+            const where = req.query.SELECT.where;
+            function matchesWhere(item, whereClause) {
+                if (!whereClause || whereClause.length === 0) return true;
+                if (!Array.isArray(whereClause) && typeof whereClause === 'object') {
+                    return Object.entries(whereClause).every(([k, v]) => String(item[k]).toLowerCase() === String(v).toLowerCase());
+                }
+                let currentResult = true;
+                let pendingLogicalOp = null;
+
+                for (let i = 0; i < whereClause.length; i++) {
+                    const token = whereClause[i];
+                    if (typeof token === 'string' && (token.toLowerCase() === 'or' || token.toLowerCase() === 'and')) {
+                        pendingLogicalOp = token.toLowerCase();
+                        continue;
+                    }
+
+                    let termResult = true;
+                    if (token && typeof token === 'object' && token.func === 'contains') {
+                        const colRef = token.args?.[0]?.ref?.[0];
+                        const searchVal = token.args?.[1]?.val;
+                        if (colRef && searchVal !== undefined) {
+                            termResult = String(item[colRef] || '').toLowerCase().includes(String(searchVal).toLowerCase());
+                        }
+                    } else if (token && typeof token === 'object' && token.ref) {
+                        const col = token.ref[0];
+                        const op = whereClause[i + 1];
+                        const val = whereClause[i + 2]?.val ?? whereClause[i + 2];
+                        i += 2;
+                        if (op === '=' || op === '==') {
+                            termResult = String(item[col] || '').toLowerCase() === String(val).toLowerCase();
+                        } else if (op === '!=' || op === '<>') {
+                            termResult = String(item[col] || '').toLowerCase() !== String(val).toLowerCase();
+                        } else if (op === 'like') {
+                            const pattern = String(val).replace(/%/g, '.*');
+                            termResult = new RegExp('^' + pattern + '$', 'i').test(String(item[col] || ''));
+                        }
+                    }
+
+                    if (pendingLogicalOp === 'or') {
+                        currentResult = currentResult || termResult;
+                    } else if (pendingLogicalOp === 'and') {
+                        currentResult = currentResult && termResult;
+                    } else {
+                        currentResult = termResult;
+                    }
+                    pendingLogicalOp = null;
+                }
+                return currentResult;
+            }
+
+            result = result.filter(item => matchesWhere(item, where));
+        }
+
+        // 3. Apply ORDER BY sorting (Fixed string comparisons)
+        if (req.query?.SELECT?.orderBy && req.query.SELECT.orderBy.length > 0) {
+            const orderItem = req.query.SELECT.orderBy[0];
+            const sortCol = orderItem?.ref?.[0];
+            const isDesc = orderItem?.sort === 'desc' || orderItem?.asc === false; // checks both variants
+            if (sortCol) {
+                result.sort((a, b) => {
+                    const valA = String(a[sortCol] || '');
+                    const valB = String(b[sortCol] || '');
+                    return isDesc ? valB.localeCompare(valA) : valA.localeCompare(valB);
+                });
+            }
+        }
+
+        // 4. Apply LIMIT / TOP if provided
+        if (req.query?.SELECT?.limit?.rows?.val) {
+            result = result.slice(0, req.query.SELECT.limit.rows.val);
+        }
+
+        if (req.query?.SELECT?.count) {
+            result.$count = result.length;
+        }
+
+        // 5. Return single entity if SELECT.one was requested
+        if (req.query?.SELECT?.one) {
+            return result[0] || null;
+        }
+
+        return result;
+    }
+});
 
     /*
      * ============================================================
