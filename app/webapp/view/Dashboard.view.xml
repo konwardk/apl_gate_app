@@ -1,9 +1,44 @@
 <mvc:View
     controllerName="factory.gate.controller.Dashboard"
     xmlns:mvc="sap.ui.core.mvc"
-    xmlns="sap.m">
+    xmlns="sap.m"
+    xmlns:f="sap.f"
+    xmlns:core="sap.ui.core">
     <Page showHeader="false" enableScrolling="true">
         <VBox class="flp-dashboard">
+            <!-- User Profile & Assigned Operational Workspace Hero Banner -->
+            <HBox alignItems="Center" justifyContent="SpaceBetween" wrap="Wrap" class="dashboard-hero-card sapUiSmallMarginBottom">
+                <HBox alignItems="Center" class="sapUiTinyMarginEnd">
+                    <f:Avatar
+                        initials="{/userInitials}"
+                        backgroundColor="{/userAvatarColor}"
+                        displaySize="M"
+                        class="sapUiSmallMarginEnd" />
+                    <VBox>
+                        <HBox alignItems="Center">
+                            <Title text="Welcome, {/userName}" level="H2" titleStyle="H3" class="sapUiTinyMarginEnd" />
+                            <ObjectStatus text="{/userPrimaryRoleTitle}" state="Information" inverted="true" />
+                        </HBox>
+                        <Text text="{= ${/userDepartment} ? ${/userDesignation} + ' • ' + ${/userDepartment} : ${/userDesignation} }" class="text-muted sapUiTinyMarginTop" />
+                    </VBox>
+                </HBox>
+                <HBox alignItems="Center" class="sapUiTinyMarginTop sapUiTinyMarginBottom">
+                    <Button
+                        text="Open {/assignedScreenTitle}"
+                        icon="{/assignedScreenIcon}"
+                        type="Emphasized"
+                        press=".onOpenAssignedWorkspace"
+                        visible="{= !!${/assignedScreen} &amp;&amp; ${/assignedScreen} !== 'launchpadPage' }"
+                        class="sapUiTinyMarginEnd" />
+                    <Button
+                        text="Refresh"
+                        icon="sap-icon://refresh"
+                        tooltip="Refresh Live KPI Counts &amp; Transactions"
+                        type="Transparent"
+                        press=".onRefreshDashboard" />
+                </HBox>
+            </HBox>
+
             <!-- Stream Context Notification Banner -->
             <MessageStrip
                 text="Vehicle Stream: OTHER VEHICLE (General Cargo, Trucks, Containers, LCV). Choose a Fiori application or operational tool below."
@@ -123,7 +158,7 @@
                         <tileContent>
                             <TileContent footer="Gate IN / OUT Clearance">
                                 <content>
-                                    <NumericContent icon="sap-icon://log-in" valueColor="Neutral" />
+                                    <NumericContent icon="sap-icon://log-in" value="{/counts/TOTAL}" valueColor="Neutral" />
                                 </content>
                             </TileContent>
                         </tileContent>
@@ -139,7 +174,7 @@
                         <tileContent>
                             <TileContent footer="Physical Check &amp; Delivery Docs">
                                 <content>
-                                    <NumericContent icon="sap-icon://shield" valueColor="Neutral" />
+                                    <NumericContent icon="sap-icon://shield" value="{/counts/ACTIVE}" valueColor="Neutral" />
                                 </content>
                             </TileContent>
                         </tileContent>
@@ -171,7 +206,7 @@
                         <tileContent>
                             <TileContent footer="Plant Unloading &amp; Clearance">
                                 <content>
-                                    <NumericContent icon="sap-icon://factory" valueColor="Neutral" />
+                                    <NumericContent icon="sap-icon://factory" value="{/counts/IN_PLANT}" valueColor="Neutral" />
                                 </content>
                             </TileContent>
                         </tileContent>
@@ -249,8 +284,8 @@
                 </HBox>
             </VBox>
 
-            <!-- Group 3: Compliance & Audit (Hidden for Main Gate User) -->
-            <!-- <VBox class="flp-section" visible="{/canViewAuditTrail}">
+            <!-- Group 3: Compliance & Audit (Visible for Auditor, Admin, Superadmin) -->
+            <VBox class="flp-section" visible="{/canViewAuditTrail}">
                 <Title
                     text="Governance &amp; Audit Trail (SAP Fiori Elements)"
                     level="H2"
@@ -272,7 +307,7 @@
                         </tileContent>
                     </GenericTile>
                 </HBox>
-            </VBox> -->
+            </VBox>
             <!-- Group 4: Superadmin Console (Only visible for Superadmin) -->
             <VBox class="flp-section" visible="{/canManageUsers}">
                 <Title

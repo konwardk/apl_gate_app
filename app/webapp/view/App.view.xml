@@ -21,7 +21,7 @@
                 press=".onHomePressed"
                 class="sapUiTinyMarginBegin sapUiTinyMarginEnd" />
             <Title text="APL Gate In - Gate Out" level="H2" class="sapUiTinyMarginEnd" />
-            <Text text="| Plant Logistics Workspace" class="sapUiTinyMarginEnd text-muted" />
+            <Text text="" class="sapUiTinyMarginEnd text-muted" />
             <ToolbarSpacer />
 
             <!-- Authenticated Workspace Navigation -->
@@ -30,7 +30,7 @@
                 icon="{/assignedScreenIcon}"
                 type="Emphasized"
                 tooltip="Go to your assigned operational workspace"
-                visible="{/isAuthenticated}"
+                visible="{= ${/isAuthenticated} &amp;&amp; ${/assignedScreen} !== 'launchpadPage' }"
                 press=".onAssignedWorkspaceNav"
                 class="sapUiTinyMarginEnd" />
 
@@ -39,7 +39,7 @@
                 icon="sap-icon://home"
                 type="Transparent"
                 tooltip="Launchpad Operations Dashboard"
-                visible="{= ${/isAuthenticated} &amp;&amp; ${/canViewGateOps} }"
+                visible="{/isAuthenticated}"
                 press=".onLaunchpadNav" />
 
             <Button
@@ -67,11 +67,11 @@
             </HBox>
 
             <!-- Theme Toggle -->
-            <Button
+            <!-- <Button
                 icon="sap-icon://palette"
                 tooltip="Toggle Morning Light / Evening Dark Theme"
                 type="Transparent"
-                press=".onToggleTheme" />
+                press=".onToggleTheme" /> -->
 
             <!-- User Profile Avatar & Sign Out -->
             <f:Avatar

@@ -70,6 +70,8 @@ sap.ui.define([
                 await this.getOwnerComponent().authenticateUser(sUser, sPass);
                 // Clear password field after successful sign-in
                 oModel.setProperty("/loginPassword", "");
+                // Redirect user to the assigned Dashboard screen
+                this.getOwnerComponent().navigateTo("launchpadPage", "slide");
             } catch (err) {
                 oModel.setProperty("/loginError", err.message || "Authentication failed. Invalid username or password.");
                 if (oUserInput) oUserInput.setValueState(ValueState.Error);

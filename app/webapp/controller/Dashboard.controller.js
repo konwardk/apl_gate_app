@@ -1,24 +1,61 @@
 sap.ui.define([
     "sap/ui/core/mvc/Controller",
-    "sap/m/MessageBox"
-], function (Controller, MessageBox) {
+    "sap/m/MessageBox",
+    "sap/m/MessageToast"
+], function (Controller, MessageBox, MessageToast) {
     "use strict";
 
     return Controller.extend("factory.gate.controller.Dashboard", {
         onInit: function () {
+            const oComponent = this.getOwnerComponent();
+            const oModel = oComponent ? oComponent.getModel() : null;
+            if (oModel && oModel.getProperty("/isAuthenticated")) {
+                oComponent.loadOverviewData();
+            }
+        },
+
+        onOpenAssignedWorkspace: function () {
+            const oModel = this.getOwnerComponent().getModel();
+            const sAssigned = oModel ? oModel.getProperty("/assignedScreen") : "launchpadPage";
+            if (sAssigned && sAssigned !== "launchpadPage") {
+                const oComponent = this.getOwnerComponent();
+                oComponent.navigateTo(sAssigned, "slide");
+                if (sAssigned === "mainGateOpsPage") {
+                    oComponent.loadOverviewData();
+                }
+            }
+        },
+
+        onRefreshDashboard: async function () {
+            const oComponent = this.getOwnerComponent();
+            if (oComponent && oComponent.loadOverviewData) {
+                try {
+                    await oComponent.loadOverviewData();
+                    MessageToast.show("Dashboard metrics refreshed.");
+                } catch (e) {
+                    console.error("Dashboard refresh error:", e);
+                }
+            }
         },
 
         onKpiPress: function () {
             const oModel = this.getOwnerComponent().getModel();
             const oComponent = this.getOwnerComponent();
-            if (oModel.getProperty("/canViewMainGateOps")) {
+            const sAssigned = oModel ? oModel.getProperty("/assignedScreen") : null;
+
+            if (sAssigned && sAssigned !== "launchpadPage") {
+                oComponent.navigateTo(sAssigned, "slide");
+                if (sAssigned === "mainGateOpsPage") {
+                    oComponent.loadOverviewData();
+                }
+            } else if (oModel && oModel.getProperty("/canViewMainGateOps")) {
                 oComponent.navigateTo("mainGateOpsPage", "slide");
                 oComponent.loadOverviewData();
-            } else if (oModel.getProperty("/canViewSecurityGateOps")) {
+            } else if (oModel && oModel.getProperty("/canViewSecurityGateOps")) {
                 oComponent.navigateTo("securityGateOpsPage", "slide");
-            } else if (oModel.getProperty("/canViewWeighbridgeOps")) {
+            } else if (oModel && oModel.getProperty("/canViewWeighbridgeOps")) {
                 oComponent.navigateTo("weighbridgeOpsPage", "slide");
-            } else if (oModel.getProperty("/canViewFactoryGateOps")) {
+            } else if (oModel && oModel.getProperty("/canViewFactoryGateOps")) {
                 oComponent.navigateTo("factoryGateOpsPage", "slide");
             }
         },

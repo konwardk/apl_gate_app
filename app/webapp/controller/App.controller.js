@@ -13,8 +13,7 @@ sap.ui.define([
             const bAuth = oModel ? oModel.getProperty("/isAuthenticated") : false;
 
             if (bAuth) {
-                const sAssigned = oModel.getProperty("/assignedScreen") || "launchpadPage";
-                this.getOwnerComponent().navigateTo(sAssigned, "show");
+                this.getOwnerComponent().navigateTo("launchpadPage", "show");
             } else {
                 this.getOwnerComponent().navigateTo("loginPage", "show");
             }
@@ -27,8 +26,7 @@ sap.ui.define([
                 this.getOwnerComponent().navigateTo("loginPage", "slide");
                 return;
             }
-            const sAssigned = oModel.getProperty("/assignedScreen") || "launchpadPage";
-            this.getOwnerComponent().navigateTo(sAssigned, "slide");
+            this.getOwnerComponent().navigateTo("launchpadPage", "slide");
         },
 
         onAssignedWorkspaceNav: function () {

@@ -92,6 +92,8 @@ sap.ui.define([
                     oCtrl.loadFactoryData();
                 } else if (sPageId === "userManagementPage" && oCtrl && oCtrl.loadUsersData) {
                     oCtrl.loadUsersData();
+                } else if (sPageId === "launchpadPage") {
+                    this.loadOverviewData();
                 }
             } else {
                 this._oNavContainer.to(sPageId, sTransition || "slide");
@@ -378,8 +380,8 @@ sap.ui.define([
             // Load data
             await this.loadOverviewData();
 
-            // Automatically navigate directly to the user's assigned screen
-            this.navigateTo(perms.assignedScreen, "slide");
+            // Automatically navigate to the assigned Dashboard screen
+            this.navigateTo("launchpadPage", "slide");
 
             MessageToast.show("Welcome, " + (info.name || info.id) + "! Signed in as " + perms.primaryRoleTitle);
         },
@@ -527,7 +529,7 @@ sap.ui.define([
 
                 const info = await res.json();
                 models.userPasswords[u] = p;
-                this.handlePersonaChange(u);
+                await this.authenticateUser(u, p);
                 oDialog.close();
                 MessageToast.show(`Welcome, ${u}! Authenticated with roles: ${(info.roles || []).join(", ")}`);
             } catch (err) {
