@@ -21,6 +21,10 @@
                     <Text text="Username:" design="Bold" />
                     <Text text="{/activeUser}" />
                 </HBox>
+                <HBox justifyContent="SpaceBetween" class="sapUiTinyMarginBottom" visible="{= !!${/userEmployeeId} }">
+                    <Text text="Employee ID:" design="Bold" />
+                    <Text text="{/userEmployeeId}" />
+                </HBox>
                 <HBox justifyContent="SpaceBetween" class="sapUiTinyMarginBottom">
                     <Text text="Primary Role:" design="Bold" />
                     <Text text="{/userPrimaryRoleTitle}" />

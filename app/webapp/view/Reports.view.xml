@@ -1,0 +1,534 @@
+<mvc:View
+    controllerName="factory.gate.controller.Reports"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:f="sap.f"
+    xmlns:core="sap.ui.core">
+    <Page
+        id="reportsPageView"
+        title="Operational Gate Reports &amp; Analytics"
+        showNavButton="true"
+        navButtonPress=".onNavBack"
+        enableScrolling="true"
+        class="sapUiContentPadding">
+        <headerContent>
+            <Button
+                text="Refresh"
+                icon="sap-icon://refresh"
+                type="Transparent"
+                tooltip="Refresh all operational reports data"
+                press=".onRefreshReports" />
+            <Button
+                text="Export to PDF (.pdf)"
+                icon="sap-icon://pdf-attachment"
+                type="Emphasized"
+                tooltip="Download filtered operational report as PDF file"
+                press=".onExportPDF" />
+            <Button
+                text="Print Report"
+                icon="sap-icon://print"
+                type="Default"
+                tooltip="Print or preview report document (Save as PDF)"
+                press=".onPrintReport" />
+            <Button
+                text="Export to CSV (.csv)"
+                icon="sap-icon://download"
+                type="Default"
+                tooltip="Download filtered report as CSV file"
+                press=".onExportCSV" />
+        </headerContent>
+        <content>
+            <VBox class="sapUiSmallMarginBottom">
+                <!-- Summary KPI Row -->
+                <HBox wrap="Wrap" class="sapUiSmallMarginBottom flp-kpi-bar">
+                    <GenericTile
+                        header="Total Operations"
+                        subheader="Filtered Records"
+                        class="kpi-tile-card sapUiTinyMarginEnd sapUiTinyMarginBottom">
+                        <tileContent>
+                            <TileContent>
+                                <content>
+                                    <NumericContent
+                                        value="{reportModel>/kpi/totalRecords}"
+                                        icon="sap-icon://documents"
+                                        valueColor="Neutral" />
+                                </content>
+                            </TileContent>
+                        </tileContent>
+                    </GenericTile>
+
+                    <GenericTile
+                        header="Unique Vehicles"
+                        subheader="Distinct Registrations"
+                        class="kpi-tile-card sapUiTinyMarginEnd sapUiTinyMarginBottom">
+                        <tileContent>
+                            <TileContent>
+                                <content>
+                                    <NumericContent
+                                        value="{reportModel>/kpi/uniqueVehicles}"
+                                        icon="sap-icon://shipping-status"
+                                        valueColor="Neutral" />
+                                </content>
+                            </TileContent>
+                        </tileContent>
+                    </GenericTile>
+
+                    <GenericTile
+                        header="In Plant Active"
+                        subheader="Currently Inside Facility"
+                        class="kpi-tile-card sapUiTinyMarginEnd sapUiTinyMarginBottom">
+                        <tileContent>
+                            <TileContent>
+                                <content>
+                                    <NumericContent
+                                        value="{reportModel>/kpi/inPlant}"
+                                        icon="sap-icon://factory"
+                                        valueColor="Critical" />
+                                </content>
+                            </TileContent>
+                        </tileContent>
+                    </GenericTile>
+
+                    <GenericTile
+                        header="Completed Exits"
+                        subheader="Gate OUT Finalized"
+                        class="kpi-tile-card sapUiTinyMarginEnd sapUiTinyMarginBottom">
+                        <tileContent>
+                            <TileContent>
+                                <content>
+                                    <NumericContent
+                                        value="{reportModel>/kpi/completed}"
+                                        icon="sap-icon://accept"
+                                        valueColor="Good" />
+                                </content>
+                            </TileContent>
+                        </tileContent>
+                    </GenericTile>
+                </HBox>
+
+                <!-- Filter Controls Card -->
+                <Panel
+                    expandable="true"
+                    expanded="true"
+                    headerText="Report Filters &amp; Parameters"
+                    width="100%"
+                    class="sapUiSmallMarginBottom">
+                    <content>
+                        <VBox>
+                            <!-- Row 1: Date Range & Quick Presets -->
+                            <HBox wrap="Wrap" alignItems="End" class="sapUiTinyMarginBottom">
+                                <VBox width="280px" class="sapUiSmallMarginEnd sapUiTinyMarginBottom">
+                                    <Label text="Date Range (From - To):" design="Bold" />
+                                    <DateRangeSelection
+                                        id="dateRangeFilter"
+                                        displayFormat="yyyy-MM-dd"
+                                        valueFormat="yyyy-MM-dd"
+                                        placeholder="Select date range..."
+                                        change=".onDateRangeChange"
+                                        width="100%" />
+                                </VBox>
+
+                                <VBox class="sapUiSmallMarginEnd sapUiTinyMarginBottom">
+                                    <Label text="Quick Date Presets:" />
+                                    <HBox>
+                                        <Button text="Today" type="Transparent" press=".onPresetToday" class="sapUiTinyMarginEnd" />
+                                        <Button text="Last 7 Days" type="Transparent" press=".onPresetLast7Days" class="sapUiTinyMarginEnd" />
+                                        <Button text="Last 30 Days" type="Transparent" press=".onPresetLast30Days" class="sapUiTinyMarginEnd" />
+                                        <Button text="All Time" type="Transparent" press=".onPresetAllTime" />
+                                    </HBox>
+                                </VBox>
+                            </HBox>
+
+                            <!-- Row 2: Vehicle, Area, Status, Universal Search -->
+                            <HBox wrap="Wrap" alignItems="End" class="sapUiTinyMarginBottom">
+                                <VBox width="200px" class="sapUiSmallMarginEnd sapUiTinyMarginBottom">
+                                    <Label text="Vehicle Number:" design="Bold" />
+                                    <Input
+                                        id="filterVehicleInput"
+                                        value="{reportModel>/filters/vehicleNumber}"
+                                        placeholder="e.g. WB-02-1234"
+                                        liveChange=".onFilterLiveChange" />
+                                </VBox>
+
+                                <VBox width="220px" class="sapUiSmallMarginEnd sapUiTinyMarginBottom">
+                                    <Label text="Entry / Plant Area:" design="Bold" />
+                                    <Select
+                                        id="filterAreaSelect"
+                                        selectedKey="{reportModel>/filters/entryArea}"
+                                        change=".onFilterChange"
+                                        width="100%">
+                                        <core:Item key="ALL" text="All Areas &amp; Routes" />
+                                        <core:Item key="MAIN_GATE" text="Main Gate Checkpost" />
+                                        <core:Item key="SECURITY" text="Security Inspection Gate" />
+                                        <core:Item key="WEIGHBRIDGE" text="Weighbridge Scale Area" />
+                                        <core:Item key="FACTORY" text="Factory Yard Area" />
+                                        <core:Item key="Methanol Plant" text="Methanol Plant" />
+                                        <core:Item key="Formalin Plant" text="Formalin Plant" />
+                                        <core:Item key="Tank Farm" text="Tank Farm &amp; Storage" />
+                                        <core:Item key="Raw Material Yard" text="Raw Material Yard" />
+                                    </Select>
+                                </VBox>
+
+                                <VBox width="200px" class="sapUiSmallMarginEnd sapUiTinyMarginBottom">
+                                    <Label text="Process Status:" design="Bold" />
+                                    <Select
+                                        id="filterStatusSelect"
+                                        selectedKey="{reportModel>/filters/status}"
+                                        change=".onFilterChange"
+                                        width="100%">
+                                        <core:Item key="ALL" text="All Statuses" />
+                                        <core:Item key="ACTIVE" text="Active In Plant" />
+                                        <core:Item key="COMPLETED" text="Completed / Gate OUT" />
+                                        <core:Item key="GATE_IN" text="GATE_IN (Main Gate)" />
+                                        <core:Item key="SECURITY_IN" text="SECURITY_IN" />
+                                        <core:Item key="WEIGHBRIDGE_IN" text="WEIGHBRIDGE_IN" />
+                                        <core:Item key="FACTORY_IN" text="FACTORY_IN" />
+                                        <core:Item key="SECURITY_OUT" text="SECURITY_OUT" />
+                                    </Select>
+                                </VBox>
+
+                                <VBox width="250px" class="sapUiSmallMarginEnd sapUiTinyMarginBottom">
+                                    <Label text="Universal Search:" design="Bold" />
+                                    <SearchField
+                                        id="filterSearchInput"
+                                        placeholder="Driver, PO, Invoice, Operator..."
+                                        value="{reportModel>/filters/searchQuery}"
+                                        liveChange=".onSearchLiveChange"
+                                        search=".onFilterChange" />
+                                </VBox>
+
+                                <VBox class="sapUiTinyMarginBottom">
+                                    <Label text="" />
+                                    <HBox>
+                                        <Button
+                                            text="Reset Filters"
+                                            icon="sap-icon://clear-filter"
+                                            type="Transparent"
+                                            press=".onResetFilters"
+                                            class="sapUiTinyMarginEnd" />
+                                    </HBox>
+                                </VBox>
+                            </HBox>
+                        </VBox>
+                    </content>
+                </Panel>
+
+                <!-- Operation Selection IconTabBar with native content aggregation -->
+                <IconTabBar
+                    id="reportsIconTabBar"
+                    selectedKey="{reportModel>/activeTab}"
+                    select=".onTabSelect"
+                    applyContentPadding="false"
+                    expandable="false"
+                    class="sapUiResponsiveContentPadding">
+                    <items>
+                        <!-- Tab 1: Main Gate Entry Report -->
+                        <IconTabFilter
+                            key="MAIN_GATE"
+                            text="Main Gate Entry"
+                            count="{reportModel>/counts/mainGate}"
+                            icon="sap-icon://log-in">
+                            <content>
+                                <Table
+                                    id="mainGateTable"
+                                    items="{
+                                        path: 'reportModel>/displayedMainGate',
+                                        templateShareable: false
+                                    }"
+                                    growing="true"
+                                    growingThreshold="50"
+                                    popinDisplay="Inline"
+                                    noDataText="No Main Gate entries match current filters.">
+                                    <headerToolbar>
+                                        <OverflowToolbar>
+                                            <Title text="Main Gate Records ({reportModel>/counts/mainGate})" level="H3" />
+                                            <ToolbarSpacer />
+                                            <Button text="Export PDF" icon="sap-icon://pdf-attachment" press=".onExportPDF" />
+                                            <Button text="Print" icon="sap-icon://print" press=".onPrintReport" />
+                                            <Button text="Export CSV" icon="sap-icon://download" press=".onExportCSV" />
+                                        </OverflowToolbar>
+                                    </headerToolbar>
+                                    <columns>
+                                        <Column width="140px"><header><Text text="Gate Pass No" /></header></Column>
+                                        <Column width="130px"><header><Text text="Vehicle Reg No" /></header></Column>
+                                        <Column width="100px" minScreenWidth="Desktop" demandPopin="true"><header><Text text="Type" /></header></Column>
+                                        <Column minScreenWidth="Tablet" demandPopin="true"><header><Text text="Driver Name" /></header></Column>
+                                        <Column width="110px"><header><Text text="Purpose" /></header></Column>
+                                        <Column width="130px" minScreenWidth="Desktop" demandPopin="true"><header><Text text="Route" /></header></Column>
+                                        <Column width="160px"><header><Text text="Gate IN Date/Time" /></header></Column>
+                                        <Column width="130px" minScreenWidth="Desktop" demandPopin="true"><header><Text text="IN Operator" /></header></Column>
+                                        <Column width="160px" minScreenWidth="Tablet" demandPopin="true"><header><Text text="Gate OUT Date/Time" /></header></Column>
+                                        <Column width="110px" hAlign="Center"><header><Text text="Status" /></header></Column>
+                                        <Column minScreenWidth="Desktop" demandPopin="true"><header><Text text="Remarks" /></header></Column>
+                                    </columns>
+                                    <items>
+                                        <ColumnListItem>
+                                            <cells>
+                                                <ObjectIdentifier title="{reportModel>gateInNumber}" />
+                                                <Text text="{reportModel>vehicleRegNo}" design="Bold" />
+                                                <Text text="{reportModel>vehicleType}" />
+                                                <Text text="{reportModel>driverName}" />
+                                                <ObjectStatus text="{reportModel>purpose}" state="{reportModel>purposeState}" />
+                                                <Text text="{reportModel>assignedRoute}" />
+                                                <Text text="{reportModel>gateInTimeDisplay}" />
+                                                <Text text="{reportModel>gateInOperator}" />
+                                                <Text text="{reportModel>gateOutTimeDisplay}" />
+                                                <ObjectStatus text="{reportModel>status}" state="{reportModel>statusState}" />
+                                                <Text text="{reportModel>remarks}" />
+                                            </cells>
+                                        </ColumnListItem>
+                                    </items>
+                                </Table>
+                            </content>
+                        </IconTabFilter>
+
+                        <!-- Tab 2: Security Gate Report -->
+                        <IconTabFilter
+                            key="SECURITY_GATE"
+                            text="Security Gate"
+                            count="{reportModel>/counts/securityGate}"
+                            icon="sap-icon://shield">
+                            <content>
+                                <Table
+                                    id="securityGateTable"
+                                    items="{
+                                        path: 'reportModel>/displayedSecurity',
+                                        templateShareable: false
+                                    }"
+                                    growing="true"
+                                    growingThreshold="50"
+                                    popinDisplay="Inline"
+                                    noDataText="No Security Gate records match current filters.">
+                                    <headerToolbar>
+                                        <OverflowToolbar>
+                                            <Title text="Security Gate Records ({reportModel>/counts/securityGate})" level="H3" />
+                                            <ToolbarSpacer />
+                                            <Button text="Export PDF" icon="sap-icon://pdf-attachment" press=".onExportPDF" />
+                                            <Button text="Print" icon="sap-icon://print" press=".onPrintReport" />
+                                            <Button text="Export CSV" icon="sap-icon://download" press=".onExportCSV" />
+                                        </OverflowToolbar>
+                                    </headerToolbar>
+                                    <columns>
+                                        <Column width="140px"><header><Text text="Gate Pass No" /></header></Column>
+                                        <Column width="130px"><header><Text text="Vehicle Reg No" /></header></Column>
+                                        <Column width="160px"><header><Text text="Security IN Time" /></header></Column>
+                                        <Column width="130px" minScreenWidth="Tablet" demandPopin="true"><header><Text text="Security Officer" /></header></Column>
+                                        <Column minScreenWidth="Tablet" demandPopin="true"><header><Text text="Driver Details" /></header></Column>
+                                        <Column minScreenWidth="Tablet" demandPopin="true"><header><Text text="PO / Invoice" /></header></Column>
+                                        <Column width="120px"><header><Text text="Route" /></header></Column>
+                                        <Column width="160px" minScreenWidth="Tablet" demandPopin="true"><header><Text text="Security OUT Time" /></header></Column>
+                                        <Column width="130px" minScreenWidth="Desktop" demandPopin="true"><header><Text text="Exit Officer" /></header></Column>
+                                        <Column minScreenWidth="Desktop" demandPopin="true"><header><Text text="Security Remarks" /></header></Column>
+                                    </columns>
+                                    <items>
+                                        <ColumnListItem>
+                                            <cells>
+                                                <ObjectIdentifier title="{reportModel>gateInNumber}" />
+                                                <Text text="{reportModel>vehicleRegNo}" design="Bold" />
+                                                <Text text="{reportModel>securityInTimeDisplay}" />
+                                                <Text text="{reportModel>securityPersonnel}" />
+                                                <Text text="{reportModel>driverContactDisplay}" />
+                                                <Text text="{reportModel>poInvoiceDisplay}" />
+                                                <Text text="{reportModel>assignedRoute}" />
+                                                <Text text="{reportModel>securityOutTimeDisplay}" />
+                                                <Text text="{reportModel>securityOutPersonnel}" />
+                                                <Text text="{reportModel>securityInRemarks}" />
+                                            </cells>
+                                        </ColumnListItem>
+                                    </items>
+                                </Table>
+                            </content>
+                        </IconTabFilter>
+
+                        <!-- Tab 3: Weighbridge Report -->
+                        <IconTabFilter
+                            key="WEIGHBRIDGE"
+                            text="Weighbridge Scale"
+                            count="{reportModel>/counts/weighbridge}"
+                            icon="sap-icon://dimension">
+                            <content>
+                                <Table
+                                    id="weighbridgeTable"
+                                    items="{
+                                        path: 'reportModel>/displayedWeighbridge',
+                                        templateShareable: false
+                                    }"
+                                    growing="true"
+                                    growingThreshold="50"
+                                    popinDisplay="Inline"
+                                    noDataText="No Weighbridge scale records match current filters.">
+                                    <headerToolbar>
+                                        <OverflowToolbar>
+                                            <Title text="Weighbridge Records ({reportModel>/counts/weighbridge})" level="H3" />
+                                            <ToolbarSpacer />
+                                            <Button text="Export PDF" icon="sap-icon://pdf-attachment" press=".onExportPDF" />
+                                            <Button text="Print" icon="sap-icon://print" press=".onPrintReport" />
+                                            <Button text="Export CSV" icon="sap-icon://download" press=".onExportCSV" />
+                                        </OverflowToolbar>
+                                    </headerToolbar>
+                                    <columns>
+                                        <Column width="140px"><header><Text text="Gate Pass No" /></header></Column>
+                                        <Column width="130px"><header><Text text="Vehicle Reg No" /></header></Column>
+                                        <Column width="110px"><header><Text text="Scale ID" /></header></Column>
+                                        <Column width="130px"><header><Text text="Weighment Type" /></header></Column>
+                                        <Column width="140px" hAlign="End"><header><Text text="Weight (KG)" /></header></Column>
+                                        <Column width="160px"><header><Text text="Weighment Date/Time" /></header></Column>
+                                        <Column width="130px" minScreenWidth="Tablet" demandPopin="true"><header><Text text="Scale Operator" /></header></Column>
+                                        <Column width="110px" minScreenWidth="Desktop" demandPopin="true"><header><Text text="Purpose" /></header></Column>
+                                        <Column minScreenWidth="Tablet" demandPopin="true"><header><Text text="Remarks" /></header></Column>
+                                    </columns>
+                                    <items>
+                                        <ColumnListItem>
+                                            <cells>
+                                                <ObjectIdentifier title="{reportModel>gateInNumber}" />
+                                                <Text text="{reportModel>vehicleRegNo}" design="Bold" />
+                                                <Text text="{reportModel>weighbridgeNumber}" />
+                                                <ObjectStatus text="{reportModel>weighmentType}" state="{reportModel>weighmentTypeState}" />
+                                                <Text text="{reportModel>weightDisplay}" design="Bold" />
+                                                <Text text="{reportModel>weighbridgeTimeDisplay}" />
+                                                <Text text="{reportModel>operator}" />
+                                                <Text text="{reportModel>purpose}" />
+                                                <Text text="{reportModel>remarks}" />
+                                            </cells>
+                                        </ColumnListItem>
+                                    </items>
+                                </Table>
+                            </content>
+                        </IconTabFilter>
+
+                        <!-- Tab 4: Factory Yard Gate Report -->
+                        <IconTabFilter
+                            key="FACTORY_GATE"
+                            text="Factory Yard Gate"
+                            count="{reportModel>/counts/factoryGate}"
+                            icon="sap-icon://factory">
+                            <content>
+                                <Table
+                                    id="factoryGateTable"
+                                    items="{
+                                        path: 'reportModel>/displayedFactory',
+                                        templateShareable: false
+                                    }"
+                                    growing="true"
+                                    growingThreshold="50"
+                                    popinDisplay="Inline"
+                                    noDataText="No Factory Yard Gate records match current filters.">
+                                    <headerToolbar>
+                                        <OverflowToolbar>
+                                            <Title text="Factory Yard Gate Records ({reportModel>/counts/factoryGate})" level="H3" />
+                                            <ToolbarSpacer />
+                                            <Button text="Export PDF" icon="sap-icon://pdf-attachment" press=".onExportPDF" />
+                                            <Button text="Print" icon="sap-icon://print" press=".onPrintReport" />
+                                            <Button text="Export CSV" icon="sap-icon://download" press=".onExportCSV" />
+                                        </OverflowToolbar>
+                                    </headerToolbar>
+                                    <columns>
+                                        <Column width="140px"><header><Text text="Gate Pass No" /></header></Column>
+                                        <Column width="130px"><header><Text text="Vehicle Reg No" /></header></Column>
+                                        <Column width="170px"><header><Text text="Plant Area &amp; Bay" /></header></Column>
+                                        <Column minScreenWidth="Tablet" demandPopin="true"><header><Text text="Material Description" /></header></Column>
+                                        <Column width="120px" hAlign="Center"><header><Text text="Status" /></header></Column>
+                                        <Column width="130px" hAlign="End"><header><Text text="Quantity" /></header></Column>
+                                        <Column width="160px"><header><Text text="Factory IN Time" /></header></Column>
+                                        <Column width="130px" minScreenWidth="Desktop" demandPopin="true"><header><Text text="IN Operator" /></header></Column>
+                                        <Column width="160px" minScreenWidth="Tablet" demandPopin="true"><header><Text text="Factory OUT Time" /></header></Column>
+                                        <Column width="130px" minScreenWidth="Desktop" demandPopin="true"><header><Text text="OUT Operator" /></header></Column>
+                                        <Column minScreenWidth="Desktop" demandPopin="true"><header><Text text="Supplier / Remarks" /></header></Column>
+                                    </columns>
+                                    <items>
+                                        <ColumnListItem>
+                                            <cells>
+                                                <ObjectIdentifier title="{reportModel>gateInNumber}" />
+                                                <Text text="{reportModel>vehicleRegNo}" design="Bold" />
+                                                <Text text="{reportModel>factoryLocationDisplay}" />
+                                                <Text text="{reportModel>materialDescription}" />
+                                                <ObjectStatus
+                                                    text="{reportModel>unloadingStatus}"
+                                                    state="{reportModel>unloadingStatusState}" />
+                                                <Text text="{reportModel>formattedQty}" design="Bold" />
+                                                <Text text="{reportModel>factoryInTimeDisplay}" />
+                                                <Text text="{reportModel>factoryGateInOperator}" />
+                                                <Text text="{reportModel>factoryOutTimeDisplay}" />
+                                                <Text text="{reportModel>factoryGateOutOperator}" />
+                                                <Text text="{reportModel>supplierRemarksDisplay}" />
+                                            </cells>
+                                        </ColumnListItem>
+                                    </items>
+                                </Table>
+                            </content>
+                        </IconTabFilter>
+
+                        <!-- Tab 5: Consolidated Gate Lifecycle Report -->
+                        <IconTabFilter
+                            key="CONSOLIDATED"
+                            text="Consolidated Lifecycle"
+                            count="{reportModel>/counts/consolidated}"
+                            icon="sap-icon://journey-arrive">
+                            <content>
+                                <Table
+                                    id="consolidatedTable"
+                                    items="{
+                                        path: 'reportModel>/displayedConsolidated',
+                                        templateShareable: false
+                                    }"
+                                    growing="true"
+                                    growingThreshold="50"
+                                    popinDisplay="Inline"
+                                    noDataText="No Consolidated Gate Lifecycle records match current filters.">
+                                    <headerToolbar>
+                                        <OverflowToolbar>
+                                            <Title text="End-to-End Consolidated Records ({reportModel>/counts/consolidated})" level="H3" />
+                                            <ToolbarSpacer />
+                                            <Button text="Export PDF" icon="sap-icon://pdf-attachment" press=".onExportPDF" />
+                                            <Button text="Print" icon="sap-icon://print" press=".onPrintReport" />
+                                            <Button text="Export CSV" icon="sap-icon://download" press=".onExportCSV" />
+                                        </OverflowToolbar>
+                                    </headerToolbar>
+                                    <columns>
+                                        <Column width="140px"><header><Text text="Gate Pass No" /></header></Column>
+                                        <Column width="130px"><header><Text text="Vehicle Reg No" /></header></Column>
+                                        <Column width="140px"><header><Text text="Driver / Purpose" /></header></Column>
+                                        <Column width="110px" hAlign="Center"><header><Text text="Status" /></header></Column>
+                                        <Column width="150px"><header><Text text="1. Main Gate IN" /></header></Column>
+                                        <Column width="150px" minScreenWidth="Tablet" demandPopin="true"><header><Text text="2. Security IN" /></header></Column>
+                                        <Column width="130px" minScreenWidth="Tablet" demandPopin="true" hAlign="End"><header><Text text="3. Gross Weight" /></header></Column>
+                                        <Column minScreenWidth="Tablet" demandPopin="true"><header><Text text="4. Factory IN/OUT" /></header></Column>
+                                        <Column minScreenWidth="Tablet" demandPopin="true" hAlign="End"><header><Text text="5. Tare &amp; Net" /></header></Column>
+                                        <Column width="150px" minScreenWidth="Desktop" demandPopin="true"><header><Text text="6. Security OUT" /></header></Column>
+                                        <Column width="150px" minScreenWidth="Desktop" demandPopin="true"><header><Text text="7. Main Gate OUT" /></header></Column>
+                                    </columns>
+                                    <items>
+                                        <ColumnListItem>
+                                            <cells>
+                                                <ObjectIdentifier title="{reportModel>gateInNumber}" />
+                                                <Text text="{reportModel>vehicleRegNo}" design="Bold" />
+                                                <VBox>
+                                                    <Text text="{reportModel>driverName}" />
+                                                    <ObjectStatus text="{reportModel>purpose}" state="{reportModel>purposeState}" class="sapUiTinyMarginTop" />
+                                                </VBox>
+                                                <ObjectStatus text="{reportModel>status}" state="{reportModel>statusState}" />
+                                                <Text text="{reportModel>gateInTimeDisplay}" />
+                                                <Text text="{reportModel>securityInTimeDisplay}" />
+                                                <Text text="{reportModel>grossWeightDisplay}" design="Bold" />
+                                                <VBox>
+                                                    <Text text="{reportModel>factoryInTimeDisplay}" />
+                                                    <Text text="{reportModel>factoryOutTimeDisplay}" class="sapUiTinyMarginTop" />
+                                                </VBox>
+                                                <VBox alignItems="End">
+                                                    <Text text="{= 'Tare: ' + ${reportModel>tareWeightDisplay} }" />
+                                                    <Text text="{= 'Net: ' + ${reportModel>netWeightDisplay} }" design="Bold" class="sapUiTinyMarginTop" />
+                                                </VBox>
+                                                <Text text="{reportModel>securityOutTimeDisplay}" />
+                                                <Text text="{reportModel>gateOutTimeDisplay}" />
+                                            </cells>
+                                        </ColumnListItem>
+                                    </items>
+                                </Table>
+                            </content>
+                        </IconTabFilter>
+                    </items>
+                </IconTabBar>
+            </VBox>
+        </content>
+    </Page>
+</mvc:View>

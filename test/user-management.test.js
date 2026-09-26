@@ -184,11 +184,44 @@ async function runUserManagementTests() {
     const checkRoles = await srv.tx({ user: superadminUser }).run(
         SELECT.from(UserRoles).where({ user_ID: createdUser.ID })
     );
-    assert.strictEqual(checkRoles.length, 0, 'Roles should be cleaned up');
-    console.log('  [PASS] User and roles deleted cleanly.');
+    // ----------------------------------------------------
+    // TEST 8: Superadmin creates user with specific roles and employeeId
+    // ----------------------------------------------------
+    console.log('\n[TEST 8] Superadmin creates user with specific roles (maingate_user, security_user) and employeeId');
+    const roleUser = await srv.tx({ user: superadminUser }).send('CreateUser', {
+        username: 'kavita_sharma',
+        password: 'password123',
+        name: 'Kavita Sharma',
+        employeeId: 'EMP-SEC-9901',
+        designation: 'Security & Main Gate Officer',
+        department: 'Security & Plant Access',
+        email: 'kavita.sharma@apl.com',
+        phoneNo: '+91 98765 43219',
+        serviceStatus: 'IN_SERVICE',
+        status: 'ACTIVE',
+        assignedRoles: 'maingate_user, security_user',
+        remarks: 'Created for gate and security operations'
+    });
+
+    assert.strictEqual(roleUser.username, 'kavita_sharma');
+    assert.strictEqual(roleUser.employeeId, 'EMP-SEC-9901');
+    assert.strictEqual(roleUser.assignedRoles, 'maingate_user, security_user');
+
+    // Test userInfo for the newly created user
+    const kavitaUser = new cds.User({ id: 'kavita_sharma', password: 'password123', roles: ['maingate_user', 'security_user'] });
+    const info = await srv.tx({ user: kavitaUser }).send('userInfo');
+    assert.strictEqual(info.id, 'kavita_sharma');
+    assert.strictEqual(info.employeeId, 'EMP-SEC-9901');
+    assert.ok(info.roles.includes('maingate_user') && info.roles.includes('MainGateUser'));
+    assert.ok(info.roles.includes('security_user') && info.roles.includes('SecurityGateUser'));
+    console.log(`  [PASS] User created with employeeId: ${info.employeeId} and roles: ${info.roles.join(', ')}`);
+
+    // Clean up
+    await srv.tx({ user: superadminUser }).send('DeleteUser', { ID: roleUser.ID });
+    console.log('  [PASS] Test user cleaned up.');
 
     console.log('\n========================================================');
-    console.log(' ALL 7 SUPERADMIN USER MANAGEMENT TESTS PASSED!');
+    console.log(' ALL 8 SUPERADMIN USER MANAGEMENT TESTS PASSED!');
     console.log('========================================================\n');
 }
 

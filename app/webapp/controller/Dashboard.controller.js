@@ -157,6 +157,15 @@ sap.ui.define([
                 return;
             }
             this.getOwnerComponent().navigateTo("userManagementPage", "slide");
+        },
+
+        onOpenReports: function () {
+            const oModel = this.getOwnerComponent().getModel();
+            if (!oModel.getProperty("/canViewReports")) {
+                MessageBox.error("Access Restricted: Reports generation requires Admin or Superadmin role.");
+                return;
+            }
+            this.getOwnerComponent().navigateTo("reportsPage", "slide");
         }
     });
 });

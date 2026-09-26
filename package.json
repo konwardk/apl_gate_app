@@ -26,13 +26,13 @@
       "auth": {
         "kind": "mocked",
         "users": {
-          "superadmin_user": { "password": "password", "roles": ["Superadmin", "Admin", "MainGateUser", "SecurityGateUser", "WeighbridgeUser", "FactoryGateUser", "Auditor"] },
-          "maingate_user": { "password": "password", "roles": ["MainGateUser"] },
-          "security_user": { "password": "password", "roles": ["SecurityGateUser"] },
-          "weighbridge_user": { "password": "password", "roles": ["WeighbridgeUser"] },
-          "factory_user": { "password": "password", "roles": ["FactoryGateUser"] },
-          "admin_user": { "password": "password", "roles": ["Admin"] },
-          "auditor_user": { "password": "password", "roles": ["Auditor"] }
+          "superadmin_user": { "password": "password", "roles": ["Superadmin", "superadmin_user", "Admin", "admin_user", "MainGateUser", "maingate_user", "SecurityGateUser", "security_user", "WeighbridgeUser", "weighbridge_user", "FactoryGateUser", "factory_user", "Auditor", "audit_user"] },
+          "maingate_user": { "password": "password", "roles": ["MainGateUser", "maingate_user"] },
+          "security_user": { "password": "password", "roles": ["SecurityGateUser", "security_user"] },
+          "weighbridge_user": { "password": "password", "roles": ["WeighbridgeUser", "weighbridge_user"] },
+          "factory_user": { "password": "password", "roles": ["FactoryGateUser", "factory_user"] },
+          "admin_user": { "password": "password", "roles": ["Admin", "admin_user"] },
+          "auditor_user": { "password": "password", "roles": ["Auditor", "audit_user"] }
         }
       },
       "CE_PURCHASEORDER_0001": {

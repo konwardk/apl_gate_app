@@ -125,7 +125,7 @@
                 noDataText="No user accounts match current search or filters.">
                 <headerToolbar>
                     <OverflowToolbar>
-                        <Title text="User Directory ({= ${userModel>/displayedUsers}.length })" level="H3" />
+                        <Title text="User Directory ({= ${userModel>/displayedUsers} ? ${userModel>/displayedUsers}.length : 0 })" level="H3" />
                         <ToolbarSpacer />
 
                         <SearchField
@@ -142,13 +142,13 @@
                             change=".onFilterChange"
                             autoAdjustWidth="true">
                             <core:Item key="ALL" text="All Roles" />
-                            <core:Item key="Superadmin" text="Superadmin" />
-                            <core:Item key="MainGateUser" text="Main Gate User" />
-                            <core:Item key="SecurityGateUser" text="Security Gate User" />
-                            <core:Item key="WeighbridgeUser" text="Weighbridge User" />
-                            <core:Item key="FactoryGateUser" text="Factory Gate User" />
-                            <core:Item key="Admin" text="Admin" />
-                            <core:Item key="Auditor" text="Auditor" />
+                            <core:Item key="maingate_user" text="Main Gate User" />
+                            <core:Item key="security_user" text="Security Gate User" />
+                            <core:Item key="weighbridge_user" text="Weighbridge User" />
+                            <core:Item key="factory_user" text="Factory Gate User" />
+                            <core:Item key="audit_user" text="Audit User" />
+                            <core:Item key="superadmin_user" text="Superadmin" />
+                            <core:Item key="admin_user" text="Admin" />
                         </Select>
 
                         <!-- Service Status Filter -->
@@ -184,7 +184,7 @@
                 </headerToolbar>
 
                 <columns>
-                    <Column width="240px"><header><Text text="User / Username" /></header></Column>
+                    <Column width="250px"><header><Text text="User / Username / Employee ID" /></header></Column>
                     <Column><header><Text text="Designation &amp; Department" /></header></Column>
                     <Column width="260px"><header><Text text="Assigned Roles" /></header></Column>
                     <Column><header><Text text="Contact Details" /></header></Column>
@@ -196,7 +196,7 @@
                 <items>
                     <ColumnListItem>
                         <cells>
-                            <!-- User: Avatar + Name + Username -->
+                            <!-- User: Avatar + Name + Username + Employee ID -->
                             <HBox alignItems="Center">
                                 <f:Avatar
                                     initials="{path: 'userModel>username', formatter: '.formatter.getUserInitials'}"
@@ -205,7 +205,13 @@
                                     class="sapUiTinyMarginEnd" />
                                 <VBox>
                                     <Text text="{userModel>name}" design="Bold" />
-                                    <Text text="@{userModel>username}" class="sapUiTinyMarginTop" />
+                                    <Text text="@{userModel>username}" class="sapUiTinyMarginTop text-muted" />
+                                    <ObjectStatus
+                                        text="{= 'ID: ' + ${userModel>employeeId} }"
+                                        state="None"
+                                        icon="sap-icon://badge"
+                                        visible="{= !!${userModel>employeeId} }"
+                                        class="sapUiTinyMarginTop" />
                                 </VBox>
                             </HBox>
 

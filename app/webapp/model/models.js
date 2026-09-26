@@ -16,32 +16,57 @@ sap.ui.define([
 
     const ROLE_TITLES = {
         "MainGateUser": "Main Gate Operator",
+        "maingate_user": "Main Gate Operator",
         "SecurityGateUser": "Security Gate Officer",
+        "security_user": "Security Gate Officer",
         "WeighbridgeUser": "Weighbridge Scale Operator",
+        "weighbridge_user": "Weighbridge Scale Operator",
         "FactoryGateUser": "Factory Yard Supervisor",
+        "factory_user": "Factory Yard Supervisor",
         "Admin": "Operations Administrator",
+        "admin_user": "Operations Administrator",
         "Superadmin": "System Superadministrator",
-        "Auditor": "Compliance Auditor"
+        "superadmin_user": "System Superadministrator",
+        "Auditor": "Compliance Auditor",
+        "audit_user": "Compliance Auditor",
+        "auditor_user": "Compliance Auditor"
     };
 
     const ROLE_ICONS = {
         "MainGateUser": "sap-icon://log-in",
+        "maingate_user": "sap-icon://log-in",
         "SecurityGateUser": "sap-icon://shield",
+        "security_user": "sap-icon://shield",
         "WeighbridgeUser": "sap-icon://dimension",
+        "weighbridge_user": "sap-icon://dimension",
         "FactoryGateUser": "sap-icon://factory",
+        "factory_user": "sap-icon://factory",
         "Admin": "sap-icon://home",
+        "admin_user": "sap-icon://home",
         "Superadmin": "sap-icon://shield",
-        "Auditor": "sap-icon://history"
+        "superadmin_user": "sap-icon://shield",
+        "Auditor": "sap-icon://history",
+        "audit_user": "sap-icon://history",
+        "auditor_user": "sap-icon://history"
     };
 
     const ROLE_SCREENS = {
         "MainGateUser": { pageId: "mainGateOpsPage", title: "Main Gate Operations", icon: "sap-icon://log-in" },
+        "maingate_user": { pageId: "mainGateOpsPage", title: "Main Gate Operations", icon: "sap-icon://log-in" },
         "SecurityGateUser": { pageId: "securityGateOpsPage", title: "Security Gate Operations", icon: "sap-icon://shield" },
+        "security_user": { pageId: "securityGateOpsPage", title: "Security Gate Operations", icon: "sap-icon://shield" },
         "WeighbridgeUser": { pageId: "weighbridgeOpsPage", title: "Weighbridge Operations", icon: "sap-icon://dimension" },
+        "weighbridge_user": { pageId: "weighbridgeOpsPage", title: "Weighbridge Operations", icon: "sap-icon://dimension" },
         "FactoryGateUser": { pageId: "factoryGateOpsPage", title: "Factory Yard Operations", icon: "sap-icon://factory" },
+        "factory_user": { pageId: "factoryGateOpsPage", title: "Factory Yard Operations", icon: "sap-icon://factory" },
         "Admin": { pageId: "launchpadPage", title: "Launchpad Dashboard", icon: "sap-icon://home" },
+        "admin_user": { pageId: "launchpadPage", title: "Launchpad Dashboard", icon: "sap-icon://home" },
         "Superadmin": { pageId: "launchpadPage", title: "Superadmin Dashboard", icon: "sap-icon://shield" },
-        "Auditor": { pageId: "launchpadPage", title: "Compliance Dashboard", icon: "sap-icon://history" }
+        "superadmin_user": { pageId: "launchpadPage", title: "Superadmin Dashboard", icon: "sap-icon://shield" },
+        "Auditor": { pageId: "launchpadPage", title: "Compliance Dashboard", icon: "sap-icon://history" },
+        "audit_user": { pageId: "launchpadPage", title: "Compliance Dashboard", icon: "sap-icon://history" },
+        "auditor_user": { pageId: "launchpadPage", title: "Compliance Dashboard", icon: "sap-icon://history" },
+        "reportsPage": { pageId: "reportsPage", title: "Operational Reports", icon: "sap-icon://pdf-attachment" }
     };
 
     return {
@@ -49,6 +74,27 @@ sap.ui.define([
         ROLE_TITLES: ROLE_TITLES,
         ROLE_ICONS: ROLE_ICONS,
         ROLE_SCREENS: ROLE_SCREENS,
+
+        setPasswordForUser: function (username, password) {
+            if (!username) return;
+            const u = username.toLowerCase();
+            this.defaultPasswords[u] = password;
+            try {
+                const stored = JSON.parse(localStorage.getItem("gate_user_passwords") || "{}");
+                stored[u] = password;
+                localStorage.setItem("gate_user_passwords", JSON.stringify(stored));
+            } catch (e) {}
+        },
+
+        getPasswordForUser: function (username) {
+            if (!username) return "password";
+            const u = username.toLowerCase();
+            try {
+                const stored = JSON.parse(localStorage.getItem("gate_user_passwords") || "{}");
+                if (stored[u]) return stored[u];
+            } catch (e) {}
+            return this.defaultPasswords[u] || "password";
+        },
 
         getActiveUser: function () {
             return sessionStorage.getItem("gate_active_user") || localStorage.getItem("gate_active_user") || "";
@@ -93,16 +139,16 @@ sap.ui.define([
         },
 
         getPermissionsForUser: function (roles, username) {
-            const aRoles = roles || [];
+            const aRoles = (roles || []).map(r => (r || "").trim());
             const u = (username || this.getActiveUser() || "").toLowerCase();
 
-            const isSuper = aRoles.includes("Superadmin") || u === "superadmin_user";
-            const isAdmin = aRoles.includes("Admin") || u === "admin_user";
-            const isMainGate = aRoles.includes("MainGateUser") || u === "maingate_user";
-            const isSecurity = aRoles.includes("SecurityGateUser") || u === "security_user";
-            const isWeighbridge = aRoles.includes("WeighbridgeUser") || u === "weighbridge_user";
-            const isFactory = aRoles.includes("FactoryGateUser") || u === "factory_user";
-            const isAuditor = aRoles.includes("Auditor") || u === "auditor_user";
+            const isSuper = aRoles.includes("Superadmin") || aRoles.includes("superadmin_user") || aRoles.includes("superadmin") || u === "superadmin_user";
+            const isAdmin = aRoles.includes("Admin") || aRoles.includes("admin_user") || aRoles.includes("admin") || u === "admin_user";
+            const isMainGate = aRoles.includes("MainGateUser") || aRoles.includes("maingate_user") || u === "maingate_user";
+            const isSecurity = aRoles.includes("SecurityGateUser") || aRoles.includes("security_user") || u === "security_user";
+            const isWeighbridge = aRoles.includes("WeighbridgeUser") || aRoles.includes("weighbridge_user") || u === "weighbridge_user";
+            const isFactory = aRoles.includes("FactoryGateUser") || aRoles.includes("factory_user") || u === "factory_user";
+            const isAuditor = aRoles.includes("Auditor") || aRoles.includes("audit_user") || aRoles.includes("auditor_user") || u === "auditor_user";
 
             // Determine primary role & assigned workspace screen
             let primaryRole = "Authenticated";
@@ -110,7 +156,17 @@ sap.ui.define([
             let assignedScreenTitle = "Launchpad Dashboard";
             let assignedScreenIcon = "sap-icon://home";
 
-            if (isMainGate) {
+            if (isSuper) {
+                primaryRole = "Superadmin";
+                assignedScreen = "launchpadPage";
+                assignedScreenTitle = "Superadmin Console";
+                assignedScreenIcon = "sap-icon://shield";
+            } else if (isAdmin) {
+                primaryRole = "Admin";
+                assignedScreen = "launchpadPage";
+                assignedScreenTitle = "Operations Dashboard";
+                assignedScreenIcon = "sap-icon://home";
+            } else if (isMainGate) {
                 primaryRole = "MainGateUser";
                 assignedScreen = "mainGateOpsPage";
                 assignedScreenTitle = "Main Gate Operations";
@@ -130,16 +186,6 @@ sap.ui.define([
                 assignedScreen = "factoryGateOpsPage";
                 assignedScreenTitle = "Factory Yard Operations";
                 assignedScreenIcon = "sap-icon://factory";
-            } else if (isSuper) {
-                primaryRole = "Superadmin";
-                assignedScreen = "launchpadPage";
-                assignedScreenTitle = "Superadmin Console";
-                assignedScreenIcon = "sap-icon://shield";
-            } else if (isAdmin) {
-                primaryRole = "Admin";
-                assignedScreen = "launchpadPage";
-                assignedScreenTitle = "Operations Dashboard";
-                assignedScreenIcon = "sap-icon://home";
             } else if (isAuditor) {
                 primaryRole = "Auditor";
                 assignedScreen = "launchpadPage";
@@ -169,6 +215,7 @@ sap.ui.define([
                 canViewMasterData: isSuper || isAdmin,
                 canViewAuditTrail: isSuper || isAdmin || isAuditor,
                 canManageUsers: isSuper,
+                canViewReports: isSuper || isAdmin,
                 canViewLiveOps: isSuper || isMainGate || isAdmin || isSecurity || isWeighbridge || isFactory || isAuditor,
                 canViewGateOps: isSuper || isAdmin || isMainGate || isSecurity || isWeighbridge || isFactory,
 
@@ -190,6 +237,7 @@ sap.ui.define([
             const oModel = new JSONModel({
                 activeUser: activeUser,
                 userName: savedInfo?.name || activeUser || "",
+                userEmployeeId: savedInfo?.employeeId || "",
                 userDesignation: savedInfo?.designation || perms.primaryRoleTitle || "",
                 userDepartment: savedInfo?.department || "",
                 userRoles: savedRoles,
@@ -233,6 +281,7 @@ sap.ui.define([
                 canViewAuditTrail: perms.canViewAuditTrail,
                 canViewAudit: perms.canViewAuditTrail,
                 canManageUsers: perms.canManageUsers,
+                canViewReports: perms.canViewReports,
                 currentFeAppTitle: "",
                 currentFeAppUrl: ""
             });

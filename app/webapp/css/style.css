@@ -109,6 +109,14 @@ html, body {
     border-top: 4px solid #6f42c1 !important;
 }
 
+.flp-tile-reports {
+    border-top: 4px solid #0854a0 !important;
+}
+
+.flp-tile-superadmin {
+    border-top: 4px solid #d20a0a !important;
+}
+
 /* KPI Quick Bar */
 .flp-kpi-bar {
     display: flex;

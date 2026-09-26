@@ -507,6 +507,7 @@ entity Users : cuid, managed {
     username        : String(50) @mandatory;
     password        : String(100) @mandatory;
     name            : String(100) @mandatory;
+    employeeId      : String(50);
     designation     : String(100);
     department      : String(100);
     email           : String(100);

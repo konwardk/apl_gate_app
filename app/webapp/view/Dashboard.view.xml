@@ -308,7 +308,32 @@
                     </GenericTile>
                 </HBox>
             </VBox>
-            <!-- Group 4: Superadmin Console (Only visible for Superadmin) -->
+            <!-- Group 4: Operational Reports & Analytics (Admin, Superadmin) -->
+            <VBox class="flp-section" visible="{/canViewReports}">
+                <Title
+                    text="Operational Reports &amp; Analytics"
+                    level="H2"
+                    titleStyle="H3"
+                    class="flp-section-title" />
+                <HBox class="flp-tiles-grid">
+                    <GenericTile
+                        header="Operational Gate Reports"
+                        subheader="Main Gate, Security, Weighbridge &amp; Factory Yard"
+                        sizeBehavior="Responsive"
+                        press=".onOpenReports"
+                        class="flp-tile flp-tile-reports">
+                        <tileContent>
+                            <TileContent footer="Filter, Inspect &amp; Export PDF / CSV">
+                                <content>
+                                    <NumericContent icon="sap-icon://pdf-attachment" valueColor="Good" />
+                                </content>
+                            </TileContent>
+                        </tileContent>
+                    </GenericTile>
+                </HBox>
+            </VBox>
+
+            <!-- Group 5: Superadmin Console (Only visible for Superadmin) -->
             <VBox class="flp-section" visible="{/canManageUsers}">
                 <Title
                     text="Superadmin Console &amp; Administration"

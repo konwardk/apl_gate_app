@@ -280,6 +280,7 @@ service GateService {
         username        : String,
         password        : String,
         name            : String,
+        employeeId      : String,
         designation     : String,
         department      : String,
         email           : String,
@@ -295,6 +296,7 @@ service GateService {
         username        : String,
         password        : String,
         name            : String,
+        employeeId      : String,
         designation     : String,
         department      : String,
         email           : String,
@@ -325,6 +327,7 @@ service GateService {
         id          : String;
         roles       : array of String;
         name        : String;
+        employeeId  : String;
         designation : String;
         department  : String;
         status      : String;

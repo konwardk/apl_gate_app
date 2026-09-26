@@ -13,7 +13,8 @@ sap.ui.define([
             const bAuth = oModel ? oModel.getProperty("/isAuthenticated") : false;
 
             if (bAuth) {
-                this.getOwnerComponent().navigateTo("launchpadPage", "show");
+                const sTarget = oModel.getProperty("/assignedScreen") || "launchpadPage";
+                this.getOwnerComponent().navigateTo(sTarget, "show");
             } else {
                 this.getOwnerComponent().navigateTo("loginPage", "show");
             }
@@ -45,6 +46,10 @@ sap.ui.define([
 
         onUserManagementNav: function () {
             this.getOwnerComponent().navigateTo("userManagementPage", "slide");
+        },
+
+        onReportsNav: function () {
+            this.getOwnerComponent().navigateTo("reportsPage", "slide");
         },
 
         onProfilePressed: function (oEvt) {

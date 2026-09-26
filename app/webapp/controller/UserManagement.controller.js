@@ -15,12 +15,41 @@ sap.ui.define([
 
     const ROLE_CONFIG = {
         "Superadmin": { text: "Superadmin", state: "Indication01", icon: "sap-icon://user-settings" },
+        "superadmin_user": { text: "Superadmin", state: "Indication01", icon: "sap-icon://user-settings" },
         "MainGateUser": { text: "Main Gate", state: "Information", icon: "sap-icon://log-in" },
+        "maingate_user": { text: "Main Gate", state: "Information", icon: "sap-icon://log-in" },
         "SecurityGateUser": { text: "Security Gate", state: "Warning", icon: "sap-icon://shield" },
+        "security_user": { text: "Security Gate", state: "Warning", icon: "sap-icon://shield" },
         "WeighbridgeUser": { text: "Weighbridge", state: "Indication04", icon: "sap-icon://dimension" },
+        "weighbridge_user": { text: "Weighbridge", state: "Indication04", icon: "sap-icon://dimension" },
         "FactoryGateUser": { text: "Factory Gate", state: "Success", icon: "sap-icon://factory" },
+        "factory_user": { text: "Factory Gate", state: "Success", icon: "sap-icon://factory" },
         "Admin": { text: "Admin", state: "Information", icon: "sap-icon://manager" },
-        "Auditor": { text: "Auditor", state: "None", icon: "sap-icon://history" }
+        "admin_user": { text: "Admin", state: "Information", icon: "sap-icon://manager" },
+        "Auditor": { text: "Auditor", state: "None", icon: "sap-icon://history" },
+        "audit_user": { text: "Auditor", state: "None", icon: "sap-icon://history" },
+        "auditor_user": { text: "Auditor", state: "None", icon: "sap-icon://history" }
+    };
+
+    const ROLE_NORMALIZE = {
+        "MainGateUser": "maingate_user",
+        "SecurityGateUser": "security_user",
+        "WeighbridgeUser": "weighbridge_user",
+        "FactoryGateUser": "factory_user",
+        "Auditor": "audit_user",
+        "auditor_user": "audit_user",
+        "Superadmin": "superadmin_user",
+        "Admin": "admin_user"
+    };
+
+    const ROLE_ALIASES = {
+        "maingate_user": ["maingate_user", "MainGateUser"],
+        "security_user": ["security_user", "SecurityGateUser"],
+        "weighbridge_user": ["weighbridge_user", "WeighbridgeUser"],
+        "factory_user": ["factory_user", "FactoryGateUser"],
+        "audit_user": ["audit_user", "Auditor", "auditor_user"],
+        "superadmin_user": ["superadmin_user", "Superadmin"],
+        "admin_user": ["admin_user", "Admin"]
     };
 
     return Controller.extend("factory.gate.controller.UserManagement", {
@@ -46,6 +75,7 @@ sap.ui.define([
                     ID: null,
                     username: "",
                     name: "",
+                    employeeId: "",
                     password: "",
                     designation: "",
                     department: "Main Gate Operations",
@@ -53,7 +83,7 @@ sap.ui.define([
                     phoneNo: "",
                     serviceStatus: "IN_SERVICE",
                     status: "ACTIVE",
-                    selectedRoleKeys: ["MainGateUser"],
+                    selectedRoleKeys: ["maingate_user"],
                     remarks: ""
                 }
             });
@@ -105,8 +135,8 @@ sap.ui.define([
                         };
                     });
 
-                    // Ensure local password dictionary contains seed/db password
-                    if (u.username && u.password) {
+                    // Ensure local password dictionary contains seed/db password safely
+                    if (u.username && u.password && typeof models.setPasswordForUser === "function") {
                         models.setPasswordForUser(u.username, u.password);
                     }
 
@@ -180,7 +210,9 @@ sap.ui.define([
                 // 1. Role Filter
                 if (sRole !== "ALL") {
                     const assigned = (u.assignedRoles || "");
-                    if (!assigned.includes(sRole)) return false;
+                    const aliases = ROLE_ALIASES[sRole] || [sRole];
+                    const hasRole = aliases.some(r => assigned.toLowerCase().includes(r.toLowerCase()));
+                    if (!hasRole) return false;
                 }
 
                 // 2. Service Status Filter
@@ -197,11 +229,13 @@ sap.ui.define([
                 if (q) {
                     const matchName = (u.name || "").toLowerCase().includes(q);
                     const matchUser = (u.username || "").toLowerCase().includes(q);
+                    const matchEmp = (u.employeeId || "").toLowerCase().includes(q);
                     const matchDesig = (u.designation || "").toLowerCase().includes(q);
                     const matchDept = (u.department || "").toLowerCase().includes(q);
                     const matchEmail = (u.email || "").toLowerCase().includes(q);
+                    const matchPhone = (u.phoneNo || "").toLowerCase().includes(q);
                     const matchRole = (u.assignedRoles || "").toLowerCase().includes(q);
-                    if (!matchName && !matchUser && !matchDesig && !matchDept && !matchEmail && !matchRole) {
+                    if (!matchName && !matchUser && !matchEmp && !matchDesig && !matchDept && !matchEmail && !matchPhone && !matchRole) {
                         return false;
                     }
                 }
@@ -272,16 +306,25 @@ sap.ui.define([
                 ID: null,
                 username: "",
                 name: "",
+                employeeId: "",
                 password: "",
                 designation: "",
                 department: "Main Gate Operations",
                 email: "",
                 phoneNo: "",
+                phoneValueState: ValueState.None,
+                phoneValueStateText: "",
                 serviceStatus: "IN_SERVICE",
                 status: "ACTIVE",
-                selectedRoleKeys: ["MainGateUser"],
+                selectedRoleKeys: ["maingate_user"],
                 remarks: ""
             });
+
+            const oPhoneInput = this.byId("inputPhone");
+            if (oPhoneInput) {
+                oPhoneInput.setValueState(ValueState.None);
+                oPhoneInput.setValueStateText("");
+            }
 
             this._getUserDialog().then(oDialog => oDialog.open());
         },
@@ -297,27 +340,97 @@ sap.ui.define([
             const aRoleKeys = (u.assignedRoles || "")
                 .split(",")
                 .map(r => r.trim())
-                .filter(Boolean);
+                .filter(Boolean)
+                .map(r => ROLE_NORMALIZE[r] || r);
+
+            // Clean phoneNo if it has non-digit characters from legacy data
+            let sPhone = (u.phoneNo || "").trim();
+            if (sPhone && /\D/.test(sPhone)) {
+                const sDigits = sPhone.replace(/\D/g, "");
+                sPhone = sDigits.length > 10 && sDigits.startsWith("91") ? sDigits.slice(2, 12) : sDigits.slice(-10);
+            }
 
             oModel.setProperty("/form", {
                 ID: u.ID,
                 username: u.username,
                 name: u.name,
+                employeeId: u.employeeId || "",
                 password: "",
                 designation: u.designation || "",
                 department: u.department || "",
                 email: u.email || "",
-                phoneNo: u.phoneNo || "",
+                phoneNo: sPhone,
+                phoneValueState: ValueState.None,
+                phoneValueStateText: "",
                 serviceStatus: u.serviceStatus || "IN_SERVICE",
                 status: u.status || "ACTIVE",
-                selectedRoleKeys: aRoleKeys.length ? aRoleKeys : ["MainGateUser"],
+                selectedRoleKeys: aRoleKeys.length ? aRoleKeys : ["maingate_user"],
                 remarks: u.remarks || ""
             });
+
+            const oPhoneInput = this.byId("inputPhone");
+            if (oPhoneInput) {
+                oPhoneInput.setValueState(ValueState.None);
+                oPhoneInput.setValueStateText("");
+            }
 
             this._getUserDialog().then(oDialog => oDialog.open());
         },
 
+        onPhoneLiveChange: function (oEvt) {
+            const oInput = oEvt.getSource();
+            const sValue = oEvt.getParameter("newValue") || "";
+            const oModel = this.getView().getModel("userModel");
+
+            // Check if input contains non-digit characters
+            const bHasNonDigits = /\D/.test(sValue);
+            // Numeric only, max 10 characters
+            const sNumericOnly = sValue.replace(/\D/g, "").slice(0, 10);
+
+            if (bHasNonDigits) {
+                oInput.setValue(sNumericOnly);
+                if (oModel) {
+                    oModel.setProperty("/form/phoneNo", sNumericOnly);
+                    oModel.setProperty("/form/phoneValueState", ValueState.Error);
+                    oModel.setProperty("/form/phoneValueStateText", "Only numbers are allowed (max 10 characters).");
+                }
+                oInput.setValueState(ValueState.Error);
+                oInput.setValueStateText("Only numbers are allowed (max 10 characters).");
+                return;
+            }
+
+            if (sValue.length > 10) {
+                oInput.setValue(sNumericOnly);
+                if (oModel) {
+                    oModel.setProperty("/form/phoneNo", sNumericOnly);
+                    oModel.setProperty("/form/phoneValueState", ValueState.Error);
+                    oModel.setProperty("/form/phoneValueStateText", "Phone number cannot exceed 10 characters.");
+                }
+                oInput.setValueState(ValueState.Error);
+                oInput.setValueStateText("Phone number cannot exceed 10 characters.");
+                return;
+            }
+
+            if (oModel) {
+                oModel.setProperty("/form/phoneNo", sValue);
+                oModel.setProperty("/form/phoneValueState", ValueState.None);
+                oModel.setProperty("/form/phoneValueStateText", "");
+            }
+            oInput.setValueState(ValueState.None);
+            oInput.setValueStateText("");
+        },
+
         onCancelUser: function () {
+            const oModel = this.getView().getModel("userModel");
+            if (oModel) {
+                oModel.setProperty("/form/phoneValueState", ValueState.None);
+                oModel.setProperty("/form/phoneValueStateText", "");
+            }
+            const oPhoneInput = this.byId("inputPhone");
+            if (oPhoneInput) {
+                oPhoneInput.setValueState(ValueState.None);
+                oPhoneInput.setValueStateText("");
+            }
             this._getUserDialog().then(oDialog => oDialog.close());
         },
 
@@ -342,6 +455,42 @@ sap.ui.define([
                 return MessageToast.show("Please assign at least one role to the user.");
             }
 
+            // Phone validation: only numbers and max 10 characters
+            const sPhone = (oForm.phoneNo || "").trim();
+            if (sPhone) {
+                const bOnlyDigits = /^\d+$/.test(sPhone);
+                if (!bOnlyDigits) {
+                    oModel.setProperty("/form/phoneValueState", ValueState.Error);
+                    oModel.setProperty("/form/phoneValueStateText", "Phone number must contain only numbers.");
+                    const oPhoneInput = this.byId("inputPhone");
+                    if (oPhoneInput) {
+                        oPhoneInput.setValueState(ValueState.Error);
+                        oPhoneInput.setValueStateText("Phone number must contain only numbers.");
+                    }
+                    return MessageToast.show("Phone number must contain only numbers.");
+                }
+
+                if (sPhone.length > 10) {
+                    oModel.setProperty("/form/phoneValueState", ValueState.Error);
+                    oModel.setProperty("/form/phoneValueStateText", "Phone number cannot exceed 10 characters.");
+                    const oPhoneInput = this.byId("inputPhone");
+                    if (oPhoneInput) {
+                        oPhoneInput.setValueState(ValueState.Error);
+                        oPhoneInput.setValueStateText("Phone number cannot exceed 10 characters.");
+                    }
+                    return MessageToast.show("Phone number cannot exceed 10 characters.");
+                }
+            }
+
+            // Reset phone validation state on successful check
+            oModel.setProperty("/form/phoneValueState", ValueState.None);
+            oModel.setProperty("/form/phoneValueStateText", "");
+            const oPhoneInput = this.byId("inputPhone");
+            if (oPhoneInput) {
+                oPhoneInput.setValueState(ValueState.None);
+                oPhoneInput.setValueStateText("");
+            }
+
             const sAssignedRoles = aRoles.join(", ");
             const oDialog = await this._getUserDialog();
 
@@ -353,10 +502,11 @@ sap.ui.define([
                     username: oForm.username.trim().toLowerCase(),
                     password: oForm.password ? oForm.password.trim() : "",
                     name: oForm.name.trim(),
+                    employeeId: (oForm.employeeId || "").trim(),
                     designation: (oForm.designation || "").trim(),
                     department: (oForm.department || "").trim(),
                     email: (oForm.email || "").trim(),
-                    phoneNo: (oForm.phoneNo || "").trim(),
+                    phoneNo: sPhone,
                     serviceStatus: oForm.serviceStatus || "IN_SERVICE",
                     status: oForm.status || "ACTIVE",
                     assignedRoles: sAssignedRoles,
@@ -384,7 +534,7 @@ sap.ui.define([
                 }
 
                 // Update local authentication password store
-                if (bodyData.password) {
+                if (bodyData.password && typeof models.setPasswordForUser === "function") {
                     models.setPasswordForUser(bodyData.username, bodyData.password);
                 }
 

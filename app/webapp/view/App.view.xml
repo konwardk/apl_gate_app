@@ -58,6 +58,14 @@
                 visible="{= ${/isAuthenticated} &amp;&amp; ${/canManageUsers} }"
                 press=".onUserManagementNav" />
 
+            <Button
+                text="Reports"
+                icon="sap-icon://pdf-attachment"
+                type="Transparent"
+                tooltip="Operational Reports &amp; Export (PDF / CSV)"
+                visible="{= ${/isAuthenticated} &amp;&amp; ${/canViewReports} }"
+                press=".onReportsNav" />
+
             <ToolbarSeparator visible="{/isAuthenticated}" />
 
             <!-- Role Badge / User Identification -->
@@ -121,6 +129,7 @@
                 <mvc:XMLView id="editSecurityGateEntryPage" viewName="factory.gate.view.EditSecurityGateEntry" />
                 <mvc:XMLView id="factoryGateOpsPage" viewName="factory.gate.view.FactoryOperations" />
                 <mvc:XMLView id="userManagementPage" viewName="factory.gate.view.UserManagement" />
+                <mvc:XMLView id="reportsPage" viewName="factory.gate.view.Reports" />
             </pages>
         </NavContainer>
     </VBox>

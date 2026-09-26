@@ -73,6 +73,9 @@ sap.ui.define([
                 } else if (sPageId === "mainGateOpsPage" && !oModel.getProperty("/canViewMainGateOps")) {
                     MessageBox.warning("Access Denied: Your account role does not have authorization to access Main Gate Operations.");
                     sPageId = oModel.getProperty("/assignedScreen") || "launchpadPage";
+                } else if (sPageId === "reportsPage" && !oModel.getProperty("/canViewReports")) {
+                    MessageBox.warning("Access Denied: Only Admin and Superadmin have authorization to access Operational Reports.");
+                    sPageId = oModel.getProperty("/assignedScreen") || "launchpadPage";
                 }
             }
 
@@ -92,7 +95,9 @@ sap.ui.define([
                     oCtrl.loadFactoryData();
                 } else if (sPageId === "userManagementPage" && oCtrl && oCtrl.loadUsersData) {
                     oCtrl.loadUsersData();
-                } else if (sPageId === "launchpadPage") {
+                } else if (sPageId === "reportsPage" && oCtrl && oCtrl.loadReportsData) {
+                    oCtrl.loadReportsData();
+                } else if (sPageId === "launchpadPage" || sPageId === "mainGateOpsPage") {
                     this.loadOverviewData();
                 }
             } else {
@@ -207,6 +212,7 @@ sap.ui.define([
                 const perms = models.getPermissionsForUser(info.roles || [], info.id);
                 const oModel = this.getModel();
                 oModel.setProperty("/userName", info.name || info.id);
+                oModel.setProperty("/userEmployeeId", info.employeeId || "");
                 oModel.setProperty("/userDesignation", info.designation || perms.primaryRoleTitle);
                 oModel.setProperty("/userDepartment", info.department || "");
                 oModel.setProperty("/userRoles", info.roles || []);
@@ -215,6 +221,7 @@ sap.ui.define([
                 oModel.setProperty("/assignedScreen", perms.assignedScreen);
                 oModel.setProperty("/assignedScreenTitle", perms.assignedScreenTitle);
                 oModel.setProperty("/assignedScreenIcon", perms.assignedScreenIcon);
+                oModel.setProperty("/canViewReports", perms.canViewReports);
             } catch (e) {
                 console.warn("Session check failed:", e);
             }
@@ -239,6 +246,7 @@ sap.ui.define([
                         const info = await resUser.json();
                         currentRoles = info.roles || [];
                         if (info.name) oModel.setProperty("/userName", info.name);
+                        if (info.employeeId !== undefined) oModel.setProperty("/userEmployeeId", info.employeeId || "");
                         if (info.designation) oModel.setProperty("/userDesignation", info.designation);
                         if (info.department) oModel.setProperty("/userDepartment", info.department);
                     }
@@ -271,6 +279,7 @@ sap.ui.define([
                 oModel.setProperty("/canViewAuditTrail", perms.canViewAuditTrail);
                 oModel.setProperty("/canViewAudit", perms.canViewAuditTrail);
                 oModel.setProperty("/canManageUsers", perms.canManageUsers);
+                oModel.setProperty("/canViewReports", perms.canViewReports);
 
                 // 2. Fetch Transactions if authorized
                 if (perms.canViewGateOps || perms.canViewLiveOps) {
@@ -349,6 +358,7 @@ sap.ui.define([
             oModel.setProperty("/isAuthenticated", true);
             oModel.setProperty("/activeUser", info.id);
             oModel.setProperty("/userName", info.name || info.id);
+            oModel.setProperty("/userEmployeeId", info.employeeId || "");
             oModel.setProperty("/userDesignation", info.designation || perms.primaryRoleTitle);
             oModel.setProperty("/userDepartment", info.department || "");
             oModel.setProperty("/userRoles", info.roles || []);
@@ -380,8 +390,9 @@ sap.ui.define([
             // Load data
             await this.loadOverviewData();
 
-            // Automatically navigate to the assigned Dashboard screen
-            this.navigateTo("launchpadPage", "slide");
+            // Automatically navigate to the assigned role dashboard screen
+            const sTargetDashboard = perms.assignedScreen || "launchpadPage";
+            this.navigateTo(sTargetDashboard, "slide");
 
             MessageToast.show("Welcome, " + (info.name || info.id) + "! Signed in as " + perms.primaryRoleTitle);
         },
@@ -401,6 +412,7 @@ sap.ui.define([
 
             oModel.setProperty("/activeUser", "");
             oModel.setProperty("/userName", "");
+            oModel.setProperty("/userEmployeeId", "");
             oModel.setProperty("/userDesignation", "");
             oModel.setProperty("/userDepartment", "");
             oModel.setProperty("/userRoles", []);

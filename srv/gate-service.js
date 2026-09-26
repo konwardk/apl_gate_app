@@ -22,6 +22,38 @@ export default cds.service.impl(async function () {
         UserRoles
     } = this.entities;
 
+    const ROLE_EXPANSIONS = {
+        'maingate_user': ['maingate_user', 'MainGateUser'],
+        'MainGateUser': ['maingate_user', 'MainGateUser'],
+        'security_user': ['security_user', 'SecurityGateUser'],
+        'SecurityGateUser': ['security_user', 'SecurityGateUser'],
+        'weighbridge_user': ['weighbridge_user', 'WeighbridgeUser'],
+        'WeighbridgeUser': ['weighbridge_user', 'WeighbridgeUser'],
+        'factory_user': ['factory_user', 'FactoryGateUser'],
+        'FactoryGateUser': ['factory_user', 'FactoryGateUser'],
+        'audit_user': ['audit_user', 'Auditor', 'auditor_user'],
+        'auditor_user': ['audit_user', 'Auditor', 'auditor_user'],
+        'Auditor': ['audit_user', 'Auditor', 'auditor_user'],
+        'superadmin_user': ['superadmin_user', 'Superadmin'],
+        'Superadmin': ['superadmin_user', 'Superadmin'],
+        'admin_user': ['admin_user', 'Admin'],
+        'Admin': ['admin_user', 'Admin']
+    };
+
+    function expandRoles(roleList) {
+        const set = new Set();
+        for (const r of roleList || []) {
+            if (!r) continue;
+            const trimmed = r.trim();
+            if (ROLE_EXPANSIONS[trimmed]) {
+                ROLE_EXPANSIONS[trimmed].forEach(x => set.add(x));
+            } else {
+                set.add(trimmed);
+            }
+        }
+        return Array.from(set);
+    }
+
     // Sync active users from DB into in-memory auth cache for real-time authentication
     async function syncAuthUsersFromDb() {
         try {
@@ -31,13 +63,13 @@ export default cds.service.impl(async function () {
             delete authUsers['*'];
 
             const defaultSeedUsers = {
-                'superadmin_user': { password: 'password', roles: ['Superadmin', 'Admin', 'MainGateUser', 'SecurityGateUser', 'WeighbridgeUser', 'FactoryGateUser', 'Auditor'] },
-                'maingate_user': { password: 'password', roles: ['MainGateUser'] },
-                'security_user': { password: 'password', roles: ['SecurityGateUser'] },
-                'weighbridge_user': { password: 'password', roles: ['WeighbridgeUser'] },
-                'factory_user': { password: 'password', roles: ['FactoryGateUser'] },
-                'admin_user': { password: 'password', roles: ['Admin'] },
-                'auditor_user': { password: 'password', roles: ['Auditor'] }
+                'superadmin_user': { password: 'password', roles: ['Superadmin', 'superadmin_user', 'Admin', 'admin_user', 'MainGateUser', 'maingate_user', 'SecurityGateUser', 'security_user', 'WeighbridgeUser', 'weighbridge_user', 'FactoryGateUser', 'factory_user', 'Auditor', 'audit_user'] },
+                'maingate_user': { password: 'password', roles: ['MainGateUser', 'maingate_user'] },
+                'security_user': { password: 'password', roles: ['SecurityGateUser', 'security_user'] },
+                'weighbridge_user': { password: 'password', roles: ['WeighbridgeUser', 'weighbridge_user'] },
+                'factory_user': { password: 'password', roles: ['FactoryGateUser', 'factory_user'] },
+                'admin_user': { password: 'password', roles: ['Admin', 'admin_user'] },
+                'auditor_user': { password: 'password', roles: ['Auditor', 'audit_user'] }
             };
 
             for (const [uname, udata] of Object.entries(defaultSeedUsers)) {
@@ -55,10 +87,11 @@ export default cds.service.impl(async function () {
                 for (const r of dbRoles) {
                     if (!roles.includes(r.roleCode)) roles.push(r.roleCode);
                 }
+                const expandedRoles = expandRoles(roles);
                 authUsers[sUsername] = new cds.User({
                     id: sUsername,
                     password: u.password,
-                    roles: roles
+                    roles: expandedRoles
                 });
             }
         } catch (_) {}
@@ -423,6 +456,7 @@ export default cds.service.impl(async function () {
         const delegatedQuery = SELECT.from(externalPO.entities.PurchaseOrder);
         
         // Safely apply query modifiers from the incoming request structure
+        if (req.query.SELECT.one) delegatedQuery.SELECT.one = req.query.SELECT.one;
         if (req.query.SELECT.columns) delegatedQuery.SELECT.columns = req.query.SELECT.columns;
         if (req.query.SELECT.where) delegatedQuery.SELECT.where = req.query.SELECT.where;
         if (req.query.SELECT.orderBy) delegatedQuery.SELECT.orderBy = req.query.SELECT.orderBy;
@@ -1872,12 +1906,20 @@ export default cds.service.impl(async function () {
 
     const ROLE_NAMES = {
         'Superadmin': 'Superadministrator',
+        'superadmin_user': 'Superadministrator',
         'Admin': 'Operations Administrator',
+        'admin_user': 'Operations Administrator',
         'MainGateUser': 'Main Gate Operator',
+        'maingate_user': 'Main Gate Operator',
         'SecurityGateUser': 'Security Gate Officer',
+        'security_user': 'Security Gate Officer',
         'WeighbridgeUser': 'Weighbridge Scale Operator',
+        'weighbridge_user': 'Weighbridge Scale Operator',
         'FactoryGateUser': 'Factory Yard Supervisor',
-        'Auditor': 'Internal Compliance Auditor'
+        'factory_user': 'Factory Yard Supervisor',
+        'Auditor': 'Internal Compliance Auditor',
+        'audit_user': 'Internal Compliance Auditor',
+        'auditor_user': 'Internal Compliance Auditor'
     };
 
     this.on('CreateUser', async (req) => {
@@ -1885,6 +1927,7 @@ export default cds.service.impl(async function () {
             username,
             password,
             name,
+            employeeId,
             designation,
             department,
             email,
@@ -1915,6 +1958,7 @@ export default cds.service.impl(async function () {
         const bActive = (sStatus === 'ACTIVE');
         const sServiceStatus = serviceStatus || 'IN_SERVICE';
         const sRoles = (assignedRoles || '').trim();
+        const empId = employeeId !== undefined ? (employeeId || '').trim() : (req.data.employee_id ? String(req.data.employee_id).trim() : null);
 
         const newUserId = cds.utils.uuid();
         const userEntry = {
@@ -1922,6 +1966,7 @@ export default cds.service.impl(async function () {
             username: sUsername,
             password: password.trim(),
             name: name.trim(),
+            employeeId: empId,
             designation: designation ? designation.trim() : null,
             department: department ? department.trim() : null,
             email: email ? email.trim() : null,
@@ -1952,10 +1997,11 @@ export default cds.service.impl(async function () {
         // Real-time auth cache registration for immediate login
         if (cds.env?.requires?.auth?.users) {
             const roleArray = sRoles ? sRoles.split(',').map(r => r.trim()).filter(Boolean) : [];
+            const expandedRoles = expandRoles(roleArray);
             cds.env.requires.auth.users[sUsername] = new cds.User({
                 id: sUsername,
                 password: password.trim(),
-                roles: roleArray
+                roles: expandedRoles
             });
         }
 
@@ -1977,6 +2023,7 @@ export default cds.service.impl(async function () {
             username,
             password,
             name,
+            employeeId,
             designation,
             department,
             email,
@@ -2010,7 +2057,7 @@ export default cds.service.impl(async function () {
         }
 
         const sRoles = assignedRoles !== undefined ? assignedRoles.trim() : user.assignedRoles;
-        if (user.username === 'superadmin_user' && !sRoles.includes('Superadmin')) {
+        if (user.username === 'superadmin_user' && !sRoles.includes('Superadmin') && !sRoles.includes('superadmin_user')) {
             return req.error(400, 'Superadmin role cannot be removed from primary Superadmin user.');
         }
 
@@ -2027,6 +2074,10 @@ export default cds.service.impl(async function () {
             assignedRoles: sRoles,
             remarks: remarks !== undefined ? remarks.trim() : user.remarks
         };
+
+        if (employeeId !== undefined || req.data.employee_id !== undefined) {
+            updateData.employeeId = (employeeId !== undefined ? employeeId : req.data.employee_id || '').trim();
+        }
 
         if (password && password.trim()) {
             updateData.password = password.trim();
@@ -2052,10 +2103,11 @@ export default cds.service.impl(async function () {
         // Real-time auth cache update for immediate login
         if (cds.env?.requires?.auth?.users) {
             const roleArray = (sRoles !== undefined ? sRoles : (user.assignedRoles || '')).split(',').map(r => r.trim()).filter(Boolean);
+            const expandedRoles = expandRoles(roleArray);
             cds.env.requires.auth.users[sUsername] = new cds.User({
                 id: sUsername,
                 password: updateData.password || user.password,
-                roles: roleArray
+                roles: expandedRoles
             });
         }
 
@@ -2098,10 +2150,11 @@ export default cds.service.impl(async function () {
         if (cds.env?.requires?.auth?.users) {
             if (newStatus === 'ACTIVE') {
                 const roleArray = (user.assignedRoles || '').split(',').map(r => r.trim()).filter(Boolean);
+                const expandedRoles = expandRoles(roleArray);
                 cds.env.requires.auth.users[user.username] = new cds.User({
                     id: user.username,
                     password: user.password,
-                    roles: roleArray
+                    roles: expandedRoles
                 });
             } else {
                 delete cds.env.requires.auth.users[user.username];
@@ -2167,12 +2220,20 @@ export default cds.service.impl(async function () {
         let roles = [];
         const checkRoles = [
             'Superadmin',
+            'superadmin_user',
             'Admin',
+            'admin_user',
             'MainGateUser',
+            'maingate_user',
             'SecurityGateUser',
+            'security_user',
             'WeighbridgeUser',
+            'weighbridge_user',
             'FactoryGateUser',
-            'Auditor'
+            'factory_user',
+            'Auditor',
+            'audit_user',
+            'auditor_user'
         ];
 
         if (typeof req.user?.is === 'function') {
@@ -2217,6 +2278,8 @@ export default cds.service.impl(async function () {
             } catch (_) {}
         }
 
+        roles = expandRoles(roles);
+
         const primaryRole = roles[0] || '';
         const fallbackName = username === 'superadmin_user' ? 'System Superadmin' :
             (username === 'maingate_user' ? 'Mahesh Verma' :
@@ -2234,6 +2297,7 @@ export default cds.service.impl(async function () {
             id: req.user.id,
             roles: roles,
             name: userDb?.name || fallbackName,
+            employeeId: userDb?.employeeId || '',
             designation: userDb?.designation || ROLE_NAMES[primaryRole] || '',
             department: userDb?.department || '',
             status: userDb?.status || 'ACTIVE'
