@@ -577,6 +577,271 @@ export default cds.service.impl(async function () {
 
     /*
      * ============================================================
+     * SAP S/4HANA CLOUD CBO: VEHICLE ENTRY & SECURITY ENTRY
+     * ============================================================
+     */
+
+    const getS4VehicleEntryService = async () => {
+        return await cds.connect.to('YY1_API_VEHICLEENTRY_0001');
+    };
+
+    // ------------------------------------------------------------
+    // S/4HANA CLOUD CBO SYNC HELPERS (Resilient, Non-blocking)
+    // ------------------------------------------------------------
+
+    async function pushVehicleEntryToS4Hana(tx) {
+        if (!tx || !tx.ID) return;
+        try {
+            const s4Cbo = await getS4VehicleEntryService();
+            const payload = {
+                EntryID: tx.ID,
+                GateInNumber: (tx.gateInNumber || '').substring(0, 30),
+                VehicleRegNo: (tx.vehicleRegNo || '').substring(0, 20),
+                VehicleType: (tx.vehicleType || 'TRUCK').substring(0, 20),
+                DriverName: (tx.driverName || 'Driver').substring(0, 100),
+                Purpose: (tx.purpose || 'DELIVERY').substring(0, 20),
+                Status: (tx.status || 'GATE_IN').substring(0, 20),
+                GateInDateTime: tx.gateInDateTime ? new Date(tx.gateInDateTime).toISOString() : new Date().toISOString(),
+                GateInOperator: (tx.gateInOperator || 'SYSTEM').substring(0, 100),
+                AssignedRoute: (tx.assignedRoute || '').substring(0, 20),
+                CurrentStage: (tx.currentStage || 'MAIN_GATE_IN').substring(0, 20),
+                SAPDescription: `APL Gate Entry - ${tx.gateInNumber || ''}`.substring(0, 80)
+            };
+            await s4Cbo.post('/VehicleEntry', payload);
+            console.log(`[GateService] S/4HANA Auto-Sync: Created VehicleEntry ${tx.gateInNumber} (${tx.ID})`);
+        } catch (err) {
+            console.warn(`[GateService] S/4HANA Auto-Sync warning for VehicleEntry ${tx.gateInNumber}:`, err.message);
+        }
+    }
+
+    async function updateVehicleEntryInS4Hana(txId, patchFields) {
+        if (!txId) return;
+        try {
+            const s4Cbo = await getS4VehicleEntryService();
+            await s4Cbo.patch(`/VehicleEntry(EntryID='${txId}')`, patchFields);
+            console.log(`[GateService] S/4HANA Auto-Sync: Updated VehicleEntry ${txId}`);
+        } catch (err) {
+            console.warn(`[GateService] S/4HANA Auto-Sync update warning for VehicleEntry ${txId}:`, err.message);
+        }
+    }
+
+    async function pushSecurityEntryToS4Hana(txId, sec) {
+        if (!txId || !sec) return;
+        try {
+            const s4Cbo = await getS4VehicleEntryService();
+            const secPayload = {
+                SecurityID: sec.ID || cds.utils.uuid(),
+                DriverLicenseNo: (sec.driverLicenseNo || '').substring(0, 30),
+                DriverPhoneNo: (sec.driverPhoneNo || '').substring(0, 20),
+                DriverVerified: sec.driverVerified !== false,
+                VehicleVerified: sec.vehicleVerified !== false,
+                DocumentVerified: sec.documentsVerified !== false,
+                SecurityInDateTime: sec.securityInDateTime ? new Date(sec.securityInDateTime).toISOString() : new Date().toISOString(),
+                SecurityPersonnel: (sec.securityPersonnel || sec.securityOfficer || 'Security').substring(0, 100),
+                Remarks: (sec.remarks || '').substring(0, 20),
+                PurchaseOrderNumber: (sec.poNumber || '').substring(0, 30),
+                HelperName: (sec.helperName || '').substring(0, 100)
+            };
+            await s4Cbo.post(`/VehicleEntry(EntryID='${txId}')/_SecurityEntry`, secPayload);
+            console.log(`[GateService] S/4HANA Auto-Sync: Created SecurityEntry for tx ${txId}`);
+        } catch (err) {
+            console.warn(`[GateService] S/4HANA Auto-Sync warning for SecurityEntry ${txId}:`, err.message);
+        }
+    }
+
+    // 1. READ S4VehicleEntries from S/4HANA Cloud CBO
+    this.on('READ', 'S4VehicleEntries', async (req) => {
+        try {
+            const s4Cbo = await getS4VehicleEntryService();
+            const delegatedQuery = SELECT.from(s4Cbo.entities.VehicleEntry);
+            if (req.query?.SELECT?.one) delegatedQuery.SELECT.one = req.query.SELECT.one;
+            if (req.query?.SELECT?.columns) delegatedQuery.SELECT.columns = req.query.SELECT.columns;
+            if (req.query?.SELECT?.where) delegatedQuery.SELECT.where = req.query.SELECT.where;
+            if (req.query?.SELECT?.orderBy) delegatedQuery.SELECT.orderBy = req.query.SELECT.orderBy;
+            if (req.query?.SELECT?.limit) delegatedQuery.SELECT.limit = req.query.SELECT.limit;
+            if (req.query?.SELECT?.count) delegatedQuery.SELECT.count = req.query.SELECT.count;
+            return await s4Cbo.run(delegatedQuery);
+        } catch (err) {
+            console.warn('[GateService] S/4HANA CBO VehicleEntry service not reachable, serving fallback data:', err.message);
+            const txs = await SELECT.from('factory.gate.GateTransactions');
+            return txs.map(tx => ({
+                EntryID: tx.ID,
+                GateInNumber: tx.gateInNumber,
+                VehicleRegNo: tx.vehicleRegNo,
+                VehicleType: tx.vehicleType,
+                DriverName: tx.driverName,
+                Purpose: tx.purpose,
+                Status: tx.status,
+                GateInDateTime: tx.gateInDateTime,
+                GateInOperator: tx.gateInOperator,
+                AssignedRoute: tx.assignedRoute,
+                GateOutDateTime: tx.gateOutDateTime,
+                GateOutOperator: tx.gateOutOperator,
+                CurrentStage: tx.currentStage,
+                SAPDescription: `Vehicle Entry ${tx.gateInNumber}`
+            }));
+        }
+    });
+
+    // 2. CREATE S4VehicleEntries in S/4HANA Cloud CBO
+    this.on('CREATE', 'S4VehicleEntries', async (req) => {
+        try {
+            const s4Cbo = await getS4VehicleEntryService();
+            const entryData = Object.assign({}, req.data);
+            if (!entryData.EntryID) {
+                entryData.EntryID = cds.utils.uuid();
+            }
+            return await s4Cbo.run(INSERT.into(s4Cbo.entities.VehicleEntry).entries(entryData));
+        } catch (err) {
+            console.error('[GateService] Failed to create VehicleEntry in S/4HANA CBO:', err.message);
+            req.error(502, `Failed to create VehicleEntry in S/4HANA Cloud: ${err.message}`);
+        }
+    });
+
+    // 3. READ S4SecurityEntries from S/4HANA Cloud CBO
+    this.on('READ', 'S4SecurityEntries', async (req) => {
+        try {
+            const s4Cbo = await getS4VehicleEntryService();
+            const delegatedQuery = SELECT.from(s4Cbo.entities.SecurityEntry);
+            if (req.query?.SELECT?.one) delegatedQuery.SELECT.one = req.query.SELECT.one;
+            if (req.query?.SELECT?.columns) delegatedQuery.SELECT.columns = req.query.SELECT.columns;
+            if (req.query?.SELECT?.where) delegatedQuery.SELECT.where = req.query.SELECT.where;
+            if (req.query?.SELECT?.orderBy) delegatedQuery.SELECT.orderBy = req.query.SELECT.orderBy;
+            if (req.query?.SELECT?.limit) delegatedQuery.SELECT.limit = req.query.SELECT.limit;
+            if (req.query?.SELECT?.count) delegatedQuery.SELECT.count = req.query.SELECT.count;
+            return await s4Cbo.run(delegatedQuery);
+        } catch (err) {
+            console.warn('[GateService] S/4HANA CBO SecurityEntry service not reachable, serving fallback data:', err.message);
+            const secEntries = await SELECT.from('factory.gate.SecurityGateEntries');
+            return secEntries.map(s => ({
+                EntryID: s.gateTransaction_ID || s.ID,
+                SecurityID: s.ID,
+                DriverLicenseNo: s.driverLicenseNo || '',
+                DriverPhoneNo: s.driverPhoneNo || '',
+                DriverVerified: s.driverVerified ?? true,
+                VehicleVerified: s.vehicleVerified ?? true,
+                DocumentVerified: s.documentsVerified ?? true,
+                SecurityInDateTime: s.securityInDateTime,
+                SecurityOutDateTime: s.securityOutDateTime,
+                SecurityPersonnel: s.securityOfficer || '',
+                Remarks: (s.remarks || '').substring(0, 20),
+                PurchaseOrderNumber: s.poNumber || '',
+                HelperName: s.helperName || ''
+            }));
+        }
+    });
+
+    // 4. CREATE S4SecurityEntries in S/4HANA Cloud CBO
+    this.on('CREATE', 'S4SecurityEntries', async (req) => {
+        try {
+            const s4Cbo = await getS4VehicleEntryService();
+            const entryData = Object.assign({}, req.data);
+            if (!entryData.SecurityID) {
+                entryData.SecurityID = cds.utils.uuid();
+            }
+            if (entryData.EntryID) {
+                return await s4Cbo.post(`/VehicleEntry(EntryID='${entryData.EntryID}')/_SecurityEntry`, entryData);
+            }
+            return await s4Cbo.run(INSERT.into(s4Cbo.entities.SecurityEntry).entries(entryData));
+        } catch (err) {
+            console.error('[GateService] Failed to create SecurityEntry in S/4HANA CBO:', err.message);
+            req.error(502, `Failed to create SecurityEntry in S/4HANA Cloud: ${err.message}`);
+        }
+    });
+
+    // 5. Action: Sync Gate Transaction to S/4HANA Cloud CBO
+    this.on('SyncToS4Hana', async (req) => {
+        const { gateInNumber } = req.data;
+        if (!gateInNumber) {
+            req.error(400, 'gateInNumber is required for S/4HANA CBO synchronization.');
+            return;
+        }
+
+        const tx = await SELECT.one.from('factory.gate.GateTransactions')
+            .where({ gateInNumber })
+            .columns(t => {
+                t('*'),
+                t.securityEntry(s => { s('*') })
+            });
+
+        if (!tx) {
+            req.error(404, `Gate Transaction with Gate IN number ${gateInNumber} not found.`);
+            return;
+        }
+
+        try {
+            const s4Cbo = await getS4VehicleEntryService();
+            
+            // Map Gate Transaction to S/4HANA VehicleEntry CBO
+            const vehicleEntryPayload = {
+                EntryID: tx.ID,
+                GateInNumber: (tx.gateInNumber || '').substring(0, 30),
+                VehicleRegNo: (tx.vehicleRegNo || '').substring(0, 20),
+                VehicleType: (tx.vehicleType || 'TRUCK').substring(0, 20),
+                DriverName: (tx.driverName || 'Driver').substring(0, 100),
+                Purpose: (tx.purpose || 'DELIVERY').substring(0, 20),
+                Status: (tx.status || 'GATE_IN').substring(0, 20),
+                GateInDateTime: tx.gateInDateTime ? new Date(tx.gateInDateTime).toISOString() : new Date().toISOString(),
+                GateInOperator: (tx.gateInOperator || 'SYSTEM').substring(0, 100),
+                AssignedRoute: (tx.assignedRoute || '').substring(0, 20),
+                GateOutDateTime: tx.gateOutDateTime ? new Date(tx.gateOutDateTime).toISOString() : null,
+                GateOutOperator: (tx.gateOutOperator || '').substring(0, 100),
+                CurrentStage: (tx.currentStage || 'MAIN_GATE_IN').substring(0, 20),
+                SAPDescription: `APL Gate Entry - ${tx.gateInNumber}`.substring(0, 80)
+            };
+
+            // Check if VehicleEntry already exists in S/4HANA
+            let existingVeh = null;
+            try {
+                existingVeh = await s4Cbo.run(SELECT.one.from(s4Cbo.entities.VehicleEntry).where({ EntryID: tx.ID }));
+            } catch (_) {}
+
+            if (existingVeh) {
+                await s4Cbo.patch(`/VehicleEntry(EntryID='${tx.ID}')`, vehicleEntryPayload);
+            } else {
+                await s4Cbo.post('/VehicleEntry', vehicleEntryPayload);
+            }
+
+            // If security entry exists, also sync to SecurityEntry CBO via navigation property
+            if (tx.securityEntry) {
+                const sec = tx.securityEntry;
+                const secPayload = {
+                    SecurityID: sec.ID,
+                    DriverLicenseNo: (sec.driverLicenseNo || '').substring(0, 30),
+                    DriverPhoneNo: (sec.driverPhoneNo || '').substring(0, 20),
+                    DriverVerified: sec.driverVerified !== false,
+                    VehicleVerified: sec.vehicleVerified !== false,
+                    DocumentVerified: sec.documentsVerified !== false,
+                    SecurityInDateTime: sec.securityInDateTime ? new Date(sec.securityInDateTime).toISOString() : null,
+                    SecurityOutDateTime: sec.securityOutDateTime ? new Date(sec.securityOutDateTime).toISOString() : null,
+                    SecurityPersonnel: (sec.securityOfficer || 'Security').substring(0, 100),
+                    Remarks: (sec.remarks || '').substring(0, 20),
+                    PurchaseOrderNumber: (sec.poNumber || '').substring(0, 30),
+                    HelperName: (sec.helperName || '').substring(0, 100)
+                };
+
+                let existingSec = null;
+                try {
+                    existingSec = await s4Cbo.run(SELECT.one.from(s4Cbo.entities.SecurityEntry).where({ EntryID: tx.ID, SecurityID: sec.ID }));
+                } catch (_) {}
+
+                if (!existingSec) {
+                    await s4Cbo.post(`/VehicleEntry(EntryID='${tx.ID}')/_SecurityEntry`, secPayload);
+                } else {
+                    await s4Cbo.patch(`/SecurityEntry(EntryID='${tx.ID}',SecurityID='${sec.ID}')`, secPayload);
+                }
+            }
+
+            console.log(`[GateService] Successfully synchronized Gate IN ${gateInNumber} to S/4HANA CBO`);
+            return `Successfully synchronized Gate IN ${gateInNumber} to SAP S/4HANA Cloud CBO (VehicleEntry & SecurityEntry).`;
+        } catch (err) {
+            console.error(`[GateService] Error synchronizing ${gateInNumber} to S/4HANA CBO:`, err.message);
+            req.error(502, `Failed to sync with S/4HANA Cloud CBO: ${err.message}`);
+        }
+    });
+
+    /*
+     * ============================================================
      * CREATE GATE IN
      * ============================================================
      */
@@ -710,6 +975,11 @@ export default cds.service.impl(async function () {
 
                 userName: req.user?.id || 'SYSTEM'
             });
+
+        /*
+         * Auto-sync to SAP S/4HANA Cloud CBO (YY1_API_VEHICLEENTRY_0001)
+         */
+        await pushVehicleEntryToS4Hana(transaction);
 
 
         return SELECT.one
@@ -891,6 +1161,29 @@ export default cds.service.impl(async function () {
             userId: req.user?.id || 'SYSTEM',
             userName: securityPersonnel,
             remarks: auditRemarks
+        });
+
+        /*
+         * Auto-sync to SAP S/4HANA Cloud CBO (YY1_API_VEHICLEENTRY_0001)
+         */
+        await pushSecurityEntryToS4Hana(transaction.ID, {
+            ID: entryId,
+            driverLicenseNo: driverLicenseNo,
+            driverPhoneNo: driverPhoneNo,
+            helperName: helperName,
+            securityPersonnel: securityPersonnel,
+            driverVerified: driverVerified,
+            vehicleVerified: vehicleVerified,
+            documentsVerified: documentsVerified,
+            poNumber: poNumber,
+            remarks: remarks,
+            securityInDateTime: new Date()
+        });
+
+        await updateVehicleEntryInS4Hana(transaction.ID, {
+            Status: targetStatus,
+            CurrentStage: targetStage,
+            AssignedRoute: determinedRoute || ''
         });
 
         return SELECT.one
@@ -1889,6 +2182,15 @@ export default cds.service.impl(async function () {
                 `Main Gate OUT clearance recorded by ${operatorName}`
         });
 
+        /*
+         * Auto-sync completed exit to SAP S/4HANA Cloud CBO (YY1_API_VEHICLEENTRY_0001)
+         */
+        await updateVehicleEntryInS4Hana(transaction.ID, {
+            Status: 'COMPLETED',
+            CurrentStage: 'COMPLETED',
+            GateOutDateTime: exitDateTime.toISOString(),
+            GateOutOperator: operatorName.substring(0, 100)
+        });
 
         return SELECT.one
             .from(GateTransactions)

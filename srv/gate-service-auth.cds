@@ -23,6 +23,7 @@ annotate GateService.CreateUser             with @(requires: ['Superadmin', 'sup
 annotate GateService.UpdateUser             with @(requires: ['Superadmin', 'superadmin_user']);
 annotate GateService.ToggleUserStatus       with @(requires: ['Superadmin', 'superadmin_user']);
 annotate GateService.DeleteUser             with @(requires: ['Superadmin', 'superadmin_user']);
+annotate GateService.SyncToS4Hana            with @(requires: ['MainGateUser', 'maingate_user', 'SecurityGateUser', 'security_user', 'Admin', 'admin_user', 'Superadmin', 'superadmin_user']);
 annotate GateService.userInfo                with @(requires: 'authenticated-user');
 
 
@@ -58,6 +59,15 @@ annotate GateService.Suppliers with @(restrict: [
 // External Purchase Orders (SAP S/4HANA Cloud)
 annotate GateService.PurchaseOrders with @(restrict: [
     { grant: 'READ', to: 'authenticated-user' }
+]);
+
+// External S/4HANA Cloud CBO (Vehicle Entry & Security Entry)
+annotate GateService.S4VehicleEntries with @(restrict: [
+    { grant: '*', to: 'authenticated-user' }
+]);
+
+annotate GateService.S4SecurityEntries with @(restrict: [
+    { grant: '*', to: 'authenticated-user' }
 ]);
 
 // Security Gate Records

@@ -1,0 +1,11 @@
+{
+  "name": "apl-gate-approuter",
+  "version": "1.0.0",
+  "description": "Standalone Approuter for APL Gate Application",
+  "dependencies": {
+    "@sap/approuter": "^23"
+  },
+  "scripts": {
+    "start": "node node_modules/@sap/approuter/approuter.js"
+  }
+}

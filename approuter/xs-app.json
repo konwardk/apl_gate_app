@@ -1,0 +1,41 @@
+{
+  "welcomeFile": "/webapp/index.html",
+  "authenticationMethod": "route",
+  "routes": [
+    {
+      "source": "^/gate/(.*)$",
+      "target": "/gate/$1",
+      "destination": "srv-api",
+      "authenticationType": "xsuaa",
+      "csrfProtection": false
+    },
+    {
+      "source": "^/odata/(.*)$",
+      "target": "/odata/$1",
+      "destination": "srv-api",
+      "authenticationType": "xsuaa",
+      "csrfProtection": false
+    },
+    {
+      "source": "^/webapp/(.*)$",
+      "target": "/webapp/$1",
+      "destination": "srv-api",
+      "authenticationType": "none",
+      "csrfProtection": false
+    },
+    {
+      "source": "^/images/(.*)$",
+      "target": "/images/$1",
+      "destination": "srv-api",
+      "authenticationType": "none",
+      "csrfProtection": false
+    },
+    {
+      "source": "^/(.*)$",
+      "target": "$1",
+      "destination": "srv-api",
+      "authenticationType": "none",
+      "csrfProtection": false
+    }
+  ]
+}

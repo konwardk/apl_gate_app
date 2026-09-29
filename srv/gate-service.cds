@@ -1,5 +1,6 @@
 using factory.gate as db from '../db/schema';
 using { CE_PURCHASEORDER_0001 as externalPO } from './external/CE_PURCHASEORDER_0001';
+using { YY1_API_VEHICLEENTRY_0001 as externalVehicleEntry } from './external/YY1_API_VEHICLEENTRY_0001';
 
 @path: '/gate'
 service GateService {
@@ -119,6 +120,19 @@ service GateService {
                 PurchaseOrderDate,
                 DocumentCurrency
         };
+
+
+    /*
+     * ============================================================
+     * SAP S/4HANA CLOUD CBO: VEHICLE ENTRY & SECURITY ENTRY
+     * ============================================================
+     */
+
+    entity S4VehicleEntries
+        as projection on externalVehicleEntry.VehicleEntry;
+
+    entity S4SecurityEntries
+        as projection on externalVehicleEntry.SecurityEntry;
 
 
     /*
@@ -314,6 +328,17 @@ service GateService {
     action DeleteUser(
         ID              : UUID
     ) returns Boolean;
+
+
+    /*
+     * ============================================================
+     * SAP S/4HANA CLOUD CBO SYNC ACTION
+     * ============================================================
+     */
+
+    action SyncToS4Hana(
+        gateInNumber : String
+    ) returns String;
 
 
 
