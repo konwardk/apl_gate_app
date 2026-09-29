@@ -70,9 +70,10 @@ sap.ui.define([
                 await this.getOwnerComponent().authenticateUser(sUser, sPass);
                 // Clear password field after successful sign-in
                 oModel.setProperty("/loginPassword", "");
-                // Redirect user to their specific assigned operational dashboard
-                const sTargetPage = oModel.getProperty("/assignedScreen") || "launchpadPage";
-                this.getOwnerComponent().navigateTo(sTargetPage, "slide");
+                // Redirect user to their specific role's tab on the Dashboard
+                const sAssignedTab = oModel.getProperty("/assignedTab") || "OVERVIEW";
+                oModel.setProperty("/selectedDashboardTab", sAssignedTab);
+                this.getOwnerComponent().navigateTo("launchpadPage", "slide");
             } catch (err) {
                 oModel.setProperty("/loginError", err.message || "Authentication failed. Invalid username or password.");
                 if (oUserInput) oUserInput.setValueState(ValueState.Error);

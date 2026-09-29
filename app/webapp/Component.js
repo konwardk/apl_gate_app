@@ -221,6 +221,10 @@ sap.ui.define([
                 oModel.setProperty("/assignedScreen", perms.assignedScreen);
                 oModel.setProperty("/assignedScreenTitle", perms.assignedScreenTitle);
                 oModel.setProperty("/assignedScreenIcon", perms.assignedScreenIcon);
+                oModel.setProperty("/assignedTab", perms.assignedTab);
+                if (!oModel.getProperty("/selectedDashboardTab")) {
+                    oModel.setProperty("/selectedDashboardTab", perms.assignedTab || "OVERVIEW");
+                }
                 oModel.setProperty("/canViewReports", perms.canViewReports);
             } catch (e) {
                 console.warn("Session check failed:", e);
@@ -263,6 +267,10 @@ sap.ui.define([
                 oModel.setProperty("/assignedScreen", perms.assignedScreen);
                 oModel.setProperty("/assignedScreenTitle", perms.assignedScreenTitle);
                 oModel.setProperty("/assignedScreenIcon", perms.assignedScreenIcon);
+                oModel.setProperty("/assignedTab", perms.assignedTab);
+                if (!oModel.getProperty("/selectedDashboardTab")) {
+                    oModel.setProperty("/selectedDashboardTab", perms.assignedTab || "OVERVIEW");
+                }
 
                 oModel.setProperty("/canCreateGateIn", perms.canCreateGateIn);
                 oModel.setProperty("/canMainGateOut", perms.canMainGateOut);
@@ -369,6 +377,8 @@ sap.ui.define([
             oModel.setProperty("/assignedScreen", perms.assignedScreen);
             oModel.setProperty("/assignedScreenTitle", perms.assignedScreenTitle);
             oModel.setProperty("/assignedScreenIcon", perms.assignedScreenIcon);
+            oModel.setProperty("/assignedTab", perms.assignedTab);
+            oModel.setProperty("/selectedDashboardTab", perms.assignedTab || "OVERVIEW");
 
             // Set permissions
             oModel.setProperty("/canCreateGateIn", perms.canCreateGateIn);
@@ -390,9 +400,8 @@ sap.ui.define([
             // Load data
             await this.loadOverviewData();
 
-            // Automatically navigate to the assigned role dashboard screen
-            const sTargetDashboard = perms.assignedScreen || "launchpadPage";
-            this.navigateTo(sTargetDashboard, "slide");
+            // Automatically navigate to the dashboard with the user's role-specific tab
+            this.navigateTo("launchpadPage", "slide");
 
             MessageToast.show("Welcome, " + (info.name || info.id) + "! Signed in as " + perms.primaryRoleTitle);
         },

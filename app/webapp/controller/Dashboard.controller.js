@@ -1,17 +1,65 @@
 sap.ui.define([
     "sap/ui/core/mvc/Controller",
+    "factory/gate/model/formatter",
     "sap/m/MessageBox",
     "sap/m/MessageToast"
-], function (Controller, MessageBox, MessageToast) {
+], function (Controller, formatter, MessageBox, MessageToast) {
     "use strict";
 
     return Controller.extend("factory.gate.controller.Dashboard", {
+        formatter: formatter,
+
         onInit: function () {
             const oComponent = this.getOwnerComponent();
             const oModel = oComponent ? oComponent.getModel() : null;
-            if (oModel && oModel.getProperty("/isAuthenticated")) {
-                oComponent.loadOverviewData();
+            if (oModel) {
+                const sAssignedTab = oModel.getProperty("/assignedTab") || "OVERVIEW";
+                if (!oModel.getProperty("/selectedDashboardTab")) {
+                    oModel.setProperty("/selectedDashboardTab", sAssignedTab);
+                }
+                if (oModel.getProperty("/isAuthenticated")) {
+                    oComponent.loadOverviewData();
+                }
             }
+        },
+
+        onTabSelect: function (oEvt) {
+            const oTab = oEvt.getParameter("item");
+            const sKey = oTab ? oTab.getKey() : oEvt.getParameter("key");
+            const oModel = this.getOwnerComponent().getModel();
+            if (oModel && sKey) {
+                oModel.setProperty("/selectedDashboardTab", sKey);
+            }
+        },
+
+        onQuickGateIn: function () {
+            const oModel = this.getOwnerComponent().getModel();
+            if (!oModel.getProperty("/canCreateGateIn")) {
+                MessageBox.error("Access Restricted: Creating Gate IN entries requires Main Gate Operator, Admin, or Superadmin role.");
+                return;
+            }
+            this.getOwnerComponent().openGateInDialog();
+        },
+
+        onQuickGateOut: function () {
+            const oModel = this.getOwnerComponent().getModel();
+            if (!oModel.getProperty("/canMainGateOut")) {
+                MessageBox.error("Access Restricted: Gate OUT clearance requires Main Gate Operator, Admin, or Superadmin role.");
+                return;
+            }
+            this.getOwnerComponent().openGateOutDialog();
+        },
+
+        onSearchDashboardTx: function (oEvt) {
+            const sQuery = oEvt.getParameter("query") || oEvt.getParameter("newValue") || "";
+            this.getOwnerComponent().filterTransactions(sQuery);
+        },
+
+        onRowTxPress: function (oEvt) {
+            const oCtx = oEvt.getSource().getBindingContext();
+            if (!oCtx) return;
+            const oTx = oCtx.getObject();
+            this.getOwnerComponent().openGateInSuccessDialog(oTx);
         },
 
         onOpenAssignedWorkspace: function () {

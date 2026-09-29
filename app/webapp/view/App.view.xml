@@ -25,14 +25,14 @@
             <ToolbarSpacer />
 
             <!-- Authenticated Workspace Navigation -->
-            <Button
+            <!-- <Button
                 text="{/assignedScreenTitle}"
                 icon="{/assignedScreenIcon}"
                 type="Emphasized"
                 tooltip="Go to your assigned operational workspace"
                 visible="{= ${/isAuthenticated} &amp;&amp; ${/assignedScreen} !== 'launchpadPage' }"
                 press=".onAssignedWorkspaceNav"
-                class="sapUiTinyMarginEnd" />
+                class="sapUiTinyMarginEnd" /> -->
 
             <Button
                 text="Dashboard"

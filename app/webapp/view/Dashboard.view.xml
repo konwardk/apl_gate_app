@@ -41,322 +41,860 @@
 
             <!-- Stream Context Notification Banner -->
             <MessageStrip
-                text="Vehicle Stream: OTHER VEHICLE (General Cargo, Trucks, Containers, LCV). Choose a Fiori application or operational tool below."
+                text="Vehicle Stream: OTHER VEHICLE (General Cargo, Trucks, Containers, LCV). Choose your role dashboard or operational tool below."
                 type="Information"
                 showIcon="true"
                 class="sapUiSmallMarginBottom" />
 
-            <!-- Live Operations Overview Section -->
-            <VBox class="flp-section" visible="{/canViewLiveOps}">
-                <Title
-                    text="Live Operations Overview"
-                    level="H2"
-                    titleStyle="H3"
-                    class="flp-section-title" />
+            <!-- Role-Specific Tabs Container -->
+            <IconTabBar
+                id="dashboardTabBar"
+                selectedKey="{/selectedDashboardTab}"
+                select=".onTabSelect"
+                applyContentPadding="false"
+                expandable="false"
+                headerMode="Inline"
+                class="sapUiResponsiveContentPadding">
+                <items>
+                    <!-- Role Tab 1: Main Gate Operations -->
+                    <IconTabFilter
+                        key="MAIN_GATE"
+                        text="Main Gate"
+                        icon="sap-icon://log-in"
+                        count="{/counts/TOTAL}"
+                        visible="{/canViewMainGateOps}">
+                        <content>
+                            <VBox class="sapUiSmallMarginTop">
+                                <!-- Main Gate KPI Overview -->
+                                <Title text="Main Gate Operations KPI Overview" level="H3" titleStyle="H4" class="sapUiTinyMarginBottom" />
+                                <HBox wrap="NoWrap" class="flp-kpi-bar">
+                                    <GenericTile
+                                        header="Total Gate Entries"
+                                        subheader="All Vehicles Recorded"
+                                        press=".onKpiPress"
+                                        class="kpi-tile-card">
+                                        <tileContent>
+                                            <TileContent>
+                                                <content>
+                                                    <NumericContent
+                                                        value="{/counts/TOTAL}"
+                                                        icon="sap-icon://shipping-status"
+                                                        valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
 
-                <HBox wrap="NoWrap" class="flp-kpi-bar">
-                    <GenericTile
-                        header="Total Gate Entries"
-                        subheader="All Vehicles"
-                        press=".onKpiPress"
-                        class="kpi-tile-card">
-                        <tileContent>
-                            <TileContent>
-                                <content>
-                                    <NumericContent
-                                        value="{/counts/TOTAL}"
-                                        icon="sap-icon://shipping-status"
-                                        valueColor="Neutral" />
-                                </content>
-                            </TileContent>
-                        </tileContent>
-                    </GenericTile>
+                                    <GenericTile
+                                        header="Active In Yard"
+                                        subheader="Inside Factory Yard"
+                                        press=".onKpiPress"
+                                        class="kpi-tile-card">
+                                        <tileContent>
+                                            <TileContent>
+                                                <content>
+                                                    <NumericContent
+                                                        value="{/counts/ACTIVE}"
+                                                        icon="sap-icon://factory"
+                                                        valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
 
-                    <GenericTile
-                        header="Active In Plant"
-                        subheader="Inside Factory Yard"
-                        press=".onKpiPress"
-                        class="kpi-tile-card">
-                        <tileContent>
-                            <TileContent>
-                                <content>
-                                    <NumericContent
-                                        value="{/counts/ACTIVE}"
-                                        icon="sap-icon://factory"
-                                        valueColor="Neutral" />
-                                </content>
-                            </TileContent>
-                        </tileContent>
-                    </GenericTile>
+                                    <GenericTile
+                                        header="Ready for Gate OUT"
+                                        subheader="Cleared Security OUT"
+                                        press=".onKpiPress"
+                                        class="kpi-tile-card">
+                                        <tileContent>
+                                            <TileContent>
+                                                <content>
+                                                    <NumericContent
+                                                        value="{/counts/READY_OUT}"
+                                                        icon="sap-icon://log-out"
+                                                        valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
 
-                    <GenericTile
-                        header="Ready for Gate OUT"
-                        subheader="Cleared Security"
-                        press=".onKpiPress"
-                        class="kpi-tile-card">
-                        <tileContent>
-                            <TileContent>
-                                <content>
-                                    <NumericContent
-                                        value="{/counts/READY_OUT}"
-                                        icon="sap-icon://log-out"
-                                        valueColor="Neutral" />
-                                </content>
-                            </TileContent>
-                        </tileContent>
-                    </GenericTile>
+                                    <GenericTile
+                                        header="Completed Exits"
+                                        subheader="Final Exit Authorized"
+                                        press=".onKpiPress"
+                                        class="kpi-tile-card">
+                                        <tileContent>
+                                            <TileContent>
+                                                <content>
+                                                    <NumericContent
+                                                        value="{/counts/COMPLETED}"
+                                                        icon="sap-icon://accept"
+                                                        valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
+                                </HBox>
 
-                    <GenericTile
-                        header="Completed Exits"
-                        subheader="Final Exit Authorized"
-                        press=".onKpiPress"
-                        class="kpi-tile-card">
-                        <tileContent>
-                            <TileContent>
-                                <content>
-                                    <NumericContent
-                                        value="{/counts/COMPLETED}"
-                                        icon="sap-icon://accept"
-                                        valueColor="Neutral" />
-                                </content>
-                            </TileContent>
-                        </tileContent>
-                    </GenericTile>
-                </HBox>
-            </VBox>
+                                <!-- Main Gate Workspace Launcher & Quick Action Toolbar -->
+                                <Title text="Main Gate Workspace &amp; Quick Execution" level="H3" titleStyle="H4" class="sapUiSmallMarginTop sapUiTinyMarginBottom" />
+                                <HBox wrap="Wrap" alignItems="Center" class="sapUiSmallMarginBottom">
+                                    <GenericTile
+                                        header="Main Gate Operations"
+                                        subheader="Vehicle Stream &amp; Processing"
+                                        sizeBehavior="Responsive"
+                                        press=".onOpenMainGateOps"
+                                        class="flp-tile flp-tile-ops sapUiMediumMarginEnd sapUiTinyMarginBottom">
+                                        <tileContent>
+                                            <TileContent footer="Gate IN / OUT Clearance">
+                                                <content>
+                                                    <NumericContent icon="sap-icon://log-in" value="{/counts/TOTAL}" valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
 
-            <!-- Group 1: Gate Operations & Execution Section -->
-            <VBox class="flp-section" visible="{/canViewGateOps}">
-                <Title
-                    text="Gate Operations &amp; Execution"
-                    level="H2"
-                    titleStyle="H3"
-                    class="flp-section-title" />
-                <HBox class="flp-tiles-grid">
-                    <!-- <GenericTile
-                        header="Gate Entries &amp; Exits"
-                        subheader="SAP Fiori Elements Floorplan"
-                        sizeBehavior="Responsive"
-                        press=".onOpenGateTxFE"
-                        class="flp-tile flp-tile-fe">
-                        <tileContent>
-                            <TileContent footer="List Report &amp; Object Page">
-                                <content>
-                                    <NumericContent icon="sap-icon://shipping-status" valueColor="Neutral" />
-                                </content>
-                            </TileContent>
-                        </tileContent>
-                    </GenericTile> -->
+                                    <VBox class="dashboard-hero-card sapUiTinyMarginBottom">
+                                        <Title text="Quick Execution Actions" level="H4" titleStyle="H5" class="sapUiTinyMarginBottom" />
+                                        <Text text="Execute gate entry or outbound clearance directly, or enter full operations workspace:" class="text-muted sapUiTinyMarginBottom" />
+                                        <HBox wrap="Wrap" class="sapUiTinyMarginTop">
+                                            <Button
+                                                text="Open Operations Workspace"
+                                                icon="sap-icon://action"
+                                                type="Emphasized"
+                                                press=".onOpenMainGateOps"
+                                                class="sapUiTinyMarginEnd sapUiTinyMarginBottom" />
+                                            <Button
+                                                text="New Gate IN"
+                                                icon="sap-icon://log-in"
+                                                type="Default"
+                                                visible="{/canCreateGateIn}"
+                                                press=".onQuickGateIn"
+                                                class="sapUiTinyMarginEnd sapUiTinyMarginBottom" />
+                                            <Button
+                                                text="Gate OUT Clearance"
+                                                icon="sap-icon://log-out"
+                                                type="Success"
+                                                visible="{/canMainGateOut}"
+                                                press=".onQuickGateOut"
+                                                class="sapUiTinyMarginBottom" />
+                                        </HBox>
+                                    </VBox>
+                                </HBox>
 
-                    <GenericTile
-                        header="Main Gate Operations"
-                        subheader="Vehicle Stream &amp; Processing"
-                        sizeBehavior="Responsive"
-                        visible="{/canViewMainGateOps}"
-                        press=".onOpenMainGateOps"
-                        class="flp-tile flp-tile-ops">
-                        <tileContent>
-                            <TileContent footer="Gate IN / OUT Clearance">
-                                <content>
-                                    <NumericContent icon="sap-icon://log-in" value="{/counts/TOTAL}" valueColor="Neutral" />
-                                </content>
-                            </TileContent>
-                        </tileContent>
-                    </GenericTile>
+                                <!-- Active Transactions Table for Main Gate Operator -->
+                                <Table
+                                    id="mainGateDashboardTable"
+                                    items="{/transactions}"
+                                    growing="true"
+                                    growingThreshold="15"
+                                    noDataText="No gate entries recorded."
+                                    class="sapUiSmallMarginTop">
+                                    <headerToolbar>
+                                        <OverflowToolbar>
+                                            <Title text="Live Gate Entries &amp; Passes ({= ${/transactions}.length })" level="H3" />
+                                            <ToolbarSpacer />
+                                            <SearchField
+                                                width="280px"
+                                                placeholder="Filter by Pass No, Vehicle, Driver..."
+                                                search=".onSearchDashboardTx"
+                                                liveChange=".onSearchDashboardTx" />
+                                            <Button
+                                                icon="sap-icon://refresh"
+                                                tooltip="Refresh Live Transactions"
+                                                press=".onRefreshDashboard" />
+                                        </OverflowToolbar>
+                                    </headerToolbar>
+                                    <columns>
+                                        <Column width="140px"><header><Text text="Gate Pass No" /></header></Column>
+                                        <Column width="130px"><header><Text text="Vehicle Reg No" /></header></Column>
+                                        <Column width="100px" minScreenWidth="Tablet" demandPopin="true"><header><Text text="Type" /></header></Column>
+                                        <Column minScreenWidth="Tablet" demandPopin="true"><header><Text text="Driver Name" /></header></Column>
+                                        <Column width="110px"><header><Text text="Purpose" /></header></Column>
+                                        <Column width="160px" minScreenWidth="Desktop" demandPopin="true"><header><Text text="Gate IN Time" /></header></Column>
+                                        <Column width="170px"><header><Text text="Status" /></header></Column>
+                                        <Column width="120px" hAlign="End"><header><Text text="Action" /></header></Column>
+                                    </columns>
+                                    <items>
+                                        <ColumnListItem type="Active" press=".onRowTxPress">
+                                            <cells>
+                                                <ObjectIdentifier title="{gateInNumber}" />
+                                                <Text text="{vehicleRegNo}" />
+                                                <Text text="{vehicleType}" />
+                                                <Text text="{driverName}" />
+                                                <Text text="{purpose}" />
+                                                <Text text="{path: 'gateInDateTime', formatter: '.formatter.formatDateTime'}" />
+                                                <ObjectStatus
+                                                    text="{path: 'status', formatter: '.formatter.getStatusText'}"
+                                                    state="{path: 'status', formatter: '.formatter.getStatusState'}" />
+                                                <Button
+                                                    text="View Slip"
+                                                    icon="sap-icon://hint"
+                                                    type="Transparent"
+                                                    press=".onRowTxPress" />
+                                            </cells>
+                                        </ColumnListItem>
+                                    </items>
+                                </Table>
+                            </VBox>
+                        </content>
+                    </IconTabFilter>
 
-                    <GenericTile
-                        header="Security Gate Operations"
-                        subheader="Vehicle &amp; PO Document Clearance"
-                        sizeBehavior="Responsive"
-                        visible="{/canViewSecurityGateOps}"
-                        press=".onOpenSecurityGateOps"
-                        class="flp-tile flp-tile-ops">
-                        <tileContent>
-                            <TileContent footer="Physical Check &amp; Delivery Docs">
-                                <content>
-                                    <NumericContent icon="sap-icon://shield" value="{/counts/ACTIVE}" valueColor="Neutral" />
-                                </content>
-                            </TileContent>
-                        </tileContent>
-                    </GenericTile>
+                    <!-- Role Tab 2: Security Gate Operations -->
+                    <IconTabFilter
+                        key="SECURITY_GATE"
+                        text="Security Gate"
+                        icon="sap-icon://shield"
+                        count="{/counts/ACTIVE}"
+                        visible="{/canViewSecurityGateOps}">
+                        <content>
+                            <VBox class="sapUiSmallMarginTop">
+                                <Title text="Security Gate Clearance KPI Overview" level="H3" titleStyle="H4" class="sapUiTinyMarginBottom" />
+                                <HBox wrap="NoWrap" class="flp-kpi-bar">
+                                    <GenericTile
+                                        header="Active In Plant"
+                                        subheader="Inside Factory Yard"
+                                        press=".onKpiPress"
+                                        class="kpi-tile-card">
+                                        <tileContent>
+                                            <TileContent>
+                                                <content>
+                                                    <NumericContent
+                                                        value="{/counts/ACTIVE}"
+                                                        icon="sap-icon://shield"
+                                                        valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
 
-                    <GenericTile
-                        header="Weighbridge Operations"
-                        subheader="Gross &amp; Tare Weighment Clearance"
-                        sizeBehavior="Responsive"
-                        visible="{/canViewWeighbridgeOps}"
-                        press=".onOpenWeighbridgeOps"
-                        class="flp-tile flp-tile-ops">
-                        <tileContent>
-                            <TileContent footer="Digital Scale &amp; Net Weight">
-                                <content>
-                                    <NumericContent icon="sap-icon://dimension" valueColor="Neutral" />
-                                </content>
-                            </TileContent>
-                        </tileContent>
-                    </GenericTile>
+                                    <GenericTile
+                                        header="Ready for Exit"
+                                        subheader="Cleared for Gate OUT"
+                                        press=".onKpiPress"
+                                        class="kpi-tile-card">
+                                        <tileContent>
+                                            <TileContent>
+                                                <content>
+                                                    <NumericContent
+                                                        value="{/counts/READY_OUT}"
+                                                        icon="sap-icon://log-out"
+                                                        valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
+                                </HBox>
 
-                    <GenericTile
-                        header="Factory Gate Operations"
-                        subheader="Delivery Unloading &amp; Yard Clearance"
-                        sizeBehavior="Responsive"
-                        visible="{/canViewFactoryGateOps}"
-                        press=".onOpenFactoryGateOps"
-                        class="flp-tile flp-tile-ops">
-                        <tileContent>
-                            <TileContent footer="Plant Unloading &amp; Clearance">
-                                <content>
-                                    <NumericContent icon="sap-icon://factory" value="{/counts/IN_PLANT}" valueColor="Neutral" />
-                                </content>
-                            </TileContent>
-                        </tileContent>
-                    </GenericTile>
-                </HBox>
-            </VBox>
+                                <Title text="Security Gate Workspace" level="H3" titleStyle="H4" class="sapUiSmallMarginTop sapUiTinyMarginBottom" />
+                                <HBox wrap="Wrap" alignItems="Center" class="sapUiSmallMarginBottom">
+                                    <GenericTile
+                                        header="Security Gate Operations"
+                                        subheader="Vehicle &amp; PO Document Clearance"
+                                        sizeBehavior="Responsive"
+                                        press=".onOpenSecurityGateOps"
+                                        class="flp-tile flp-tile-ops sapUiMediumMarginEnd sapUiTinyMarginBottom">
+                                        <tileContent>
+                                            <TileContent footer="Physical Check &amp; Delivery Docs">
+                                                <content>
+                                                    <NumericContent icon="sap-icon://shield" value="{/counts/ACTIVE}" valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
 
-            <!-- Group 2: Master Data Management (Hidden for Main Gate User) -->
-            <VBox class="flp-section" visible="{/canViewMasterData}">
-                <Title
-                    text="Master Data Management (SAP Fiori Elements)"
-                    level="H2"
-                    titleStyle="H3"
-                    class="flp-section-title" />
-                <HBox class="flp-tiles-grid">
-                    <GenericTile
-                        header="Vehicles Master"
-                        subheader="Fleet &amp; Capacity Registry"
-                        sizeBehavior="Responsive"
-                        press=".onOpenVehiclesFE"
-                        class="flp-tile flp-tile-master">
-                        <tileContent>
-                            <TileContent footer="Fiori Elements List Report">
-                                <content>
-                                    <NumericContent icon="sap-icon://car-rental" valueColor="Neutral" />
-                                </content>
-                            </TileContent>
-                        </tileContent>
-                    </GenericTile>
+                                    <VBox class="dashboard-hero-card sapUiTinyMarginBottom">
+                                        <Title text="Security Clearance &amp; Verification" level="H4" titleStyle="H5" class="sapUiTinyMarginBottom" />
+                                        <Text text="Inspect documents, purchase orders, driver licenses, and assign yard routes:" class="text-muted sapUiTinyMarginBottom" />
+                                        <HBox class="sapUiTinyMarginTop">
+                                            <Button
+                                                text="Open Security Gate Operations"
+                                                icon="sap-icon://shield"
+                                                type="Emphasized"
+                                                press=".onOpenSecurityGateOps" />
+                                        </HBox>
+                                    </VBox>
+                                </HBox>
+                            </VBox>
+                        </content>
+                    </IconTabFilter>
 
-                    <GenericTile
-                        header="Drivers Master"
-                        subheader="License &amp; Driver Records"
-                        sizeBehavior="Responsive"
-                        press=".onOpenDriversFE"
-                        class="flp-tile flp-tile-master">
-                        <tileContent>
-                            <TileContent footer="Fiori Elements List Report">
-                                <content>
-                                    <NumericContent icon="sap-icon://person-placeholder" valueColor="Neutral" />
-                                </content>
-                            </TileContent>
-                        </tileContent>
-                    </GenericTile>
+                    <!-- Role Tab 3: Weighbridge Operations -->
+                    <IconTabFilter
+                        key="WEIGHBRIDGE"
+                        text="Weighbridge"
+                        icon="sap-icon://dimension"
+                        visible="{/canViewWeighbridgeOps}">
+                        <content>
+                            <VBox class="sapUiSmallMarginTop">
+                                <Title text="Weighbridge Scale Overview" level="H3" titleStyle="H4" class="sapUiTinyMarginBottom" />
+                                <HBox wrap="Wrap" alignItems="Center" class="sapUiSmallMarginBottom">
+                                    <GenericTile
+                                        header="Weighbridge Operations"
+                                        subheader="Gross &amp; Tare Weighment Clearance"
+                                        sizeBehavior="Responsive"
+                                        press=".onOpenWeighbridgeOps"
+                                        class="flp-tile flp-tile-ops sapUiMediumMarginEnd sapUiTinyMarginBottom">
+                                        <tileContent>
+                                            <TileContent footer="Digital Scale &amp; Net Weight">
+                                                <content>
+                                                    <NumericContent icon="sap-icon://dimension" valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
 
-                    <GenericTile
-                        header="Transporters Master"
-                        subheader="Carriers &amp; Logistics Partners"
-                        sizeBehavior="Responsive"
-                        press=".onOpenTransportersFE"
-                        class="flp-tile flp-tile-master">
-                        <tileContent>
-                            <TileContent footer="Fiori Elements List Report">
-                                <content>
-                                    <NumericContent icon="sap-icon://supplier" valueColor="Neutral" />
-                                </content>
-                            </TileContent>
-                        </tileContent>
-                    </GenericTile>
+                                    <VBox class="dashboard-hero-card sapUiTinyMarginBottom">
+                                        <Title text="Scale Weighment Execution" level="H4" titleStyle="H5" class="sapUiTinyMarginBottom" />
+                                        <Text text="Perform digital gross and tare scale measurements with automated net weight calculation:" class="text-muted sapUiTinyMarginBottom" />
+                                        <HBox class="sapUiTinyMarginTop">
+                                            <Button
+                                                text="Open Weighbridge Operations"
+                                                icon="sap-icon://dimension"
+                                                type="Emphasized"
+                                                press=".onOpenWeighbridgeOps" />
+                                        </HBox>
+                                    </VBox>
+                                </HBox>
+                            </VBox>
+                        </content>
+                    </IconTabFilter>
 
-                    <GenericTile
-                        header="Suppliers Master"
-                        subheader="Vendor &amp; SAP BP Master"
-                        sizeBehavior="Responsive"
-                        press=".onOpenSuppliersFE"
-                        class="flp-tile flp-tile-master">
-                        <tileContent>
-                            <TileContent footer="Fiori Elements List Report">
-                                <content>
-                                    <NumericContent icon="sap-icon://factory" valueColor="Neutral" />
-                                </content>
-                            </TileContent>
-                        </tileContent>
-                    </GenericTile>
-                </HBox>
-            </VBox>
+                    <!-- Role Tab 4: Factory Yard Operations -->
+                    <IconTabFilter
+                        key="FACTORY_GATE"
+                        text="Factory Yard"
+                        icon="sap-icon://factory"
+                        count="{/counts/IN_PLANT}"
+                        visible="{/canViewFactoryGateOps}">
+                        <content>
+                            <VBox class="sapUiSmallMarginTop">
+                                <Title text="Factory Yard Operations Overview" level="H3" titleStyle="H4" class="sapUiTinyMarginBottom" />
+                                <HBox wrap="NoWrap" class="flp-kpi-bar">
+                                    <GenericTile
+                                        header="In Plant Yard"
+                                        subheader="Active In Factory"
+                                        press=".onKpiPress"
+                                        class="kpi-tile-card">
+                                        <tileContent>
+                                            <TileContent>
+                                                <content>
+                                                    <NumericContent
+                                                        value="{/counts/IN_PLANT}"
+                                                        icon="sap-icon://factory"
+                                                        valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
+                                </HBox>
 
-            <!-- Group 3: Compliance & Audit (Visible for Auditor, Admin, Superadmin) -->
-            <VBox class="flp-section" visible="{/canViewAuditTrail}">
-                <Title
-                    text="Governance &amp; Audit Trail (SAP Fiori Elements)"
-                    level="H2"
-                    titleStyle="H3"
-                    class="flp-section-title" />
-                <HBox class="flp-tiles-grid">
-                    <GenericTile
-                        header="Gate Audit Trail"
-                        subheader="Process &amp; Security History"
-                        sizeBehavior="Responsive"
-                        press=".onOpenAuditFE"
-                        class="flp-tile flp-tile-audit">
-                        <tileContent>
-                            <TileContent footer="Fiori Elements List Report">
-                                <content>
-                                    <NumericContent icon="sap-icon://history" valueColor="Neutral" />
-                                </content>
-                            </TileContent>
-                        </tileContent>
-                    </GenericTile>
-                </HBox>
-            </VBox>
-            <!-- Group 4: Operational Reports & Analytics (Admin, Superadmin) -->
-            <VBox class="flp-section" visible="{/canViewReports}">
-                <Title
-                    text="Operational Reports &amp; Analytics"
-                    level="H2"
-                    titleStyle="H3"
-                    class="flp-section-title" />
-                <HBox class="flp-tiles-grid">
-                    <GenericTile
-                        header="Operational Gate Reports"
-                        subheader="Main Gate, Security, Weighbridge &amp; Factory Yard"
-                        sizeBehavior="Responsive"
-                        press=".onOpenReports"
-                        class="flp-tile flp-tile-reports">
-                        <tileContent>
-                            <TileContent footer="Filter, Inspect &amp; Export PDF / CSV">
-                                <content>
-                                    <NumericContent icon="sap-icon://pdf-attachment" valueColor="Good" />
-                                </content>
-                            </TileContent>
-                        </tileContent>
-                    </GenericTile>
-                </HBox>
-            </VBox>
+                                <Title text="Factory Yard Workspace" level="H3" titleStyle="H4" class="sapUiSmallMarginTop sapUiTinyMarginBottom" />
+                                <HBox wrap="Wrap" alignItems="Center" class="sapUiSmallMarginBottom">
+                                    <GenericTile
+                                        header="Factory Gate Operations"
+                                        subheader="Delivery Unloading &amp; Yard Clearance"
+                                        sizeBehavior="Responsive"
+                                        press=".onOpenFactoryGateOps"
+                                        class="flp-tile flp-tile-ops sapUiMediumMarginEnd sapUiTinyMarginBottom">
+                                        <tileContent>
+                                            <TileContent footer="Plant Unloading &amp; Clearance">
+                                                <content>
+                                                    <NumericContent icon="sap-icon://factory" value="{/counts/IN_PLANT}" valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
 
-            <!-- Group 5: Superadmin Console (Only visible for Superadmin) -->
-            <VBox class="flp-section" visible="{/canManageUsers}">
-                <Title
-                    text="Superadmin Console &amp; Administration"
-                    level="H2"
-                    titleStyle="H3"
-                    class="flp-section-title" />
-                <HBox class="flp-tiles-grid">
-                    <GenericTile
-                        header="User Management"
-                        subheader="Users, Credentials &amp; Multiple Roles"
-                        sizeBehavior="Responsive"
-                        press=".onOpenUserManagement"
-                        class="flp-tile flp-tile-superadmin">
-                        <tileContent>
-                            <TileContent footer="Accounts, Service Status &amp; RBAC">
-                                <content>
-                                    <NumericContent icon="sap-icon://user-settings" valueColor="Neutral" />
-                                </content>
-                            </TileContent>
-                        </tileContent>
-                    </GenericTile>
-                </HBox>
-            </VBox>
+                                    <VBox class="dashboard-hero-card sapUiTinyMarginBottom">
+                                        <Title text="Factory Yard Supervisor Workspace" level="H4" titleStyle="H5" class="sapUiTinyMarginBottom" />
+                                        <Text text="Oversee unloading bays, tank farms, material inspection, and yard clearance:" class="text-muted sapUiTinyMarginBottom" />
+                                        <HBox class="sapUiTinyMarginTop">
+                                            <Button
+                                                text="Open Factory Yard Operations"
+                                                icon="sap-icon://factory"
+                                                type="Emphasized"
+                                                press=".onOpenFactoryGateOps" />
+                                        </HBox>
+                                    </VBox>
+                                </HBox>
+                            </VBox>
+                        </content>
+                    </IconTabFilter>
+
+                    <!-- Role Tab 5: Overview (All Operations) -->
+                    <IconTabFilter
+                        key="OVERVIEW"
+                        text="Overview"
+                        icon="sap-icon://home"
+                        count="{/counts/TOTAL}"
+                        visible="{= ${/isSuper} || ${/isAdmin} || ${/canViewLiveOps} }">
+                        <content>
+                            <VBox class="sapUiSmallMarginTop">
+                                <!-- Live Operations Overview Section -->
+                                <VBox class="flp-section" visible="{/canViewLiveOps}">
+                                    <Title
+                                        text="Live Operations Overview"
+                                        level="H2"
+                                        titleStyle="H3"
+                                        class="flp-section-title" />
+
+                                    <HBox wrap="NoWrap" class="flp-kpi-bar">
+                                        <GenericTile
+                                            header="Total Gate Entries"
+                                            subheader="All Vehicles"
+                                            press=".onKpiPress"
+                                            class="kpi-tile-card">
+                                            <tileContent>
+                                                <TileContent>
+                                                    <content>
+                                                        <NumericContent
+                                                            value="{/counts/TOTAL}"
+                                                            icon="sap-icon://shipping-status"
+                                                            valueColor="Neutral" />
+                                                    </content>
+                                                </TileContent>
+                                            </tileContent>
+                                        </GenericTile>
+
+                                        <GenericTile
+                                            header="Active In Plant"
+                                            subheader="Inside Factory Yard"
+                                            press=".onKpiPress"
+                                            class="kpi-tile-card">
+                                            <tileContent>
+                                                <TileContent>
+                                                    <content>
+                                                        <NumericContent
+                                                            value="{/counts/ACTIVE}"
+                                                            icon="sap-icon://factory"
+                                                            valueColor="Neutral" />
+                                                    </content>
+                                                </TileContent>
+                                            </tileContent>
+                                        </GenericTile>
+
+                                        <GenericTile
+                                            header="Ready for Gate OUT"
+                                            subheader="Cleared Security"
+                                            press=".onKpiPress"
+                                            class="kpi-tile-card">
+                                            <tileContent>
+                                                <TileContent>
+                                                    <content>
+                                                        <NumericContent
+                                                            value="{/counts/READY_OUT}"
+                                                            icon="sap-icon://log-out"
+                                                            valueColor="Neutral" />
+                                                    </content>
+                                                </TileContent>
+                                            </tileContent>
+                                        </GenericTile>
+
+                                        <GenericTile
+                                            header="Completed Exits"
+                                            subheader="Final Exit Authorized"
+                                            press=".onKpiPress"
+                                            class="kpi-tile-card">
+                                            <tileContent>
+                                                <TileContent>
+                                                    <content>
+                                                        <NumericContent
+                                                            value="{/counts/COMPLETED}"
+                                                            icon="sap-icon://accept"
+                                                            valueColor="Neutral" />
+                                                    </content>
+                                                </TileContent>
+                                            </tileContent>
+                                        </GenericTile>
+                                    </HBox>
+                                </VBox>
+
+                                <!-- Group 1: Gate Operations & Execution Section -->
+                                <VBox class="flp-section" visible="{/canViewGateOps}">
+                                    <Title
+                                        text="Gate Operations &amp; Execution"
+                                        level="H2"
+                                        titleStyle="H3"
+                                        class="flp-section-title" />
+                                    <HBox class="flp-tiles-grid">
+                                        <GenericTile
+                                            header="Main Gate Operations"
+                                            subheader="Vehicle Stream &amp; Processing"
+                                            sizeBehavior="Responsive"
+                                            visible="{/canViewMainGateOps}"
+                                            press=".onOpenMainGateOps"
+                                            class="flp-tile flp-tile-ops">
+                                            <tileContent>
+                                                <TileContent footer="Gate IN / OUT Clearance">
+                                                    <content>
+                                                        <NumericContent icon="sap-icon://log-in" value="{/counts/TOTAL}" valueColor="Neutral" />
+                                                    </content>
+                                                </TileContent>
+                                            </tileContent>
+                                        </GenericTile>
+
+                                        <GenericTile
+                                            header="Security Gate Operations"
+                                            subheader="Vehicle &amp; PO Document Clearance"
+                                            sizeBehavior="Responsive"
+                                            visible="{/canViewSecurityGateOps}"
+                                            press=".onOpenSecurityGateOps"
+                                            class="flp-tile flp-tile-ops">
+                                            <tileContent>
+                                                <TileContent footer="Physical Check &amp; Delivery Docs">
+                                                    <content>
+                                                        <NumericContent icon="sap-icon://shield" value="{/counts/ACTIVE}" valueColor="Neutral" />
+                                                    </content>
+                                                </TileContent>
+                                            </tileContent>
+                                        </GenericTile>
+
+                                        <GenericTile
+                                            header="Weighbridge Operations"
+                                            subheader="Gross &amp; Tare Weighment Clearance"
+                                            sizeBehavior="Responsive"
+                                            visible="{/canViewWeighbridgeOps}"
+                                            press=".onOpenWeighbridgeOps"
+                                            class="flp-tile flp-tile-ops">
+                                            <tileContent>
+                                                <TileContent footer="Digital Scale &amp; Net Weight">
+                                                    <content>
+                                                        <NumericContent icon="sap-icon://dimension" valueColor="Neutral" />
+                                                    </content>
+                                                </TileContent>
+                                            </tileContent>
+                                        </GenericTile>
+
+                                        <GenericTile
+                                            header="Factory Gate Operations"
+                                            subheader="Delivery Unloading &amp; Yard Clearance"
+                                            sizeBehavior="Responsive"
+                                            visible="{/canViewFactoryGateOps}"
+                                            press=".onOpenFactoryGateOps"
+                                            class="flp-tile flp-tile-ops">
+                                            <tileContent>
+                                                <TileContent footer="Plant Unloading &amp; Clearance">
+                                                    <content>
+                                                        <NumericContent icon="sap-icon://factory" value="{/counts/IN_PLANT}" valueColor="Neutral" />
+                                                    </content>
+                                                </TileContent>
+                                            </tileContent>
+                                        </GenericTile>
+                                    </HBox>
+                                </VBox>
+
+                                <!-- Group 2: Master Data Management -->
+                                <VBox class="flp-section" visible="{/canViewMasterData}">
+                                    <Title
+                                        text="Master Data Management (SAP Fiori Elements)"
+                                        level="H2"
+                                        titleStyle="H3"
+                                        class="flp-section-title" />
+                                    <HBox class="flp-tiles-grid">
+                                        <GenericTile
+                                            header="Vehicles Master"
+                                            subheader="Fleet &amp; Capacity Registry"
+                                            sizeBehavior="Responsive"
+                                            press=".onOpenVehiclesFE"
+                                            class="flp-tile flp-tile-master">
+                                            <tileContent>
+                                                <TileContent footer="Fiori Elements List Report">
+                                                    <content>
+                                                        <NumericContent icon="sap-icon://car-rental" valueColor="Neutral" />
+                                                    </content>
+                                                </TileContent>
+                                            </tileContent>
+                                        </GenericTile>
+
+                                        <GenericTile
+                                            header="Drivers Master"
+                                            subheader="License &amp; Driver Records"
+                                            sizeBehavior="Responsive"
+                                            press=".onOpenDriversFE"
+                                            class="flp-tile flp-tile-master">
+                                            <tileContent>
+                                                <TileContent footer="Fiori Elements List Report">
+                                                    <content>
+                                                        <NumericContent icon="sap-icon://person-placeholder" valueColor="Neutral" />
+                                                    </content>
+                                                </TileContent>
+                                            </tileContent>
+                                        </GenericTile>
+
+                                        <GenericTile
+                                            header="Transporters Master"
+                                            subheader="Carriers &amp; Logistics Partners"
+                                            sizeBehavior="Responsive"
+                                            press=".onOpenTransportersFE"
+                                            class="flp-tile flp-tile-master">
+                                            <tileContent>
+                                                <TileContent footer="Fiori Elements List Report">
+                                                    <content>
+                                                        <NumericContent icon="sap-icon://supplier" valueColor="Neutral" />
+                                                    </content>
+                                                </TileContent>
+                                            </tileContent>
+                                        </GenericTile>
+
+                                        <GenericTile
+                                            header="Suppliers Master"
+                                            subheader="Vendor &amp; SAP BP Master"
+                                            sizeBehavior="Responsive"
+                                            press=".onOpenSuppliersFE"
+                                            class="flp-tile flp-tile-master">
+                                            <tileContent>
+                                                <TileContent footer="Fiori Elements List Report">
+                                                    <content>
+                                                        <NumericContent icon="sap-icon://factory" valueColor="Neutral" />
+                                                    </content>
+                                                </TileContent>
+                                            </tileContent>
+                                        </GenericTile>
+                                    </HBox>
+                                </VBox>
+
+                                <!-- Group 3: Compliance & Audit -->
+                                <VBox class="flp-section" visible="{/canViewAuditTrail}">
+                                    <Title
+                                        text="Governance &amp; Audit Trail (SAP Fiori Elements)"
+                                        level="H2"
+                                        titleStyle="H3"
+                                        class="flp-section-title" />
+                                    <HBox class="flp-tiles-grid">
+                                        <GenericTile
+                                            header="Gate Audit Trail"
+                                            subheader="Process &amp; Security History"
+                                            sizeBehavior="Responsive"
+                                            press=".onOpenAuditFE"
+                                            class="flp-tile flp-tile-audit">
+                                            <tileContent>
+                                                <TileContent footer="Fiori Elements List Report">
+                                                    <content>
+                                                        <NumericContent icon="sap-icon://history" valueColor="Neutral" />
+                                                    </content>
+                                                </TileContent>
+                                            </tileContent>
+                                        </GenericTile>
+                                    </HBox>
+                                </VBox>
+
+                                <!-- Group 4: Operational Reports & Analytics -->
+                                <VBox class="flp-section" visible="{/canViewReports}">
+                                    <Title
+                                        text="Operational Reports &amp; Analytics"
+                                        level="H2"
+                                        titleStyle="H3"
+                                        class="flp-section-title" />
+                                    <HBox class="flp-tiles-grid">
+                                        <GenericTile
+                                            header="Operational Gate Reports"
+                                            subheader="Main Gate, Security, Weighbridge &amp; Factory Yard"
+                                            sizeBehavior="Responsive"
+                                            press=".onOpenReports"
+                                            class="flp-tile flp-tile-reports">
+                                            <tileContent>
+                                                <TileContent footer="Filter, Inspect &amp; Export PDF / CSV">
+                                                    <content>
+                                                        <NumericContent icon="sap-icon://pdf-attachment" valueColor="Good" />
+                                                    </content>
+                                                </TileContent>
+                                            </tileContent>
+                                        </GenericTile>
+                                    </HBox>
+                                </VBox>
+
+                                <!-- Group 5: Superadmin Console -->
+                                <VBox class="flp-section" visible="{/canManageUsers}">
+                                    <Title
+                                        text="Superadmin Console &amp; Administration"
+                                        level="H2"
+                                        titleStyle="H3"
+                                        class="flp-section-title" />
+                                    <HBox class="flp-tiles-grid">
+                                        <GenericTile
+                                            header="User Management"
+                                            subheader="Users, Credentials &amp; Multiple Roles"
+                                            sizeBehavior="Responsive"
+                                            press=".onOpenUserManagement"
+                                            class="flp-tile flp-tile-superadmin">
+                                            <tileContent>
+                                                <TileContent footer="Accounts, Service Status &amp; RBAC">
+                                                    <content>
+                                                        <NumericContent icon="sap-icon://user-settings" valueColor="Neutral" />
+                                                    </content>
+                                                </TileContent>
+                                            </tileContent>
+                                        </GenericTile>
+                                    </HBox>
+                                </VBox>
+                            </VBox>
+                        </content>
+                    </IconTabFilter>
+
+                    <!-- Role Tab 6: Master Data Management -->
+                    <IconTabFilter
+                        key="MASTER_DATA"
+                        text="Master Data"
+                        icon="sap-icon://database"
+                        visible="{/canViewMasterData}">
+                        <content>
+                            <VBox class="sapUiSmallMarginTop">
+                                <Title
+                                    text="Master Data Management (SAP Fiori Elements)"
+                                    level="H2"
+                                    titleStyle="H3"
+                                    class="flp-section-title" />
+                                <HBox class="flp-tiles-grid">
+                                    <GenericTile
+                                        header="Vehicles Master"
+                                        subheader="Fleet &amp; Capacity Registry"
+                                        sizeBehavior="Responsive"
+                                        press=".onOpenVehiclesFE"
+                                        class="flp-tile flp-tile-master">
+                                        <tileContent>
+                                            <TileContent footer="Fiori Elements List Report">
+                                                <content>
+                                                    <NumericContent icon="sap-icon://car-rental" valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
+
+                                    <GenericTile
+                                        header="Drivers Master"
+                                        subheader="License &amp; Driver Records"
+                                        sizeBehavior="Responsive"
+                                        press=".onOpenDriversFE"
+                                        class="flp-tile flp-tile-master">
+                                        <tileContent>
+                                            <TileContent footer="Fiori Elements List Report">
+                                                <content>
+                                                    <NumericContent icon="sap-icon://person-placeholder" valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
+
+                                    <GenericTile
+                                        header="Transporters Master"
+                                        subheader="Carriers &amp; Logistics Partners"
+                                        sizeBehavior="Responsive"
+                                        press=".onOpenTransportersFE"
+                                        class="flp-tile flp-tile-master">
+                                        <tileContent>
+                                            <TileContent footer="Fiori Elements List Report">
+                                                <content>
+                                                    <NumericContent icon="sap-icon://supplier" valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
+
+                                    <GenericTile
+                                        header="Suppliers Master"
+                                        subheader="Vendor &amp; SAP BP Master"
+                                        sizeBehavior="Responsive"
+                                        press=".onOpenSuppliersFE"
+                                        class="flp-tile flp-tile-master">
+                                        <tileContent>
+                                            <TileContent footer="Fiori Elements List Report">
+                                                <content>
+                                                    <NumericContent icon="sap-icon://factory" valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
+                                </HBox>
+                            </VBox>
+                        </content>
+                    </IconTabFilter>
+
+                    <!-- Role Tab 7: Compliance & Reports -->
+                    <IconTabFilter
+                        key="REPORTS_AUDIT"
+                        text="Reports &amp; Audit"
+                        icon="sap-icon://pdf-attachment"
+                        visible="{= ${/canViewReports} || ${/canViewAuditTrail} }">
+                        <content>
+                            <VBox class="sapUiSmallMarginTop">
+                                <Title
+                                    text="Governance, Reports &amp; Audit Trail"
+                                    level="H2"
+                                    titleStyle="H3"
+                                    class="flp-section-title" />
+                                <HBox class="flp-tiles-grid">
+                                    <GenericTile
+                                        header="Operational Gate Reports"
+                                        subheader="Main Gate, Security, Weighbridge &amp; Factory Yard"
+                                        sizeBehavior="Responsive"
+                                        visible="{/canViewReports}"
+                                        press=".onOpenReports"
+                                        class="flp-tile flp-tile-reports">
+                                        <tileContent>
+                                            <TileContent footer="Filter, Inspect &amp; Export PDF / CSV">
+                                                <content>
+                                                    <NumericContent icon="sap-icon://pdf-attachment" valueColor="Good" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
+
+                                    <GenericTile
+                                        header="Gate Audit Trail"
+                                        subheader="Process &amp; Security History"
+                                        sizeBehavior="Responsive"
+                                        visible="{/canViewAuditTrail}"
+                                        press=".onOpenAuditFE"
+                                        class="flp-tile flp-tile-audit">
+                                        <tileContent>
+                                            <TileContent footer="Fiori Elements List Report">
+                                                <content>
+                                                    <NumericContent icon="sap-icon://history" valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
+                                </HBox>
+                            </VBox>
+                        </content>
+                    </IconTabFilter>
+
+                    <!-- Role Tab 8: Superadmin Console -->
+                    <IconTabFilter
+                        key="ADMIN"
+                        text="Administration"
+                        icon="sap-icon://user-settings"
+                        visible="{/canManageUsers}">
+                        <content>
+                            <VBox class="sapUiSmallMarginTop">
+                                <Title
+                                    text="Superadmin Console &amp; Administration"
+                                    level="H2"
+                                    titleStyle="H3"
+                                    class="flp-section-title" />
+                                <HBox class="flp-tiles-grid">
+                                    <GenericTile
+                                        header="User Management"
+                                        subheader="Users, Credentials &amp; Multiple Roles"
+                                        sizeBehavior="Responsive"
+                                        press=".onOpenUserManagement"
+                                        class="flp-tile flp-tile-superadmin">
+                                        <tileContent>
+                                            <TileContent footer="Accounts, Service Status &amp; RBAC">
+                                                <content>
+                                                    <NumericContent icon="sap-icon://user-settings" valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
+                                </HBox>
+                            </VBox>
+                        </content>
+                    </IconTabFilter>
+                </items>
+            </IconTabBar>
         </VBox>
     </Page>
 </mvc:View>

@@ -69,11 +69,30 @@ sap.ui.define([
         "reportsPage": { pageId: "reportsPage", title: "Operational Reports", icon: "sap-icon://pdf-attachment" }
     };
 
+    const ROLE_TABS = {
+        "MainGateUser": "MAIN_GATE",
+        "maingate_user": "MAIN_GATE",
+        "SecurityGateUser": "SECURITY_GATE",
+        "security_user": "SECURITY_GATE",
+        "WeighbridgeUser": "WEIGHBRIDGE",
+        "weighbridge_user": "WEIGHBRIDGE",
+        "FactoryGateUser": "FACTORY_GATE",
+        "factory_user": "FACTORY_GATE",
+        "Admin": "OVERVIEW",
+        "admin_user": "OVERVIEW",
+        "Superadmin": "OVERVIEW",
+        "superadmin_user": "OVERVIEW",
+        "Auditor": "REPORTS_AUDIT",
+        "audit_user": "REPORTS_AUDIT",
+        "auditor_user": "REPORTS_AUDIT"
+    };
+
     return {
         defaultPasswords: defaultPasswords,
         ROLE_TITLES: ROLE_TITLES,
         ROLE_ICONS: ROLE_ICONS,
         ROLE_SCREENS: ROLE_SCREENS,
+        ROLE_TABS: ROLE_TABS,
 
         setPasswordForUser: function (username, password) {
             if (!username) return;
@@ -150,47 +169,55 @@ sap.ui.define([
             const isFactory = aRoles.includes("FactoryGateUser") || aRoles.includes("factory_user") || u === "factory_user";
             const isAuditor = aRoles.includes("Auditor") || aRoles.includes("audit_user") || aRoles.includes("auditor_user") || u === "auditor_user";
 
-            // Determine primary role & assigned workspace screen
+            // Determine primary role & assigned workspace screen & role dashboard tab
             let primaryRole = "Authenticated";
             let assignedScreen = "launchpadPage";
             let assignedScreenTitle = "Launchpad Dashboard";
             let assignedScreenIcon = "sap-icon://home";
+            let assignedTab = "OVERVIEW";
 
             if (isSuper) {
                 primaryRole = "Superadmin";
                 assignedScreen = "launchpadPage";
                 assignedScreenTitle = "Superadmin Console";
                 assignedScreenIcon = "sap-icon://shield";
+                assignedTab = "OVERVIEW";
             } else if (isAdmin) {
                 primaryRole = "Admin";
                 assignedScreen = "launchpadPage";
                 assignedScreenTitle = "Operations Dashboard";
                 assignedScreenIcon = "sap-icon://home";
+                assignedTab = "OVERVIEW";
             } else if (isMainGate) {
                 primaryRole = "MainGateUser";
                 assignedScreen = "mainGateOpsPage";
                 assignedScreenTitle = "Main Gate Operations";
                 assignedScreenIcon = "sap-icon://log-in";
+                assignedTab = "MAIN_GATE";
             } else if (isSecurity) {
                 primaryRole = "SecurityGateUser";
                 assignedScreen = "securityGateOpsPage";
                 assignedScreenTitle = "Security Gate Operations";
                 assignedScreenIcon = "sap-icon://shield";
+                assignedTab = "SECURITY_GATE";
             } else if (isWeighbridge) {
                 primaryRole = "WeighbridgeUser";
                 assignedScreen = "weighbridgeOpsPage";
                 assignedScreenTitle = "Weighbridge Operations";
                 assignedScreenIcon = "sap-icon://dimension";
+                assignedTab = "WEIGHBRIDGE";
             } else if (isFactory) {
                 primaryRole = "FactoryGateUser";
                 assignedScreen = "factoryGateOpsPage";
                 assignedScreenTitle = "Factory Yard Operations";
                 assignedScreenIcon = "sap-icon://factory";
+                assignedTab = "FACTORY_GATE";
             } else if (isAuditor) {
                 primaryRole = "Auditor";
                 assignedScreen = "launchpadPage";
                 assignedScreenTitle = "Compliance Dashboard";
                 assignedScreenIcon = "sap-icon://history";
+                assignedTab = "REPORTS_AUDIT";
             }
 
             return {
@@ -206,6 +233,7 @@ sap.ui.define([
                 assignedScreen: assignedScreen,
                 assignedScreenTitle: assignedScreenTitle,
                 assignedScreenIcon: assignedScreenIcon,
+                assignedTab: assignedTab,
 
                 // Screen Visibility Flags
                 canViewMainGateOps: isSuper || isAdmin || isMainGate,
@@ -249,6 +277,8 @@ sap.ui.define([
                 assignedScreen: perms.assignedScreen,
                 assignedScreenTitle: perms.assignedScreenTitle,
                 assignedScreenIcon: perms.assignedScreenIcon,
+                assignedTab: perms.assignedTab,
+                selectedDashboardTab: perms.assignedTab || "OVERVIEW",
                 currentTheme: "sap_horizon",
                 loginUsername: "",
                 loginPassword: "",

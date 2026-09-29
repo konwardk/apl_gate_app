@@ -13,8 +13,7 @@ sap.ui.define([
             const bAuth = oModel ? oModel.getProperty("/isAuthenticated") : false;
 
             if (bAuth) {
-                const sTarget = oModel.getProperty("/assignedScreen") || "launchpadPage";
-                this.getOwnerComponent().navigateTo(sTarget, "show");
+                this.getOwnerComponent().navigateTo("launchpadPage", "show");
             } else {
                 this.getOwnerComponent().navigateTo("loginPage", "show");
             }

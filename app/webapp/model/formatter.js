@@ -51,6 +51,33 @@ sap.ui.define([
             }
         },
 
+        getStatusText: function (status) {
+            switch (status) {
+                case "GATE_IN":
+                    return "Main Gate IN";
+                case "SECURITY_IN":
+                    return "Security Checked";
+                case "WEIGHBRIDGE_IN":
+                    return "Weighbridge Gross";
+                case "FACTORY_IN":
+                    return "In Factory Yard";
+                case "FACTORY_OUT":
+                    return "Unloading Complete";
+                case "WEIGHBRIDGE_OUT":
+                    return "Weighbridge Tare";
+                case "SECURITY_OUT":
+                    return "Security Cleared (Ready OUT)";
+                case "COMPLETED":
+                    return "Exit Completed";
+                case "HOLD":
+                    return "On Hold";
+                case "CANCELLED":
+                    return "Cancelled";
+                default:
+                    return status || "-";
+            }
+        },
+
         getPurposeState: function (purpose) {
             return purpose === "DELIVERY" ? ValueState.Information : ValueState.Warning;
         },
