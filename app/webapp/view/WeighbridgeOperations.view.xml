@@ -142,7 +142,7 @@
                                         visible="{= Boolean(${wbModel>inboundWeighment}) }"
                                         class="sapUiTinyMarginEnd" />
                                     <Text
-                                        text="{path: 'wbModel>inboundWeighment/weight', formatter: '.formatter.formatWeight'} KG"
+                                        text="{parts: [{path: 'wbModel>inboundWeighment/weight'}, {path: 'wbModel>inboundWeighment/weightUnit'}], formatter: '.formatter.formatWeight'}"
                                         design="Bold"
                                         visible="{= Boolean(${wbModel>inboundWeighment}) }" />
                                 </HBox>
@@ -165,7 +165,7 @@
                                         visible="{= Boolean(${wbModel>outboundWeighment}) }"
                                         class="sapUiTinyMarginEnd" />
                                     <Text
-                                        text="{path: 'wbModel>outboundWeighment/weight', formatter: '.formatter.formatWeight'} KG"
+                                        text="{parts: [{path: 'wbModel>outboundWeighment/weight'}, {path: 'wbModel>outboundWeighment/weightUnit'}], formatter: '.formatter.formatWeight'}"
                                         design="Bold"
                                         visible="{= Boolean(${wbModel>outboundWeighment}) }" />
                                 </HBox>

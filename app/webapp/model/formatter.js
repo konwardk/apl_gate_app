@@ -108,7 +108,7 @@ sap.ui.define([
 
         formatWeight: function (val, unit) {
             if (val === null || val === undefined || val === "") return "-";
-            const num = parseFloat(val);
+            const num = typeof val === "string" ? parseFloat(val.replace(/,/g, "")) : parseFloat(val);
             if (isNaN(num)) return "-";
             const sFormatted = num.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 3 });
             return sFormatted + (unit ? " " + unit : " KG");

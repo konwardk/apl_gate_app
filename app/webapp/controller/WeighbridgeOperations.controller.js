@@ -65,22 +65,62 @@ sap.ui.define([
         },
 
         _enrichRecord: function (tx) {
-            const weighments = tx.weighments || [];
-            const inboundWeighment = weighments.find(w => w.weighmentType === "GROSS_IN" || w.weighmentType === "TARE_IN") || null;
-            const outboundWeighment = weighments.find(w => w.weighmentType === "TARE_OUT" || w.weighmentType === "GROSS_OUT") || null;
+            const weighments = (tx.weighments || []).slice().sort((a, b) => new Date(a.weighbridgeDateTime || a.createdAt || 0) - new Date(b.weighbridgeDateTime || b.createdAt || 0));
+            const inboundWeighment = [...weighments].reverse().find(w => w.weighmentType === "GROSS_IN" || w.weighmentType === "TARE_IN") || null;
+            const outboundWeighment = [...weighments].reverse().find(w => w.weighmentType === "TARE_OUT" || w.weighmentType === "GROSS_OUT") || null;
 
-            let netWeightFormatted = "";
+            let grossWeighment = null;
+            let tareWeighment = null;
+
+            // Delivery: inbound is Gross, outbound is Tare
+            // Pickup: inbound is Tare, outbound is Gross
+            if (inboundWeighment && (inboundWeighment.weighmentType === "GROSS_IN" || inboundWeighment.weighmentType === "GROSS_OUT")) {
+                grossWeighment = inboundWeighment;
+            } else if (outboundWeighment && (outboundWeighment.weighmentType === "GROSS_IN" || outboundWeighment.weighmentType === "GROSS_OUT")) {
+                grossWeighment = outboundWeighment;
+            }
+
+            if (inboundWeighment && (inboundWeighment.weighmentType === "TARE_IN" || inboundWeighment.weighmentType === "TARE_OUT")) {
+                tareWeighment = inboundWeighment;
+            } else if (outboundWeighment && (outboundWeighment.weighmentType === "TARE_IN" || outboundWeighment.weighmentType === "TARE_OUT")) {
+                tareWeighment = outboundWeighment;
+            }
+
+            // Fallback search across all weighments if not resolved
+            if (!grossWeighment) {
+                grossWeighment = [...weighments].reverse().find(w => w.weighmentType === "GROSS_IN" || w.weighmentType === "GROSS_OUT") || null;
+            }
+            if (!tareWeighment) {
+                tareWeighment = [...weighments].reverse().find(w => w.weighmentType === "TARE_IN" || w.weighmentType === "TARE_OUT") || null;
+            }
+
+            // General fallback: if at least 2 weighments exist, heavier is gross, lighter is tare
+            if ((!grossWeighment || !tareWeighment) && weighments.length >= 2) {
+                const wFirst = weighments[0];
+                const wLast = weighments[weighments.length - 1];
+                if (Number(wFirst.weight) >= Number(wLast.weight)) {
+                    grossWeighment = grossWeighment || wFirst;
+                    tareWeighment = tareWeighment || wLast;
+                } else {
+                    grossWeighment = grossWeighment || wLast;
+                    tareWeighment = tareWeighment || wFirst;
+                }
+            }
+
+            let grossWeight = grossWeighment ? Number(grossWeighment.weight) : null;
+            let tareWeight = tareWeighment ? Number(tareWeighment.weight) : null;
             let netWeightKg = null;
-            if (inboundWeighment && outboundWeighment) {
-                if (inboundWeighment.weighmentType === "GROSS_IN" && outboundWeighment.weighmentType === "TARE_OUT") {
-                    netWeightKg = Number(inboundWeighment.weight) - Number(outboundWeighment.weight);
-                } else if (inboundWeighment.weighmentType === "TARE_IN" && outboundWeighment.weighmentType === "GROSS_OUT") {
-                    netWeightKg = Number(outboundWeighment.weight) - Number(inboundWeighment.weight);
-                }
-                if (netWeightKg !== null) {
-                    const mt = (netWeightKg / 1000).toFixed(2);
-                    netWeightFormatted = `${formatter.formatWeight(netWeightKg, "KG")} (${mt} MT)`;
-                }
+            let netWeightMT = "0.00";
+            let netWeightFormatted = "";
+            let grossTimestampText = grossWeighment ? formatter.formatDateTime(grossWeighment.weighbridgeDateTime) : "-";
+            let tareTimestampText = tareWeighment ? formatter.formatDateTime(tareWeighment.weighbridgeDateTime) : "-";
+            let hasNetCalculation = false;
+
+            if (grossWeight !== null && tareWeight !== null && (Boolean(inboundWeighment && outboundWeighment) || weighments.length >= 2)) {
+                netWeightKg = Math.round(Math.abs(grossWeight - tareWeight) * 100) / 100;
+                netWeightMT = (netWeightKg / 1000).toFixed(2);
+                netWeightFormatted = `${formatter.formatWeight(netWeightKg, "KG")} (${netWeightMT} MT)`;
+                hasNetCalculation = true;
             }
 
             const driverName = tx.driverName || (tx.driver && tx.driver.driverName) || "";
@@ -94,16 +134,26 @@ sap.ui.define([
 
             const canWeighIn = isAwaitingInbound;
             const canWeighOut = isAwaitingOutbound;
-            const hasAnyWeighment = Boolean(inboundWeighment || outboundWeighment);
+            const hasAnyWeighment = Boolean(inboundWeighment || outboundWeighment || weighments.length > 0);
 
             return {
                 ...tx,
                 driverName: driverName,
+                weighments: weighments,
                 inboundWeighment: inboundWeighment,
                 outboundWeighment: outboundWeighment,
                 inboundWeight: inboundWeighment ? inboundWeighment.weight : null,
                 outboundWeight: outboundWeighment ? outboundWeighment.weight : null,
+                grossWeighment: grossWeighment,
+                tareWeighment: tareWeighment,
+                grossWeight: grossWeight,
+                tareWeight: tareWeight,
+                netWeight: netWeightKg,
+                netWeightMT: netWeightMT,
                 netWeightFormatted: netWeightFormatted,
+                grossTimestampText: grossTimestampText,
+                tareTimestampText: tareTimestampText,
+                hasNetCalculation: hasNetCalculation,
                 isAwaitingInbound: isAwaitingInbound,
                 isInsideYard: isInsideYard,
                 isAwaitingOutbound: isAwaitingOutbound,
@@ -302,7 +352,7 @@ sap.ui.define([
                     if (res.ok) {
                         const data = await res.json();
                         if (data.value && data.value.length > 0) {
-                            vehicle = data.value[0];
+                            vehicle = this._enrichRecord(data.value[0]);
                         }
                     }
                 } catch (e) {
@@ -700,7 +750,7 @@ sap.ui.define([
                     title: "Weighbridge Clearance Recorded",
                     actions: ["View Weight Slip", MessageBox.Action.CLOSE],
                     emphasizedAction: "View Weight Slip",
-                    onClose: (sAction) => {
+                    onClose: async (sAction) => {
                         if (sAction === "View Weight Slip") {
                             this.openWeighmentSlipDialog({
                                 slipNumber: "WB-" + Math.floor(100000 + Math.random() * 900000),
@@ -716,17 +766,17 @@ sap.ui.define([
                                 operator: sOp,
                                 remarks: m.remarks,
                                 weighbridgeDateTime: dWbTime,
-                                hasNetCalculation: m.isOutboundStage && m.calculatedNetWeight > 0,
-                                grossWeight: sType === "GROSS_OUT" ? fWeight : (m.inboundWeightRecord ? m.inboundWeightRecord.weight : fWeight),
-                                tareWeight: sType === "TARE_OUT" ? fWeight : (m.inboundWeightRecord ? m.inboundWeightRecord.weight : 0),
+                                hasNetCalculation: Boolean(m.isOutboundStage && m.calculatedNetWeight > 0),
+                                grossWeight: sType === "GROSS_OUT" ? fWeight : (m.inboundWeightRecord ? Number(m.inboundWeightRecord.weight) : fWeight),
+                                tareWeight: sType === "TARE_OUT" ? fWeight : (m.inboundWeightRecord ? Number(m.inboundWeightRecord.weight) : 0),
                                 netWeight: m.calculatedNetWeight,
                                 netWeightMT: m.calculatedNetWeightMT,
-                                grossTimestampText: sType === "GROSS_OUT" ? "Just Recorded" : (m.inboundWeightRecord ? formatter.formatDateTime(m.inboundWeightRecord.weighbridgeDateTime) : "-"),
-                                tareTimestampText: sType === "TARE_OUT" ? "Just Recorded" : (m.inboundWeightRecord ? formatter.formatDateTime(m.inboundWeightRecord.weighbridgeDateTime) : "-")
+                                grossTimestampText: sType === "GROSS_OUT" ? formatter.formatDateTime(dWbTime) : (m.inboundWeightRecord ? formatter.formatDateTime(m.inboundWeightRecord.weighbridgeDateTime) : "-"),
+                                tareTimestampText: sType === "TARE_OUT" ? formatter.formatDateTime(dWbTime) : (m.inboundWeightRecord ? formatter.formatDateTime(m.inboundWeightRecord.weighbridgeDateTime) : "-")
                             });
                         }
                         this.onResetForm();
-                        this.loadWeighbridgeData();
+                        await this.loadWeighbridgeData();
                         this.getOwnerComponent().loadOverviewData();
                     }
                 });
@@ -739,33 +789,105 @@ sap.ui.define([
         // ============================================================
         // Weighment Slip / Certificate Dialog
         // ============================================================
-        onViewWeighmentSlip: function (oEvt) {
+        _buildSlipData: function (oTx, specificWb) {
+            if (!oTx) return null;
+
+            const tx = (oTx.grossWeight !== undefined && oTx.hasNetCalculation !== undefined) ? oTx : this._enrichRecord(oTx);
+            const weighments = (tx.weighments || []).slice().sort((a, b) => new Date(a.weighbridgeDateTime || a.createdAt || 0) - new Date(b.weighbridgeDateTime || b.createdAt || 0));
+
+            // Target weighment to display in Section 2 (Recorded Weight)
+            const targetWb = specificWb || tx.outboundWeighment || tx.inboundWeighment || (weighments.length > 0 ? weighments[weighments.length - 1] : null);
+
+            const sSlipNo = (targetWb && targetWb.ID)
+                ? "SLIP-" + targetWb.ID.substring(0, 8).toUpperCase()
+                : (tx.ID ? "SLIP-" + tx.ID.substring(0, 8).toUpperCase() : "SLIP-WB-" + Math.floor(100000 + Math.random() * 900000));
+
+            const hasNet = Boolean(tx.hasNetCalculation && tx.grossWeight !== null && tx.tareWeight !== null);
+
+            return {
+                slipNumber: sSlipNo,
+                gateInNumber: tx.gateInNumber || "",
+                vehicleRegNo: tx.vehicleRegNo || "",
+                vehicleType: tx.vehicleType || "TRUCK",
+                driverName: tx.driverName || (tx.driver && tx.driver.driverName) || "Not Recorded",
+                purpose: tx.purpose || "DELIVERY",
+                weighbridgeNumber: (targetWb && targetWb.weighbridgeNumber) ? targetWb.weighbridgeNumber : (tx.weighbridgeNumber || "WB-01"),
+                weighmentType: (targetWb && targetWb.weighmentType) ? targetWb.weighmentType : (tx.purpose === "PICKUP" ? "TARE_IN" : "GROSS_IN"),
+                weight: targetWb ? targetWb.weight : (tx.grossWeight || 0),
+                weightUnit: (targetWb && targetWb.weightUnit) ? targetWb.weightUnit : (tx.weightUnit || "KG"),
+                operator: (targetWb && targetWb.operator) ? targetWb.operator : (tx.operator || models.getActiveUser()),
+                remarks: (targetWb && targetWb.remarks) ? targetWb.remarks : (tx.remarks || "None"),
+                weighbridgeDateTime: (targetWb && targetWb.weighbridgeDateTime) ? targetWb.weighbridgeDateTime : (tx.weighbridgeDateTime || new Date()),
+                hasNetCalculation: hasNet,
+                grossWeight: tx.grossWeight,
+                tareWeight: tx.tareWeight,
+                netWeight: tx.netWeight,
+                netWeightMT: tx.netWeightMT || "0.00",
+                grossTimestampText: tx.grossTimestampText || "-",
+                tareTimestampText: tx.tareTimestampText || "-"
+            };
+        },
+
+        onViewWeighmentSlip: async function (oEvt) {
             const oCtx = oEvt.getSource().getBindingContext("wbModel");
             if (!oCtx) return;
             const item = oCtx.getObject();
 
             const gateIn = item.gateTransaction ? item.gateTransaction.gateInNumber : (item.gateInNumber || "");
-            const regNo = item.gateTransaction ? item.gateTransaction.vehicleRegNo : (item.vehicleRegNo || "");
-            const purpose = item.gateTransaction ? item.gateTransaction.purpose : "DELIVERY";
-            const driver = item.gateTransaction ? item.gateTransaction.driverName : "";
-            const vType = item.gateTransaction ? item.gateTransaction.vehicleType : "TRUCK";
+            const allRecords = this.getView().getModel("wbModel").getProperty("/allRecords") || [];
+            let parentTx = allRecords.find(t => t.gateInNumber === gateIn || (item.gateTransaction && t.ID === item.gateTransaction.ID));
 
-            this.openWeighmentSlipDialog({
-                slipNumber: item.ID ? "SLIP-" + item.ID.substring(0, 8).toUpperCase() : "SLIP-WB-001",
-                gateInNumber: gateIn,
-                vehicleRegNo: regNo,
-                vehicleType: vType,
-                driverName: driver,
-                purpose: purpose,
-                weighbridgeNumber: item.weighbridgeNumber,
-                weighmentType: item.weighmentType,
-                weight: item.weight,
-                weightUnit: item.weightUnit || 'KG',
-                operator: item.operator,
-                remarks: item.remarks,
-                weighbridgeDateTime: item.weighbridgeDateTime,
-                hasNetCalculation: false
-            });
+            if (!parentTx && gateIn) {
+                try {
+                    const headers = {
+                        "Authorization": models.getAuthHeaderValue(),
+                        "Content-Type": "application/json"
+                    };
+                    const sFilter = encodeURIComponent(`gateInNumber eq '${gateIn}'`);
+                    const res = await fetch(`${ODATA_BASE}/GateTransactions?$filter=${sFilter}&$expand=weighments,transporter,supplier,driver`, { headers });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.value && data.value.length > 0) {
+                            parentTx = this._enrichRecord(data.value[0]);
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Could not fetch parent transaction for weighment slip:", e);
+                }
+            }
+
+            if (parentTx) {
+                const slipData = this._buildSlipData(parentTx, item);
+                this.openWeighmentSlipDialog(slipData);
+            } else {
+                const regNo = item.gateTransaction ? item.gateTransaction.vehicleRegNo : (item.vehicleRegNo || "");
+                const purpose = item.gateTransaction ? item.gateTransaction.purpose : "DELIVERY";
+                const driver = item.gateTransaction ? item.gateTransaction.driverName : "";
+                const vType = item.gateTransaction ? item.gateTransaction.vehicleType : "TRUCK";
+
+                this.openWeighmentSlipDialog({
+                    slipNumber: item.ID ? "SLIP-" + item.ID.substring(0, 8).toUpperCase() : "SLIP-WB-001",
+                    gateInNumber: gateIn,
+                    vehicleRegNo: regNo,
+                    vehicleType: vType,
+                    driverName: driver || "Not Recorded",
+                    purpose: purpose,
+                    weighbridgeNumber: item.weighbridgeNumber || "WB-01",
+                    weighmentType: item.weighmentType,
+                    weight: item.weight,
+                    weightUnit: item.weightUnit || 'KG',
+                    operator: item.operator || models.getActiveUser(),
+                    remarks: item.remarks || "None",
+                    weighbridgeDateTime: item.weighbridgeDateTime || new Date(),
+                    hasNetCalculation: false,
+                    grossWeight: null,
+                    tareWeight: null,
+                    netWeight: 0,
+                    netWeightMT: "0.00",
+                    grossTimestampText: "-",
+                    tareTimestampText: "-"
+                });
+            }
         },
 
         openWeighmentSlipDialog: function (slipData) {
@@ -787,15 +909,20 @@ sap.ui.define([
             const that = this;
             this._pSlipDialog.then(function (oDialog) {
                 that._currentSlipDialog = oDialog;
-                const oSlipModel = new JSONModel(slipData);
-                oDialog.setModel(oSlipModel, "slipModel");
+                let oSlipModel = oDialog.getModel("slipModel");
+                if (!oSlipModel) {
+                    oSlipModel = new JSONModel(slipData);
+                    oDialog.setModel(oSlipModel, "slipModel");
+                } else {
+                    oSlipModel.setData(slipData);
+                }
                 oDialog.open();
             });
         },
 
         onPrintSlip: function () {
             let d = this._currentSlipData;
-            if (!d && this._currentSlipDialog) {
+            if (this._currentSlipDialog) {
                 const oSlipModel = this._currentSlipDialog.getModel("slipModel");
                 if (oSlipModel) {
                     d = oSlipModel.getData();
@@ -1263,28 +1390,39 @@ sap.ui.define([
             this.onOpenWeighbridgeOutDialog(oEvt);
         },
 
-        onRowSlipPress: function (oEvt) {
+        onRowSlipPress: async function (oEvt) {
             const oCtx = oEvt.getSource().getBindingContext("wbModel");
             if (!oCtx) return;
-            const oTx = oCtx.getObject();
-            const lastWb = oTx.outboundWeighment || oTx.inboundWeighment;
-            if (lastWb) {
-                this.openWeighmentSlipDialog({
-                    slipNumber: lastWb.ID ? "SLIP-" + lastWb.ID.substring(0, 8).toUpperCase() : "SLIP-WB-001",
-                    gateInNumber: oTx.gateInNumber,
-                    vehicleRegNo: oTx.vehicleRegNo,
-                    vehicleType: oTx.vehicleType || "TRUCK",
-                    driverName: oTx.driverName || "-",
-                    purpose: oTx.purpose || "DELIVERY",
-                    weighbridgeNumber: lastWb.weighbridgeNumber || "WB-01",
-                    weighmentType: lastWb.weighmentType,
-                    weight: lastWb.weight,
-                    weightUnit: lastWb.weightUnit || "KG",
-                    operator: lastWb.operator || models.getActiveUser(),
-                    remarks: lastWb.remarks || "-",
-                    weighbridgeDateTime: lastWb.weighbridgeDateTime || new Date(),
-                    hasNetCalculation: Boolean(oTx.netWeightFormatted)
-                });
+            let oTx = oCtx.getObject();
+
+            // If weighments array is missing or empty, fetch fresh transaction data from backend
+            if (!oTx.weighments || oTx.weighments.length === 0) {
+                try {
+                    const headers = {
+                        "Authorization": models.getAuthHeaderValue(),
+                        "Content-Type": "application/json"
+                    };
+                    const sFilter = encodeURIComponent(`gateInNumber eq '${oTx.gateInNumber}'`);
+                    const res = await fetch(`${ODATA_BASE}/GateTransactions?$filter=${sFilter}&$expand=weighments,transporter,supplier,driver`, { headers });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.value && data.value.length > 0) {
+                            oTx = this._enrichRecord(data.value[0]);
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Could not fetch fresh weighments for slip dialog:", e);
+                }
+            }
+
+            if (!oTx.hasAnyWeighment && (!oTx.weighments || oTx.weighments.length === 0)) {
+                MessageToast.show("No weighment recorded yet for this vehicle.");
+                return;
+            }
+
+            const slipData = this._buildSlipData(oTx);
+            if (slipData) {
+                this.openWeighmentSlipDialog(slipData);
             } else {
                 MessageToast.show("No weighment recorded yet for this vehicle.");
             }

@@ -78,7 +78,7 @@
                             state="{path: 'slipModel>/weighmentType', formatter: '.formatter.getWeighmentTypeState'}" />
 
                         <Label text="Recorded Weight" />
-                        <Label text="{path: 'slipModel>/weight', formatter: '.formatter.formatWeight'} {= ${slipModel>/weightUnit} || 'KG' }" design="Bold" />
+                        <Label text="{parts: [{path: 'slipModel>/weight'}, {path: 'slipModel>/weightUnit'}], formatter: '.formatter.formatWeight'}" design="Bold" />
 
                         <Label text="Weighbridge Operator" />
                         <Text text="{slipModel>/operator}" />
@@ -126,7 +126,7 @@
                                     level="H2"
                                     titleStyle="H2"
                                     class="weight-metric net-metric" />
-                                <Label text="({slipModel>/netWeightMT} MT)" class="sapUiTinyMarginTop" design="Bold" />
+                                <Label text="{= ${slipModel>/netWeightMT} ? '(' + ${slipModel>/netWeightMT} + ' MT)' : '' }" class="sapUiTinyMarginTop" design="Bold" />
                             </VBox>
                         </HBox>
                     </content>
