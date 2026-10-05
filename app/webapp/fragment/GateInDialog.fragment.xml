@@ -42,6 +42,12 @@
                         placeholder="e.g. Rajesh Kumar"
                         required="true" />
 
+                    <Label text="Gate Operator" required="true" />
+                    <Input
+                        id="inputGateOperator"
+                        placeholder="e.g. Gate Operator Name / ID"
+                        required="true" />
+
                     <Label text="Purpose of Visit" required="true" />
                     <HBox alignItems="Center">
                         <CheckBox

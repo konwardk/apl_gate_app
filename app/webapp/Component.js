@@ -29,6 +29,9 @@ sap.ui.define([
             this._rawTransactions = [];
             this._selectedPurpose = "DELIVERY";
 
+            // Preload APL Logo base64 for instantaneous printable slip generation
+            this.getLogoBase64().catch(function () {});
+
             // Initialize app data model
             const oModel = models.createAppModel();
             this.setModel(oModel);
@@ -291,7 +294,7 @@ sap.ui.define([
 
                 // 2. Fetch Transactions if authorized
                 if (perms.canViewGateOps || perms.canViewLiveOps) {
-                    const resTx = await fetch(`${ODATA_BASE}/GateTransactions?$orderby=createdAt desc`, { headers });
+                    const resTx = await fetch(`${ODATA_BASE}/GateTransactions?$expand=weighments&$orderby=createdAt desc`, { headers });
                     if (resTx.ok) {
                         const txData = await resTx.json();
                         this._rawTransactions = txData.value || [];
@@ -299,31 +302,143 @@ sap.ui.define([
 
                         const counts = {
                             TOTAL: this._rawTransactions.length,
-                            GATE_IN: 0,
-                            IN_PLANT: 0,
                             ACTIVE: 0,
+                            GATE_IN: 0,
                             READY_OUT: 0,
-                            COMPLETED: 0
+                            COMPLETED: 0,
+                            MAIN_GATE: this._rawTransactions.length,
+                            SECURITY_GATE: this._rawTransactions.filter(t => t.status !== "CANCELLED").length,
+                            SECURITY_AWAITING_IN: 0,
+                            SECURITY_IN_PLANT: 0,
+                            SECURITY_AWAITING_OUT: 0,
+                            SECURITY_CLEARED: 0,
+                            WEIGHBRIDGE: 0,
+                            WEIGHBRIDGE_AWAITING_IN: 0,
+                            WEIGHBRIDGE_INSIDE_YARD: 0,
+                            WEIGHBRIDGE_AWAITING_OUT: 0,
+                            WEIGHBRIDGE_COMPLETED: 0,
+                            FACTORY_GATE: 0,
+                            FACTORY_AWAITING_IN: 0,
+                            FACTORY_ACTIVE: 0,
+                            FACTORY_DONE: 0,
+                            IN_PLANT: 0,
+                            VEHICLES: oModel.getProperty("/counts/VEHICLES") || 0,
+                            DRIVERS: oModel.getProperty("/counts/DRIVERS") || 0,
+                            TRANSPORTERS: oModel.getProperty("/counts/TRANSPORTERS") || 0,
+                            SUPPLIERS: oModel.getProperty("/counts/SUPPLIERS") || 0,
+                            MASTER_DATA: oModel.getProperty("/counts/MASTER_DATA") || 0,
+                            AUDIT: oModel.getProperty("/counts/AUDIT") || 0,
+                            USERS: oModel.getProperty("/counts/USERS") || 0
                         };
 
                         this._rawTransactions.forEach(function (tx) {
-                            if (tx.status === "COMPLETED") {
-                                counts.COMPLETED++;
-                            } else if (tx.status === "SECURITY_OUT") {
-                                counts.READY_OUT++;
-                                counts.ACTIVE++;
-                            } else if (tx.status === "GATE_IN") {
-                                counts.GATE_IN++;
-                                counts.ACTIVE++;
-                            } else if (["SECURITY_IN", "WEIGHBRIDGE_IN", "FACTORY_IN", "FACTORY_OUT", "WEIGHBRIDGE_OUT"].includes(tx.status)) {
-                                counts.IN_PLANT++;
-                                counts.ACTIVE++;
-                            } else if (tx.status !== "CANCELLED") {
+                            const status = tx.status || "GATE_IN";
+                            const route = tx.assignedRoute || "";
+                            const weighments = Array.isArray(tx.weighments) ? tx.weighments : [];
+                            const hasGrossIn = weighments.some(w => w.weighmentType === "GROSS_IN");
+                            const hasTareIn = weighments.some(w => w.weighmentType === "TARE_IN");
+                            const hasGrossOut = weighments.some(w => w.weighmentType === "GROSS_OUT");
+                            const hasTareOut = weighments.some(w => w.weighmentType === "TARE_OUT");
+                            const inboundWeighment = hasGrossIn || hasTareIn;
+                            const outboundWeighment = hasGrossOut || hasTareOut;
+                            const hasAnyWeighment = Boolean(inboundWeighment || outboundWeighment || weighments.length > 0);
+
+                            // Active in yard / plant
+                            if (status !== "COMPLETED" && status !== "CANCELLED") {
                                 counts.ACTIVE++;
                             }
+
+                            // Main Gate
+                            if (status === "GATE_IN") {
+                                counts.GATE_IN++;
+                            } else if (status === "SECURITY_OUT") {
+                                counts.READY_OUT++;
+                            } else if (status === "COMPLETED") {
+                                counts.COMPLETED++;
+                            }
+
+                            // In-Plant general indicator
+                            if (["SECURITY_IN", "WEIGHBRIDGE_IN", "FACTORY_IN", "FACTORY_OUT", "WEIGHBRIDGE_OUT"].includes(status)) {
+                                counts.IN_PLANT++;
+                            }
+
+                            // Security Gate breakdown
+                            if (status === "GATE_IN") {
+                                counts.SECURITY_AWAITING_IN++;
+                            } else if (["SECURITY_IN", "WEIGHBRIDGE_IN", "FACTORY_IN"].includes(status)) {
+                                counts.SECURITY_IN_PLANT++;
+                            } else if (["WEIGHBRIDGE_OUT", "FACTORY_OUT"].includes(status)) {
+                                counts.SECURITY_AWAITING_OUT++;
+                            } else if (["SECURITY_OUT", "COMPLETED"].includes(status)) {
+                                counts.SECURITY_CLEARED++;
+                            }
+
+                            // Weighbridge operations stream
+                            const isAssignedWb = route === "WEIGHBRIDGE" || hasAnyWeighment || ["WEIGHBRIDGE_IN", "WEIGHBRIDGE_OUT"].includes(status) || (!route && (tx.purpose === "DELIVERY" || tx.purpose === "PICKUP"));
+                            if (isAssignedWb && status !== "CANCELLED") {
+                                counts.WEIGHBRIDGE++;
+                                if (status === "GATE_IN" || (status === "SECURITY_IN" && !inboundWeighment) || (status === "WEIGHBRIDGE_IN" && !inboundWeighment)) {
+                                    counts.WEIGHBRIDGE_AWAITING_IN++;
+                                } else if (status === "FACTORY_IN" || (inboundWeighment && !outboundWeighment && status !== "FACTORY_OUT")) {
+                                    counts.WEIGHBRIDGE_INSIDE_YARD++;
+                                } else if (status === "FACTORY_OUT" && !outboundWeighment) {
+                                    counts.WEIGHBRIDGE_AWAITING_OUT++;
+                                } else if (outboundWeighment || ["WEIGHBRIDGE_OUT", "SECURITY_OUT", "COMPLETED"].includes(status)) {
+                                    counts.WEIGHBRIDGE_COMPLETED++;
+                                }
+                            }
+
+                            // Factory Yard operations stream
+                            const isFactoryEligible = status !== "CANCELLED" && (tx.purpose === "DELIVERY" || tx.purpose === "PICKUP" || route === "FACTORY" || ["SECURITY_IN", "WEIGHBRIDGE_IN", "FACTORY_IN", "FACTORY_OUT", "WEIGHBRIDGE_OUT", "SECURITY_OUT", "COMPLETED"].includes(status));
+                            if (isFactoryEligible) {
+                                counts.FACTORY_GATE++;
+                                if (["GATE_IN", "SECURITY_IN", "WEIGHBRIDGE_IN"].includes(status)) {
+                                    counts.FACTORY_AWAITING_IN++;
+                                } else if (status === "FACTORY_IN") {
+                                    counts.FACTORY_ACTIVE++;
+                                } else if (["FACTORY_OUT", "WEIGHBRIDGE_OUT", "SECURITY_OUT", "COMPLETED"].includes(status)) {
+                                    counts.FACTORY_DONE++;
+                                }
+                            }
                         });
+
                         oModel.setProperty("/counts", counts);
                     }
+                }
+
+                // 3. Fetch Master Data, Audit, and User counts (non-blocking)
+                try {
+                    const fetchCount = async (entity) => {
+                        try {
+                            const res = await fetch(`${ODATA_BASE}/${entity}?$top=0&$count=true`, { headers });
+                            if (res.ok) {
+                                const d = await res.json();
+                                return d["@odata.count"] !== undefined ? d["@odata.count"] : (d.value ? d.value.length : 0);
+                            }
+                        } catch (e) {}
+                        return 0;
+                    };
+
+                    const [vCount, dCount, tCount, sCount, aCount, uCount] = await Promise.all([
+                        fetchCount("Vehicles"),
+                        fetchCount("Drivers"),
+                        fetchCount("Transporters"),
+                        fetchCount("Suppliers"),
+                        fetchCount("GateAuditLogs"),
+                        fetchCount("Users")
+                    ]);
+
+                    const currCounts = oModel.getProperty("/counts") || {};
+                    currCounts.VEHICLES = vCount;
+                    currCounts.DRIVERS = dCount;
+                    currCounts.TRANSPORTERS = tCount;
+                    currCounts.SUPPLIERS = sCount;
+                    currCounts.MASTER_DATA = vCount + dCount + tCount + sCount;
+                    currCounts.AUDIT = aCount;
+                    currCounts.USERS = uCount;
+                    oModel.setProperty("/counts", currCounts);
+                } catch (e) {
+                    console.warn("Could not load master data counts:", e);
                 }
             } catch (err) {
                 console.error("Error loading overview data:", err);
@@ -447,7 +562,36 @@ sap.ui.define([
             oModel.setProperty("/canViewAudit", false);
             oModel.setProperty("/canManageUsers", false);
             oModel.setProperty("/transactions", []);
-            oModel.setProperty("/counts", { TOTAL: 0, ACTIVE: 0, READY_OUT: 0, COMPLETED: 0 });
+            oModel.setProperty("/counts", {
+                TOTAL: 0,
+                ACTIVE: 0,
+                GATE_IN: 0,
+                READY_OUT: 0,
+                COMPLETED: 0,
+                MAIN_GATE: 0,
+                SECURITY_GATE: 0,
+                SECURITY_AWAITING_IN: 0,
+                SECURITY_IN_PLANT: 0,
+                SECURITY_AWAITING_OUT: 0,
+                SECURITY_CLEARED: 0,
+                WEIGHBRIDGE: 0,
+                WEIGHBRIDGE_AWAITING_IN: 0,
+                WEIGHBRIDGE_INSIDE_YARD: 0,
+                WEIGHBRIDGE_AWAITING_OUT: 0,
+                WEIGHBRIDGE_COMPLETED: 0,
+                FACTORY_GATE: 0,
+                FACTORY_AWAITING_IN: 0,
+                FACTORY_ACTIVE: 0,
+                FACTORY_DONE: 0,
+                IN_PLANT: 0,
+                VEHICLES: 0,
+                DRIVERS: 0,
+                TRANSPORTERS: 0,
+                SUPPLIERS: 0,
+                MASTER_DATA: 0,
+                AUDIT: 0,
+                USERS: 0
+            });
 
             // Navigate to login page
             this.navigateTo("loginPage", "slide");
@@ -588,6 +732,7 @@ sap.ui.define([
                 const oReg = Fragment.byId(sId, "inputVehicleRegNo");
                 const oType = Fragment.byId(sId, "selectVehicleType");
                 const oDriver = Fragment.byId(sId, "inputDriverName");
+                const oOperator = Fragment.byId(sId, "inputGateOperator");
                 const oDel = Fragment.byId(sId, "cbDelivery");
                 const oPick = Fragment.byId(sId, "cbPickup");
                 if (oReg) {
@@ -602,6 +747,13 @@ sap.ui.define([
                     oDriver.setValue("");
                     oDriver.setValueState(ValueState.None);
                     oDriver.setValueStateText("");
+                }
+                if (oOperator) {
+                    const activeUser = models.getActiveUser() || "";
+                    const defaultOp = activeUser.includes("maingate") ? activeUser : (activeUser === "superadmin_user" ? "MainGateOperator" : (activeUser || "Gate Operator"));
+                    oOperator.setValue(defaultOp);
+                    oOperator.setValueState(ValueState.None);
+                    oOperator.setValueStateText("");
                 }
                 if (oDel) oDel.setSelected(true);
                 if (oPick) oPick.setSelected(false);
@@ -669,9 +821,11 @@ sap.ui.define([
             const oReg = Fragment.byId(sId, "inputVehicleRegNo");
             const oType = Fragment.byId(sId, "selectVehicleType");
             const oDriver = Fragment.byId(sId, "inputDriverName");
+            const oOperator = Fragment.byId(sId, "inputGateOperator");
             const regNo = oReg ? oReg.getValue().trim().toUpperCase() : "";
             const vehicleType = oType ? oType.getSelectedKey() || "TRUCK" : "TRUCK";
             const driver = oDriver ? oDriver.getValue().trim() : "";
+            const operator = oOperator ? oOperator.getValue().trim() : "";
 
             if (!regNo) {
                 if (oReg) {
@@ -700,6 +854,12 @@ sap.ui.define([
             }
             if (oDriver) oDriver.setValueState(ValueState.None);
 
+            if (!operator) {
+                if (oOperator) oOperator.setValueState(ValueState.Error);
+                return MessageToast.show("Gate Operator is mandatory");
+            }
+            if (oOperator) oOperator.setValueState(ValueState.None);
+
             if (!this._selectedPurpose) {
                 return MessageToast.show("Please select Purpose of Visit (DELIVERY or PICKUP)");
             }
@@ -717,7 +877,8 @@ sap.ui.define([
                         vehicleRegNo: regNo,
                         vehicleType: vehicleType,
                         purpose: this._selectedPurpose,
-                        driverName: driver
+                        driverName: driver,
+                        gateInOperator: operator
                     })
                 });
 
@@ -1138,9 +1299,47 @@ sap.ui.define([
         },
 
         // ============================================================
+        // APL Branding Asset Loader (Base64 for Print & Document Export)
+        // ============================================================
+        getLogoBase64: async function () {
+            if (this._logoBase64) {
+                return this._logoBase64;
+            }
+
+            const candidateUrls = [
+                sap.ui.require.toUrl("factory/gate/images/APL_Logo.jpg"),
+                "images/APL_Logo.jpg",
+                "/images/APL_Logo.jpg",
+                "/webapp/images/APL_Logo.jpg"
+            ];
+
+            for (const url of candidateUrls) {
+                try {
+                    const res = await fetch(url);
+                    if (res.ok) {
+                        const blob = await res.blob();
+                        const base64 = await new Promise((resolve) => {
+                            const reader = new FileReader();
+                            reader.onloadend = () => resolve(reader.result);
+                            reader.onerror = () => resolve(null);
+                            reader.readAsDataURL(blob);
+                        });
+                        if (base64) {
+                            this._logoBase64 = base64;
+                            return base64;
+                        }
+                    }
+                } catch (e) {
+                    // Try next candidate
+                }
+            }
+            return "images/APL_Logo.jpg";
+        },
+
+        // ============================================================
         // Print Operation: Gate IN Pass Document
         // ============================================================
-        printGateInPass: function (tx) {
+        printGateInPass: async function (tx) {
             if (!tx || !tx.gateInNumber) {
                 MessageToast.show("No Gate IN record available to print.");
                 return;
@@ -1160,6 +1359,7 @@ sap.ui.define([
                 document.body.appendChild(iframe);
             }
 
+            const sLogoSrc = (await this.getLogoBase64()) || "images/APL_Logo.jpg";
             const sGateInNo = tx.gateInNumber;
             const sVehicleReg = tx.vehicleRegNo || "-";
             const sVehicleType = tx.vehicleType || (tx.vehicle && tx.vehicle.vehicleType) || "TRUCK";
@@ -1193,31 +1393,61 @@ sap.ui.define([
                         font-size: 13px;
                     }
                     .slip-card {
-                        max-width: 520px;
+                        max-width: 540px;
                         margin: 0 auto;
                         border: 2px solid #111827;
                         border-radius: 6px;
                         padding: 20px 24px;
                     }
                     .header-box {
-                        text-align: center;
                         border-bottom: 2px solid #111827;
-                        padding-bottom: 12px;
+                        padding-bottom: 14px;
                         margin-bottom: 14px;
                     }
+                    .header-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                    }
+                    .header-logo-cell {
+                        width: 80px;
+                        vertical-align: middle;
+                        text-align: center;
+                        padding-right: 14px;
+                    }
+                    .header-logo {
+                        height: 54px;
+                        width: auto;
+                        max-width: 80px;
+                        object-fit: contain;
+                        display: block;
+                        margin: 0 auto;
+                    }
+                    .header-text-cell {
+                        vertical-align: middle;
+                        text-align: left;
+                    }
                     .company-name {
-                        font-size: 18px;
+                        font-size: 17px;
                         font-weight: 800;
                         color: #111827;
                         letter-spacing: 0.5px;
                         text-transform: uppercase;
+                        line-height: 1.2;
+                    }
+                    .company-address {
+                        font-size: 11px;
+                        font-weight: 500;
+                        color: #4b5563;
+                        margin-top: 3px;
+                        line-height: 1.35;
                     }
                     .company-sub {
                         font-size: 12px;
                         font-weight: 700;
                         color: #0284c7;
                         letter-spacing: 1px;
-                        margin-top: 3px;
+                        margin-top: 4px;
+                        text-transform: uppercase;
                     }
                     .barcode-box {
                         text-align: center;
@@ -1298,8 +1528,18 @@ sap.ui.define([
             <body>
                 <div class="slip-card">
                     <div class="header-box">
-                        <div class="company-name">Assam Petro-chemicals Ltd (APL)</div>
-                        <div class="company-sub">GATE IN ENTRY PASS</div>
+                        <table class="header-table">
+                            <tr>
+                                <td class="header-logo-cell">
+                                    <img src="${sLogoSrc}" class="header-logo" alt="APL Logo" />
+                                </td>
+                                <td class="header-text-cell">
+                                    <div class="company-name">Assam Petro-Chemicals Ltd</div>
+                                    <div class="company-address">Address: Namprup, Dist: Dibrugarh(ASSAM), PO: Parbatpur-786623.</div>
+                                    <div class="company-sub">GATE IN ENTRY PASS</div>
+                                </td>
+                            </tr>
+                        </table>
                     </div>
 
                     <div class="barcode-box">
@@ -1364,7 +1604,7 @@ sap.ui.define([
             }, 300);
         },
 
-        printFactoryGateOutSlip: function (tx) {
+        printFactoryGateOutSlip: async function (tx) {
             if (!tx || !tx.gateInNumber) {
                 MessageToast.show("No Factory Gate OUT record available to print.");
                 return;
@@ -1384,6 +1624,7 @@ sap.ui.define([
                 document.body.appendChild(iframe);
             }
 
+            const sLogoSrc = (await this.getLogoBase64()) || "images/APL_Logo.jpg";
             const sGateInNo = tx.gateInNumber;
             const sVehicleReg = tx.vehicleRegNo || (tx.vehicle && tx.vehicle.vehicleRegNo) || "-";
             const sVehicleType = tx.vehicleType || (tx.vehicle && tx.vehicle.vehicleType) || "TRUCK";
@@ -1425,9 +1666,14 @@ sap.ui.define([
                     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
                     body { background: #ffffff; color: #111827; padding: 10px; font-size: 13px; }
                     .slip-card { max-width: 560px; margin: 0 auto; border: 2px solid #111827; border-radius: 6px; padding: 22px 26px; }
-                    .header-box { text-align: center; border-bottom: 2px solid #111827; padding-bottom: 12px; margin-bottom: 14px; }
-                    .company-name { font-size: 18px; font-weight: 800; color: #111827; letter-spacing: 0.5px; text-transform: uppercase; }
-                    .company-sub { font-size: 13px; font-weight: 700; color: #15803d; letter-spacing: 1px; margin-top: 3px; }
+                    .header-box { border-bottom: 2px solid #111827; padding-bottom: 14px; margin-bottom: 14px; }
+                    .header-table { width: 100%; border-collapse: collapse; }
+                    .header-logo-cell { width: 80px; vertical-align: middle; text-align: center; padding-right: 14px; }
+                    .header-logo { height: 54px; width: auto; max-width: 80px; object-fit: contain; display: block; margin: 0 auto; }
+                    .header-text-cell { vertical-align: middle; text-align: left; }
+                    .company-name { font-size: 17px; font-weight: 800; color: #111827; letter-spacing: 0.5px; text-transform: uppercase; line-height: 1.2; }
+                    .company-address { font-size: 11px; font-weight: 500; color: #4b5563; margin-top: 3px; line-height: 1.35; }
+                    .company-sub { font-size: 12.5px; font-weight: 700; color: #15803d; letter-spacing: 1px; margin-top: 4px; text-transform: uppercase; }
                     .barcode-box { text-align: center; margin: 12px 0 16px 0; padding: 8px 0; background: #f8fafc; border-radius: 4px; }
                     .barcode-text { font-family: "Courier New", Courier, monospace; font-size: 13px; font-weight: 700; letter-spacing: 3px; color: #1e293b; margin-top: 4px; }
                     .details-table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
@@ -1449,8 +1695,18 @@ sap.ui.define([
             <body>
                 <div class="slip-card">
                     <div class="header-box">
-                        <div class="company-name">Assam Petro-chemicals Ltd (APL)</div>
-                        <div class="company-sub">FACTORY GATE OUT CLEARANCE SLIP</div>
+                        <table class="header-table">
+                            <tr>
+                                <td class="header-logo-cell">
+                                    <img src="${sLogoSrc}" class="header-logo" alt="APL Logo" />
+                                </td>
+                                <td class="header-text-cell">
+                                    <div class="company-name">Assam Petro-Chemicals Ltd</div>
+                                    <div class="company-address">Address: Namprup, Dist: Dibrugarh(ASSAM), PO: Parbatpur-786623.</div>
+                                    <div class="company-sub">FACTORY GATE OUT CLEARANCE SLIP</div>
+                                </td>
+                            </tr>
+                        </table>
                     </div>
 
                     <div class="barcode-box">
@@ -1540,7 +1796,7 @@ sap.ui.define([
             }, 300);
         },
 
-        printFactoryGateInSlip: function (tx) {
+        printFactoryGateInSlip: async function (tx) {
             if (!tx || !tx.gateInNumber) {
                 MessageToast.show("No Factory Gate IN record available to print.");
                 return;
@@ -1560,6 +1816,7 @@ sap.ui.define([
                 document.body.appendChild(iframe);
             }
 
+            const sLogoSrc = (await this.getLogoBase64()) || "images/APL_Logo.jpg";
             const sGateInNo = tx.gateInNumber;
             const sVehicleReg = tx.vehicleRegNo || (tx.vehicle && tx.vehicle.vehicleRegNo) || "-";
             const sVehicleType = tx.vehicleType || (tx.vehicle && tx.vehicle.vehicleType) || "TRUCK";
@@ -1582,9 +1839,14 @@ sap.ui.define([
                     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
                     body { background: #ffffff; color: #111827; padding: 10px; font-size: 13px; }
                     .slip-card { max-width: 540px; margin: 0 auto; border: 2px solid #111827; border-radius: 6px; padding: 22px 26px; }
-                    .header-box { text-align: center; border-bottom: 2px solid #111827; padding-bottom: 12px; margin-bottom: 14px; }
-                    .company-name { font-size: 18px; font-weight: 800; color: #111827; letter-spacing: 0.5px; text-transform: uppercase; }
-                    .company-sub { font-size: 13px; font-weight: 700; color: #0284c7; letter-spacing: 1px; margin-top: 3px; }
+                    .header-box { border-bottom: 2px solid #111827; padding-bottom: 14px; margin-bottom: 14px; }
+                    .header-table { width: 100%; border-collapse: collapse; }
+                    .header-logo-cell { width: 80px; vertical-align: middle; text-align: center; padding-right: 14px; }
+                    .header-logo { height: 54px; width: auto; max-width: 80px; object-fit: contain; display: block; margin: 0 auto; }
+                    .header-text-cell { vertical-align: middle; text-align: left; }
+                    .company-name { font-size: 17px; font-weight: 800; color: #111827; letter-spacing: 0.5px; text-transform: uppercase; line-height: 1.2; }
+                    .company-address { font-size: 11px; font-weight: 500; color: #4b5563; margin-top: 3px; line-height: 1.35; }
+                    .company-sub { font-size: 12.5px; font-weight: 700; color: #0284c7; letter-spacing: 1px; margin-top: 4px; text-transform: uppercase; }
                     .barcode-box { text-align: center; margin: 12px 0 16px 0; padding: 8px 0; background: #f8fafc; border-radius: 4px; }
                     .barcode-text { font-family: "Courier New", Courier, monospace; font-size: 13px; font-weight: 700; letter-spacing: 3px; color: #1e293b; margin-top: 4px; }
                     .details-table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
@@ -1601,8 +1863,18 @@ sap.ui.define([
             <body>
                 <div class="slip-card">
                     <div class="header-box">
-                        <div class="company-name">Assam Petro-chemicals Ltd (APL)</div>
-                        <div class="company-sub">FACTORY GATE IN ENTRY SLIP</div>
+                        <table class="header-table">
+                            <tr>
+                                <td class="header-logo-cell">
+                                    <img src="${sLogoSrc}" class="header-logo" alt="APL Logo" />
+                                </td>
+                                <td class="header-text-cell">
+                                    <div class="company-name">Assam Petro-Chemicals Ltd</div>
+                                    <div class="company-address">Address: Namprup, Dist: Dibrugarh(ASSAM), PO: Parbatpur-786623.</div>
+                                    <div class="company-sub">FACTORY GATE IN ENTRY SLIP</div>
+                                </td>
+                            </tr>
+                        </table>
                     </div>
 
                     <div class="barcode-box">

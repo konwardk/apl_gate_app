@@ -7,9 +7,20 @@
         title="Gate IN Created Successfully"
         type="Message"
         state="Success"
-        contentWidth="460px">
+        contentWidth="480px">
         <content>
             <VBox alignItems="Center">
+                <Image
+                    src="/images/APL_Logo.jpg"
+                    height="42px"
+                    class="sapUiSmallMarginTop sapUiTinyMarginBottom" />
+                <Title
+                    text="Assam Petro-Chemicals Ltd"
+                    level="H4"
+                    titleStyle="H5" />
+                <Text
+                    text="Address: Namprup, Dist: Dibrugarh(ASSAM), PO: Parbatpur-786623."
+                    class="sapUiTinyMarginBottom text-muted" />
                 <Text text="Generated Gate IN Pass Identifier:" class="sapUiSmallMarginTop" />
                 <Title
                     text="{gateInSuccess>/gateInNumber}"
@@ -35,6 +46,8 @@
                         <Text text="{gateInSuccess>/vehicleType}" />
                         <Label text="Driver Name" />
                         <Text text="{gateInSuccess>/driverName}" />
+                        <Label text="Gate Operator" />
+                        <Text text="{gateInSuccess>/gateInOperator}" />
                         <Label text="Purpose" />
                         <Text text="{gateInSuccess>/purpose}" />
                         <Label text="Timestamp" />

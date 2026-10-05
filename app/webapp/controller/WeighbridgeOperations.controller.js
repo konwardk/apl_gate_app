@@ -124,10 +124,10 @@ sap.ui.define([
             }
 
             const driverName = tx.driverName || (tx.driver && tx.driver.driverName) || "";
-            const isAssignedWb = (tx.assignedRoute === "WEIGHBRIDGE" || weighments.length > 0);
+            const isAssignedWb = (tx.assignedRoute === "WEIGHBRIDGE" || weighments.length > 0 || (!tx.assignedRoute && (tx.purpose === "DELIVERY" || tx.purpose === "PICKUP")));
 
             const isAwaitingInbound = (tx.status === "SECURITY_IN" && tx.assignedRoute === "WEIGHBRIDGE") ||
-                (isAssignedWb && !inboundWeighment && ["SECURITY_IN", "WEIGHBRIDGE_IN"].includes(tx.status));
+                (isAssignedWb && !inboundWeighment && ["GATE_IN", "SECURITY_IN", "WEIGHBRIDGE_IN"].includes(tx.status));
             const isInsideYard = tx.status === "FACTORY_IN" || (inboundWeighment && !outboundWeighment && tx.status !== "FACTORY_OUT");
             const isAwaitingOutbound = tx.status === "FACTORY_OUT" && !outboundWeighment;
             const isScaleCompleted = Boolean(outboundWeighment || tx.status === "WEIGHBRIDGE_OUT" || tx.status === "SECURITY_OUT" || tx.status === "COMPLETED");
@@ -920,7 +920,7 @@ sap.ui.define([
             });
         },
 
-        onPrintSlip: function () {
+        onPrintSlip: async function () {
             let d = this._currentSlipData;
             if (this._currentSlipDialog) {
                 const oSlipModel = this._currentSlipDialog.getModel("slipModel");
@@ -934,10 +934,10 @@ sap.ui.define([
                 return;
             }
 
-            this._printWeighmentSlipDocument(d);
+            await this._printWeighmentSlipDocument(d);
         },
 
-        _printWeighmentSlipDocument: function (d) {
+        _printWeighmentSlipDocument: async function (d) {
             let iframe = document.getElementById("wbPrintIframe");
             if (!iframe) {
                 iframe = document.createElement("iframe");
@@ -950,6 +950,13 @@ sap.ui.define([
                 iframe.style.border = "0";
                 iframe.style.visibility = "hidden";
                 document.body.appendChild(iframe);
+            }
+
+            let sLogoSrc = "images/APL_Logo.jpg";
+            if (this.getOwnerComponent && this.getOwnerComponent().getLogoBase64) {
+                try {
+                    sLogoSrc = (await this.getOwnerComponent().getLogoBase64()) || sLogoSrc;
+                } catch (_) {}
             }
 
             const sTypeDesc = formatter.getWeighmentTypeDesc(d.weighmentType);
@@ -1023,22 +1030,52 @@ sap.ui.define([
                     .header-table {
                         width: 100%;
                         border-bottom: 2px solid #0284c7;
-                        padding-bottom: 12px;
+                        padding-bottom: 14px;
                         margin-bottom: 16px;
+                    }
+                    .header-logo-cell {
+                        width: 80px;
+                        vertical-align: middle;
+                        text-align: center;
+                        padding-right: 14px;
+                    }
+                    .header-logo {
+                        height: 56px;
+                        width: auto;
+                        max-width: 80px;
+                        object-fit: contain;
+                        display: block;
+                        margin: 0 auto;
+                    }
+                    .header-text-cell {
+                        vertical-align: middle;
+                        text-align: left;
                     }
                     .company-name {
                         font-size: 18px;
                         font-weight: 800;
                         color: #0f172a;
                         letter-spacing: 0.5px;
+                        text-transform: uppercase;
+                        line-height: 1.2;
+                    }
+                    .company-address {
+                        font-size: 11px;
+                        font-weight: 500;
+                        color: #475569;
+                        margin-top: 3px;
+                        line-height: 1.35;
                     }
                     .sub-header {
                         font-size: 11px;
-                        color: #64748b;
-                        margin-top: 2px;
+                        font-weight: 600;
+                        color: #0284c7;
+                        margin-top: 3px;
                     }
                     .slip-badge-box {
                         text-align: right;
+                        vertical-align: middle;
+                        width: 190px;
                     }
                     .verified-badge {
                         display: inline-block;
@@ -1176,8 +1213,12 @@ sap.ui.define([
                 <div class="slip-container">
                     <table class="header-table">
                         <tr>
-                            <td>
-                                <div class="company-name">APL LOGISTICS &amp; GATE OPERATIONS</div>
+                            <td class="header-logo-cell">
+                                <img src="${sLogoSrc}" class="header-logo" alt="APL Logo" />
+                            </td>
+                            <td class="header-text-cell">
+                                <div class="company-name">Assam Petro-Chemicals Ltd</div>
+                                <div class="company-address">Address: Namprup, Dist: Dibrugarh(ASSAM), PO: Parbatpur-786623.</div>
                                 <div class="sub-header">Plant Weighbridge Station • Legal Metrology Certified</div>
                             </td>
                             <td class="slip-badge-box">

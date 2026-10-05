@@ -7,6 +7,19 @@
         title="Gate Transaction Details: {detailModel>/gateInNumber}"
         contentWidth="620px">
         <content>
+            <VBox alignItems="Center" class="sapUiSmallMarginTop sapUiTinyMarginBottom">
+                <Image
+                    src="/images/APL_Logo.jpg"
+                    height="38px"
+                    class="sapUiTinyMarginBottom" />
+                <Title
+                    text="Assam Petro-Chemicals Ltd"
+                    level="H4"
+                    titleStyle="H5" />
+                <Text
+                    text="Address: Namprup, Dist: Dibrugarh(ASSAM), PO: Parbatpur-786623."
+                    class="sapUiTinyMarginBottom text-muted" />
+            </VBox>
             <form:SimpleForm
                 layout="ResponsiveGridLayout"
                 labelSpanXL="4"

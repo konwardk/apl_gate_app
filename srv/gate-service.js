@@ -478,6 +478,66 @@ export default cds.service.impl(async function () {
                 PurchasingGroup: "003",
                 PurchaseOrderDate: "2026-09-11",
                 DocumentCurrency: "INR"
+            },
+            {
+                PurchaseOrder: "4500001001",
+                PurchaseOrderType: "NB",
+                Supplier: "SUPP-01",
+                CompanyCode: "1000",
+                PurchasingOrganization: "1010",
+                PurchasingGroup: "001",
+                PurchaseOrderDate: "2026-09-10",
+                DocumentCurrency: "INR"
+            },
+            {
+                PurchaseOrder: "4500001002",
+                PurchaseOrderType: "NB",
+                Supplier: "SUPP-01",
+                CompanyCode: "1000",
+                PurchasingOrganization: "1010",
+                PurchasingGroup: "001",
+                PurchaseOrderDate: "2026-09-08",
+                DocumentCurrency: "INR"
+            },
+            {
+                PurchaseOrder: "4500001003",
+                PurchaseOrderType: "NB",
+                Supplier: "SUPP-01",
+                CompanyCode: "1000",
+                PurchasingOrganization: "1010",
+                PurchasingGroup: "002",
+                PurchaseOrderDate: "2026-09-05",
+                DocumentCurrency: "INR"
+            },
+            {
+                PurchaseOrder: "PO-METH-2026-01",
+                PurchaseOrderType: "NB",
+                Supplier: "SUP001",
+                CompanyCode: "1000",
+                PurchasingOrganization: "1010",
+                PurchasingGroup: "001",
+                PurchaseOrderDate: "2026-09-04",
+                DocumentCurrency: "INR"
+            },
+            {
+                PurchaseOrder: "PO-GAS-2026-12",
+                PurchaseOrderType: "FO",
+                Supplier: "SUP003",
+                CompanyCode: "1000",
+                PurchasingOrganization: "1010",
+                PurchasingGroup: "002",
+                PurchaseOrderDate: "2026-09-02",
+                DocumentCurrency: "INR"
+            },
+            {
+                PurchaseOrder: "PO-CHEM-2026-99",
+                PurchaseOrderType: "NB",
+                Supplier: "SUP004",
+                CompanyCode: "1000",
+                PurchasingOrganization: "1010",
+                PurchasingGroup: "001",
+                PurchaseOrderDate: "2026-08-28",
+                DocumentCurrency: "INR"
             }
         ];
 
@@ -558,8 +618,9 @@ export default cds.service.impl(async function () {
         }
 
         // 4. Apply LIMIT / TOP if provided
-        if (req.query?.SELECT?.limit?.rows?.val) {
-            result = result.slice(0, req.query.SELECT.limit.rows.val);
+        const limitVal = req.query?.SELECT?.limit?.rows?.val ?? req.query?.SELECT?.limit?.rows;
+        if (limitVal !== undefined && limitVal !== null) {
+            result = result.slice(0, Number(limitVal));
         }
 
         if (req.query?.SELECT?.count) {
@@ -852,7 +913,8 @@ export default cds.service.impl(async function () {
             vehicleRegNo,
             vehicleType,
             purpose,
-            driverName
+            driverName,
+            gateInOperator
         } = req.data;
 
         // Validation
@@ -945,7 +1007,7 @@ export default cds.service.impl(async function () {
 
             gateInDateTime: new Date(),
 
-            gateInOperator: req.user?.id || 'SYSTEM'
+            gateInOperator: gateInOperator || req.user?.id || 'SYSTEM'
         };
 
 

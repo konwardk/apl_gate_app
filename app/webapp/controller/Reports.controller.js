@@ -698,20 +698,21 @@ sap.ui.define([
                 }
             }
 
-            doc.setFontSize(14);
+            doc.setFontSize(13);
             doc.setTextColor(0, 51, 102);
             doc.setFont("helvetica", "bold");
-            doc.text("ASSAM PETRO-CHEMICALS LIMITED", textStartX, 30);
+            doc.text("ASSAM PETRO-CHEMICALS LIMITED", textStartX, 26);
 
-            doc.setFontSize(8.5);
-            doc.setTextColor(90, 90, 90);
+            doc.setFontSize(7.5);
+            doc.setTextColor(80, 80, 80);
             doc.setFont("helvetica", "normal");
-            doc.text("Plant Gate Operations & Logistics Management System", textStartX, 42);
+            doc.text("Address: Namprup, Dist: Dibrugarh(ASSAM), PO: Parbatpur-786623.", textStartX, 36);
+            doc.text("Plant Gate Operations & Logistics Management System", textStartX, 46);
 
-            doc.setFontSize(11);
+            doc.setFontSize(10.5);
             doc.setTextColor(0, 112, 242);
             doc.setFont("helvetica", "bold");
-            doc.text(reportConfig.sheetName.toUpperCase() + " - OPERATIONAL REPORT", textStartX, 56);
+            doc.text(reportConfig.sheetName.toUpperCase() + " - OPERATIONAL REPORT", textStartX, 59);
 
             // Right-aligned header badge
             doc.setFontSize(8.5);
@@ -952,7 +953,8 @@ sap.ui.define([
                     <div style="display: flex; align-items: center; gap: 14px;">
                         <img src="${logoBase64 || 'images/APL_Logo.jpg'}" style="height: 48px; width: auto; object-fit: contain;" alt="APL Logo" />
                         <div>
-                            <div class="company-name">Assam Petro-chemicals Ltd (APL)</div>
+                            <div class="company-name">Assam Petro-Chemicals Ltd</div>
+                            <div class="company-address" style="font-size: 11px; color: #4b5563; margin-top: 2px;">Address: Namprup, Dist: Dibrugarh(ASSAM), PO: Parbatpur-786623.</div>
                             <div class="company-sub">Plant Gate Operations &amp; Logistics Management System</div>
                             <div class="report-title">${this._escapeXml(reportConfig.sheetName.toUpperCase())} - OPERATIONAL AUDIT REPORT</div>
                         </div>

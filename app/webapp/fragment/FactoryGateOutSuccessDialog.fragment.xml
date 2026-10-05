@@ -10,10 +10,21 @@
         contentWidth="540px">
         <content>
             <VBox alignItems="Center" class="sapUiSmallMargin">
+                <Image
+                    src="/images/APL_Logo.jpg"
+                    height="40px"
+                    class="sapUiTinyMarginBottom" />
+                <Title
+                    text="Assam Petro-Chemicals Ltd"
+                    level="H4"
+                    titleStyle="H5" />
+                <Text
+                    text="Address: Namrup, Dist: Dibrugarh(ASSAM), PO: Parbatpur-786623."
+                    class="sapUiTinyMarginBottom text-muted" />
                 <core:Icon
                     src="sap-icon://sys-enter-2"
                     color="#107e3e"
-                    size="2.8rem"
+                    size="2.4rem"
                     class="sapUiSmallMarginBottom" />
                 <Title
                     text="{facModel>/gateOutSuccess/gateInNumber}"

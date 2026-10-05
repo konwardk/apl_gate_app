@@ -153,10 +153,11 @@ service GateService {
      */
 
     action CreateGateIn(
-        vehicleRegNo : String,
-        vehicleType  : String,
-        purpose      : String,
-        driverName   : String
+        vehicleRegNo   : String,
+        vehicleType    : String,
+        purpose        : String,
+        driverName     : String,
+        gateInOperator : String
     ) returns GateTransactions;
 
 

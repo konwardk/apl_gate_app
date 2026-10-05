@@ -26,9 +26,13 @@ sap.ui.define([
         onTabSelect: function (oEvt) {
             const oTab = oEvt.getParameter("item");
             const sKey = oTab ? oTab.getKey() : oEvt.getParameter("key");
-            const oModel = this.getOwnerComponent().getModel();
+            const oComponent = this.getOwnerComponent();
+            const oModel = oComponent ? oComponent.getModel() : null;
             if (oModel && sKey) {
                 oModel.setProperty("/selectedDashboardTab", sKey);
+                if (oComponent && oComponent.loadOverviewData) {
+                    oComponent.loadOverviewData();
+                }
             }
         },
 
@@ -89,22 +93,34 @@ sap.ui.define([
         onKpiPress: function () {
             const oModel = this.getOwnerComponent().getModel();
             const oComponent = this.getOwnerComponent();
-            const sAssigned = oModel ? oModel.getProperty("/assignedScreen") : null;
+            const sSelectedTab = oModel ? oModel.getProperty("/selectedDashboardTab") : "OVERVIEW";
 
-            if (sAssigned && sAssigned !== "launchpadPage") {
-                oComponent.navigateTo(sAssigned, "slide");
-                if (sAssigned === "mainGateOpsPage") {
-                    oComponent.loadOverviewData();
-                }
-            } else if (oModel && oModel.getProperty("/canViewMainGateOps")) {
+            if (sSelectedTab === "SECURITY_GATE" && oModel.getProperty("/canViewSecurityGateOps")) {
+                oComponent.navigateTo("securityGateOpsPage", "slide");
+            } else if (sSelectedTab === "WEIGHBRIDGE" && oModel.getProperty("/canViewWeighbridgeOps")) {
+                oComponent.navigateTo("weighbridgeOpsPage", "slide");
+            } else if (sSelectedTab === "FACTORY_GATE" && oModel.getProperty("/canViewFactoryGateOps")) {
+                oComponent.navigateTo("factoryGateOpsPage", "slide");
+            } else if (sSelectedTab === "MAIN_GATE" && oModel.getProperty("/canViewMainGateOps")) {
                 oComponent.navigateTo("mainGateOpsPage", "slide");
                 oComponent.loadOverviewData();
-            } else if (oModel && oModel.getProperty("/canViewSecurityGateOps")) {
-                oComponent.navigateTo("securityGateOpsPage", "slide");
-            } else if (oModel && oModel.getProperty("/canViewWeighbridgeOps")) {
-                oComponent.navigateTo("weighbridgeOpsPage", "slide");
-            } else if (oModel && oModel.getProperty("/canViewFactoryGateOps")) {
-                oComponent.navigateTo("factoryGateOpsPage", "slide");
+            } else {
+                const sAssigned = oModel ? oModel.getProperty("/assignedScreen") : null;
+                if (sAssigned && sAssigned !== "launchpadPage") {
+                    oComponent.navigateTo(sAssigned, "slide");
+                    if (sAssigned === "mainGateOpsPage") {
+                        oComponent.loadOverviewData();
+                    }
+                } else if (oModel && oModel.getProperty("/canViewMainGateOps")) {
+                    oComponent.navigateTo("mainGateOpsPage", "slide");
+                    oComponent.loadOverviewData();
+                } else if (oModel && oModel.getProperty("/canViewSecurityGateOps")) {
+                    oComponent.navigateTo("securityGateOpsPage", "slide");
+                } else if (oModel && oModel.getProperty("/canViewWeighbridgeOps")) {
+                    oComponent.navigateTo("weighbridgeOpsPage", "slide");
+                } else if (oModel && oModel.getProperty("/canViewFactoryGateOps")) {
+                    oComponent.navigateTo("factoryGateOpsPage", "slide");
+                }
             }
         },
 

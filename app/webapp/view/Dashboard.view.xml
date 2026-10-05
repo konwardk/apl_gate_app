@@ -246,12 +246,29 @@
                         key="SECURITY_GATE"
                         text="Security Gate"
                         icon="sap-icon://shield"
-                        count="{/counts/ACTIVE}"
+                        count="{/counts/SECURITY_GATE}"
                         visible="{/canViewSecurityGateOps}">
                         <content>
                             <VBox class="sapUiSmallMarginTop">
                                 <Title text="Security Gate Clearance KPI Overview" level="H3" titleStyle="H4" class="sapUiTinyMarginBottom" />
                                 <HBox wrap="NoWrap" class="flp-kpi-bar">
+                                    <GenericTile
+                                        header="Awaiting Security IN"
+                                        subheader="Pending Verification"
+                                        press=".onKpiPress"
+                                        class="kpi-tile-card">
+                                        <tileContent>
+                                            <TileContent>
+                                                <content>
+                                                    <NumericContent
+                                                        value="{/counts/SECURITY_AWAITING_IN}"
+                                                        icon="sap-icon://log-in"
+                                                        valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
+
                                     <GenericTile
                                         header="Active In Plant"
                                         subheader="Inside Factory Yard"
@@ -261,8 +278,25 @@
                                             <TileContent>
                                                 <content>
                                                     <NumericContent
-                                                        value="{/counts/ACTIVE}"
+                                                        value="{/counts/SECURITY_IN_PLANT}"
                                                         icon="sap-icon://shield"
+                                                        valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
+
+                                    <GenericTile
+                                        header="Awaiting Security OUT"
+                                        subheader="Exit Check Required"
+                                        press=".onKpiPress"
+                                        class="kpi-tile-card">
+                                        <tileContent>
+                                            <TileContent>
+                                                <content>
+                                                    <NumericContent
+                                                        value="{/counts/SECURITY_AWAITING_OUT}"
+                                                        icon="sap-icon://log-out"
                                                         valueColor="Neutral" />
                                                 </content>
                                             </TileContent>
@@ -279,7 +313,7 @@
                                                 <content>
                                                     <NumericContent
                                                         value="{/counts/READY_OUT}"
-                                                        icon="sap-icon://log-out"
+                                                        icon="sap-icon://accept"
                                                         valueColor="Neutral" />
                                                 </content>
                                             </TileContent>
@@ -298,7 +332,7 @@
                                         <tileContent>
                                             <TileContent footer="Physical Check &amp; Delivery Docs">
                                                 <content>
-                                                    <NumericContent icon="sap-icon://shield" value="{/counts/ACTIVE}" valueColor="Neutral" />
+                                                    <NumericContent icon="sap-icon://shield" value="{/counts/SECURITY_GATE}" valueColor="Neutral" />
                                                 </content>
                                             </TileContent>
                                         </tileContent>
@@ -325,10 +359,99 @@
                         key="WEIGHBRIDGE"
                         text="Weighbridge"
                         icon="sap-icon://dimension"
+                        count="{/counts/WEIGHBRIDGE}"
                         visible="{/canViewWeighbridgeOps}">
                         <content>
                             <VBox class="sapUiSmallMarginTop">
-                                <Title text="Weighbridge Scale Overview" level="H3" titleStyle="H4" class="sapUiTinyMarginBottom" />
+                                <Title text="Weighbridge Scale KPI Overview" level="H3" titleStyle="H4" class="sapUiTinyMarginBottom" />
+                                <HBox wrap="NoWrap" class="flp-kpi-bar">
+                                    <GenericTile
+                                        header="Total Scale Queue"
+                                        subheader="All Weighbridge Vehicles"
+                                        press=".onKpiPress"
+                                        class="kpi-tile-card">
+                                        <tileContent>
+                                            <TileContent>
+                                                <content>
+                                                    <NumericContent
+                                                        value="{/counts/WEIGHBRIDGE}"
+                                                        icon="sap-icon://dimension"
+                                                        valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
+
+                                    <GenericTile
+                                        header="Awaiting Inbound"
+                                        subheader="1st Scale Weighment"
+                                        press=".onKpiPress"
+                                        class="kpi-tile-card">
+                                        <tileContent>
+                                            <TileContent>
+                                                <content>
+                                                    <NumericContent
+                                                        value="{/counts/WEIGHBRIDGE_AWAITING_IN}"
+                                                        icon="sap-icon://log-in"
+                                                        valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
+
+                                    <GenericTile
+                                        header="Inside Yard"
+                                        subheader="Unloading in Progress"
+                                        press=".onKpiPress"
+                                        class="kpi-tile-card">
+                                        <tileContent>
+                                            <TileContent>
+                                                <content>
+                                                    <NumericContent
+                                                        value="{/counts/WEIGHBRIDGE_INSIDE_YARD}"
+                                                        icon="sap-icon://factory"
+                                                        valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
+
+                                    <GenericTile
+                                        header="Awaiting Outbound"
+                                        subheader="2nd Scale Weighment"
+                                        press=".onKpiPress"
+                                        class="kpi-tile-card">
+                                        <tileContent>
+                                            <TileContent>
+                                                <content>
+                                                    <NumericContent
+                                                        value="{/counts/WEIGHBRIDGE_AWAITING_OUT}"
+                                                        icon="sap-icon://log-out"
+                                                        valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
+
+                                    <GenericTile
+                                        header="Scale Completed"
+                                        subheader="Tare &amp; Net Verified"
+                                        press=".onKpiPress"
+                                        class="kpi-tile-card">
+                                        <tileContent>
+                                            <TileContent>
+                                                <content>
+                                                    <NumericContent
+                                                        value="{/counts/WEIGHBRIDGE_COMPLETED}"
+                                                        icon="sap-icon://accept"
+                                                        valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
+                                </HBox>
+
+                                <Title text="Weighbridge Workspace" level="H3" titleStyle="H4" class="sapUiSmallMarginTop sapUiTinyMarginBottom" />
                                 <HBox wrap="Wrap" alignItems="Center" class="sapUiSmallMarginBottom">
                                     <GenericTile
                                         header="Weighbridge Operations"
@@ -339,7 +462,7 @@
                                         <tileContent>
                                             <TileContent footer="Digital Scale &amp; Net Weight">
                                                 <content>
-                                                    <NumericContent icon="sap-icon://dimension" valueColor="Neutral" />
+                                                    <NumericContent icon="sap-icon://dimension" value="{/counts/WEIGHBRIDGE}" valueColor="Neutral" />
                                                 </content>
                                             </TileContent>
                                         </tileContent>
@@ -366,23 +489,74 @@
                         key="FACTORY_GATE"
                         text="Factory Yard"
                         icon="sap-icon://factory"
-                        count="{/counts/IN_PLANT}"
+                        count="{/counts/FACTORY_GATE}"
                         visible="{/canViewFactoryGateOps}">
                         <content>
                             <VBox class="sapUiSmallMarginTop">
                                 <Title text="Factory Yard Operations Overview" level="H3" titleStyle="H4" class="sapUiTinyMarginBottom" />
                                 <HBox wrap="NoWrap" class="flp-kpi-bar">
                                     <GenericTile
-                                        header="In Plant Yard"
-                                        subheader="Active In Factory"
+                                        header="Total Factory Queue"
+                                        subheader="All Delivery &amp; Pickup"
                                         press=".onKpiPress"
                                         class="kpi-tile-card">
                                         <tileContent>
                                             <TileContent>
                                                 <content>
                                                     <NumericContent
-                                                        value="{/counts/IN_PLANT}"
+                                                        value="{/counts/FACTORY_GATE}"
                                                         icon="sap-icon://factory"
+                                                        valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
+
+                                    <GenericTile
+                                        header="Awaiting Factory IN"
+                                        subheader="Pending Yard Check-In"
+                                        press=".onKpiPress"
+                                        class="kpi-tile-card">
+                                        <tileContent>
+                                            <TileContent>
+                                                <content>
+                                                    <NumericContent
+                                                        value="{/counts/FACTORY_AWAITING_IN}"
+                                                        icon="sap-icon://log-in"
+                                                        valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
+
+                                    <GenericTile
+                                        header="Active Inside Yard"
+                                        subheader="Unloading / Loading"
+                                        press=".onKpiPress"
+                                        class="kpi-tile-card">
+                                        <tileContent>
+                                            <TileContent>
+                                                <content>
+                                                    <NumericContent
+                                                        value="{/counts/FACTORY_ACTIVE}"
+                                                        icon="sap-icon://wrench"
+                                                        valueColor="Neutral" />
+                                                </content>
+                                            </TileContent>
+                                        </tileContent>
+                                    </GenericTile>
+
+                                    <GenericTile
+                                        header="Yard Completed"
+                                        subheader="Cleared for Exit"
+                                        press=".onKpiPress"
+                                        class="kpi-tile-card">
+                                        <tileContent>
+                                            <TileContent>
+                                                <content>
+                                                    <NumericContent
+                                                        value="{/counts/FACTORY_DONE}"
+                                                        icon="sap-icon://accept"
                                                         valueColor="Neutral" />
                                                 </content>
                                             </TileContent>
@@ -401,7 +575,7 @@
                                         <tileContent>
                                             <TileContent footer="Plant Unloading &amp; Clearance">
                                                 <content>
-                                                    <NumericContent icon="sap-icon://factory" value="{/counts/IN_PLANT}" valueColor="Neutral" />
+                                                    <NumericContent icon="sap-icon://factory" value="{/counts/FACTORY_GATE}" valueColor="Neutral" />
                                                 </content>
                                             </TileContent>
                                         </tileContent>
@@ -545,7 +719,7 @@
                                             <tileContent>
                                                 <TileContent footer="Physical Check &amp; Delivery Docs">
                                                     <content>
-                                                        <NumericContent icon="sap-icon://shield" value="{/counts/ACTIVE}" valueColor="Neutral" />
+                                                        <NumericContent icon="sap-icon://shield" value="{/counts/SECURITY_GATE}" valueColor="Neutral" />
                                                     </content>
                                                 </TileContent>
                                             </tileContent>
@@ -561,7 +735,7 @@
                                             <tileContent>
                                                 <TileContent footer="Digital Scale &amp; Net Weight">
                                                     <content>
-                                                        <NumericContent icon="sap-icon://dimension" valueColor="Neutral" />
+                                                        <NumericContent icon="sap-icon://dimension" value="{/counts/WEIGHBRIDGE}" valueColor="Neutral" />
                                                     </content>
                                                 </TileContent>
                                             </tileContent>
@@ -577,7 +751,7 @@
                                             <tileContent>
                                                 <TileContent footer="Plant Unloading &amp; Clearance">
                                                     <content>
-                                                        <NumericContent icon="sap-icon://factory" value="{/counts/IN_PLANT}" valueColor="Neutral" />
+                                                        <NumericContent icon="sap-icon://factory" value="{/counts/FACTORY_GATE}" valueColor="Neutral" />
                                                     </content>
                                                 </TileContent>
                                             </tileContent>
@@ -602,7 +776,7 @@
                                             <tileContent>
                                                 <TileContent footer="Fiori Elements List Report">
                                                     <content>
-                                                        <NumericContent icon="sap-icon://car-rental" valueColor="Neutral" />
+                                                        <NumericContent icon="sap-icon://car-rental" value="{/counts/VEHICLES}" valueColor="Neutral" />
                                                     </content>
                                                 </TileContent>
                                             </tileContent>
@@ -617,7 +791,7 @@
                                             <tileContent>
                                                 <TileContent footer="Fiori Elements List Report">
                                                     <content>
-                                                        <NumericContent icon="sap-icon://person-placeholder" valueColor="Neutral" />
+                                                        <NumericContent icon="sap-icon://person-placeholder" value="{/counts/DRIVERS}" valueColor="Neutral" />
                                                     </content>
                                                 </TileContent>
                                             </tileContent>
@@ -632,7 +806,7 @@
                                             <tileContent>
                                                 <TileContent footer="Fiori Elements List Report">
                                                     <content>
-                                                        <NumericContent icon="sap-icon://supplier" valueColor="Neutral" />
+                                                        <NumericContent icon="sap-icon://supplier" value="{/counts/TRANSPORTERS}" valueColor="Neutral" />
                                                     </content>
                                                 </TileContent>
                                             </tileContent>
@@ -647,7 +821,7 @@
                                             <tileContent>
                                                 <TileContent footer="Fiori Elements List Report">
                                                     <content>
-                                                        <NumericContent icon="sap-icon://factory" valueColor="Neutral" />
+                                                        <NumericContent icon="sap-icon://factory" value="{/counts/SUPPLIERS}" valueColor="Neutral" />
                                                     </content>
                                                 </TileContent>
                                             </tileContent>
@@ -672,7 +846,7 @@
                                             <tileContent>
                                                 <TileContent footer="Fiori Elements List Report">
                                                     <content>
-                                                        <NumericContent icon="sap-icon://history" valueColor="Neutral" />
+                                                        <NumericContent icon="sap-icon://history" value="{/counts/AUDIT}" valueColor="Neutral" />
                                                     </content>
                                                 </TileContent>
                                             </tileContent>
@@ -722,7 +896,7 @@
                                             <tileContent>
                                                 <TileContent footer="Accounts, Service Status &amp; RBAC">
                                                     <content>
-                                                        <NumericContent icon="sap-icon://user-settings" valueColor="Neutral" />
+                                                        <NumericContent icon="sap-icon://user-settings" value="{/counts/USERS}" valueColor="Neutral" />
                                                     </content>
                                                 </TileContent>
                                             </tileContent>
@@ -738,6 +912,7 @@
                         key="MASTER_DATA"
                         text="Master Data"
                         icon="sap-icon://database"
+                        count="{/counts/MASTER_DATA}"
                         visible="{/canViewMasterData}">
                         <content>
                             <VBox class="sapUiSmallMarginTop">
@@ -756,7 +931,7 @@
                                         <tileContent>
                                             <TileContent footer="Fiori Elements List Report">
                                                 <content>
-                                                    <NumericContent icon="sap-icon://car-rental" valueColor="Neutral" />
+                                                    <NumericContent icon="sap-icon://car-rental" value="{/counts/VEHICLES}" valueColor="Neutral" />
                                                 </content>
                                             </TileContent>
                                         </tileContent>
@@ -771,7 +946,7 @@
                                         <tileContent>
                                             <TileContent footer="Fiori Elements List Report">
                                                 <content>
-                                                    <NumericContent icon="sap-icon://person-placeholder" valueColor="Neutral" />
+                                                    <NumericContent icon="sap-icon://person-placeholder" value="{/counts/DRIVERS}" valueColor="Neutral" />
                                                 </content>
                                             </TileContent>
                                         </tileContent>
@@ -786,7 +961,7 @@
                                         <tileContent>
                                             <TileContent footer="Fiori Elements List Report">
                                                 <content>
-                                                    <NumericContent icon="sap-icon://supplier" valueColor="Neutral" />
+                                                    <NumericContent icon="sap-icon://supplier" value="{/counts/TRANSPORTERS}" valueColor="Neutral" />
                                                 </content>
                                             </TileContent>
                                         </tileContent>
@@ -801,7 +976,7 @@
                                         <tileContent>
                                             <TileContent footer="Fiori Elements List Report">
                                                 <content>
-                                                    <NumericContent icon="sap-icon://factory" valueColor="Neutral" />
+                                                    <NumericContent icon="sap-icon://factory" value="{/counts/SUPPLIERS}" valueColor="Neutral" />
                                                 </content>
                                             </TileContent>
                                         </tileContent>
@@ -816,6 +991,7 @@
                         key="REPORTS_AUDIT"
                         text="Reports &amp; Audit"
                         icon="sap-icon://pdf-attachment"
+                        count="{/counts/AUDIT}"
                         visible="{= ${/canViewReports} || ${/canViewAuditTrail} }">
                         <content>
                             <VBox class="sapUiSmallMarginTop">
@@ -851,7 +1027,7 @@
                                         <tileContent>
                                             <TileContent footer="Fiori Elements List Report">
                                                 <content>
-                                                    <NumericContent icon="sap-icon://history" valueColor="Neutral" />
+                                                    <NumericContent icon="sap-icon://history" value="{/counts/AUDIT}" valueColor="Neutral" />
                                                 </content>
                                             </TileContent>
                                         </tileContent>
@@ -866,6 +1042,7 @@
                         key="ADMIN"
                         text="Administration"
                         icon="sap-icon://user-settings"
+                        count="{/counts/USERS}"
                         visible="{/canManageUsers}">
                         <content>
                             <VBox class="sapUiSmallMarginTop">
@@ -884,7 +1061,7 @@
                                         <tileContent>
                                             <TileContent footer="Accounts, Service Status &amp; RBAC">
                                                 <content>
-                                                    <NumericContent icon="sap-icon://user-settings" valueColor="Neutral" />
+                                                    <NumericContent icon="sap-icon://user-settings" value="{/counts/USERS}" valueColor="Neutral" />
                                                 </content>
                                             </TileContent>
                                         </tileContent>

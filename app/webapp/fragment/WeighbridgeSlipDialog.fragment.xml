@@ -25,10 +25,17 @@
             <VBox class="weighbridge-slip-content">
                 <!-- Slip Header / Company Reference -->
                 <HBox justifyContent="SpaceBetween" alignItems="Center" class="slip-header-banner sapUiSmallMarginBottom">
-                    <VBox>
-                        <Title text="APL LOGISTICS &amp; GATE OPERATIONS" level="H4" titleStyle="H5" />
-                        <Text text="Plant Weighbridge Station • ISO 9001 / Legal Metrology Certified" class="sapUiTinyMarginTop" />
-                    </VBox>
+                    <HBox alignItems="Center">
+                        <Image
+                            src="/images/APL_Logo.jpg"
+                            height="44px"
+                            class="sapUiSmallMarginEnd" />
+                        <VBox>
+                            <Title text="Assam Petro-Chemicals Ltd" level="H4" titleStyle="H5" />
+                            <Text text="Address: Namrup, Dist: Dibrugarh(ASSAM), PO: Parbatpur-786623." class="sapUiTinyMarginTop text-muted" />
+                            <Text text="Plant Weighbridge Station • ISO 9001 / Legal Metrology Certified" class="sapUiTinyMarginTop" />
+                        </VBox>
+                    </HBox>
                     <VBox alignItems="End">
                         <Label text="Slip No: {slipModel>/slipNumber}" design="Bold" />
                         <Text text="Date: {path: 'slipModel>/weighbridgeDateTime', formatter: '.formatter.formatDateTime'}" />
