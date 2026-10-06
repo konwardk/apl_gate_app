@@ -87,8 +87,18 @@ sap.ui.define([
         "auditor_user": "REPORTS_AUDIT"
     };
 
+    const DEFAULT_LOGIN_USERS = [
+        { UserId: "EMP-001", username: "maingate_user", password: "password", name: "Mahesh Verma", designation: "Main Gate Operator", department: "Main Gate Operations", roleCode: "MainGateUser", roleName: "Main Gate Operator", assignedRoles: "MainGateUser", status: "ACTIVE", active: true, serviceStatus: "IN_SERVICE", icon: "sap-icon://log-in", roleBadgeState: "Information", assignedTab: "MAIN_GATE" },
+        { UserId: "EMP-002", username: "security_user", password: "password", name: "Vikram Rathore", designation: "Security Gate Officer", department: "Security & Vigilance", roleCode: "SecurityGateUser", roleName: "Security Gate Officer", assignedRoles: "SecurityGateUser", status: "ACTIVE", active: true, serviceStatus: "IN_SERVICE", icon: "sap-icon://shield", roleBadgeState: "Warning", assignedTab: "SECURITY_GATE" },
+        { UserId: "EMP-003", username: "weighbridge_user", password: "password", name: "Suresh Patil", designation: "Weighbridge Scale Operator", department: "Weighment Logistics", roleCode: "WeighbridgeUser", roleName: "Weighbridge Scale Operator", assignedRoles: "WeighbridgeUser", status: "ACTIVE", active: true, serviceStatus: "IN_SERVICE", icon: "sap-icon://dimension", roleBadgeState: "Indication04", assignedTab: "WEIGHBRIDGE" },
+        { UserId: "EMP-004", username: "factory_user", password: "password", name: "Sunil Nair", designation: "Factory Yard Supervisor", department: "Plant Yard Logistics", roleCode: "FactoryGateUser", roleName: "Factory Yard Supervisor", assignedRoles: "FactoryGateUser", status: "ACTIVE", active: true, serviceStatus: "IN_SERVICE", icon: "sap-icon://factory", roleBadgeState: "Success", assignedTab: "FACTORY_GATE" },
+        { UserId: "EMP-005", username: "admin_user", password: "password", name: "Amit Roy", designation: "Operations Administrator", department: "Plant Administration", roleCode: "Admin", roleName: "Operations Administrator", assignedRoles: "Admin", status: "ACTIVE", active: true, serviceStatus: "IN_SERVICE", icon: "sap-icon://home", roleBadgeState: "Information", assignedTab: "OVERVIEW" },
+        { UserId: "EMP-000", username: "superadmin_user", password: "password", name: "System Superadmin", designation: "System Superadministrator", department: "IT Enterprise Systems", roleCode: "Superadmin", roleName: "System Superadministrator", assignedRoles: "Superadmin, Admin, MainGateUser, SecurityGateUser, WeighbridgeUser, FactoryGateUser, Auditor", status: "ACTIVE", active: true, serviceStatus: "IN_SERVICE", icon: "sap-icon://user-settings", roleBadgeState: "Indication01", assignedTab: "OVERVIEW" }
+    ];
+
     return {
         defaultPasswords: defaultPasswords,
+        DEFAULT_LOGIN_USERS: DEFAULT_LOGIN_USERS,
         ROLE_TITLES: ROLE_TITLES,
         ROLE_ICONS: ROLE_ICONS,
         ROLE_SCREENS: ROLE_SCREENS,
@@ -284,6 +294,8 @@ sap.ui.define([
                 loginPassword: "",
                 loginError: "",
                 isLoginBusy: false,
+                loginUsers: DEFAULT_LOGIN_USERS.slice(),
+                isUsersLoading: false,
                 counts: {
                     TOTAL: 0,
                     ACTIVE: 0,

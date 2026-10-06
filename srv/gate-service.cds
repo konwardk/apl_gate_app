@@ -1,6 +1,7 @@
 using factory.gate as db from '../db/schema';
 using { CE_PURCHASEORDER_0001 as externalPO } from './external/CE_PURCHASEORDER_0001';
-using { YY1_API_VEHICLEENTRY_0001 as externalVehicleEntry } from './external/YY1_API_VEHICLEENTRY_0001';
+using { YY1_API_VEHICLEGATEOPERATION_0001 as externalVehicleGateOp } from './external/YY1_API_VEHICLEGATEOPERATION_0001';
+using { YY1_API_CUSTOMUSER_0001 as externalCustomUser } from './external/YY1_API_CUSTOMUSER_0001';
 
 @path: '/gate'
 service GateService {
@@ -124,15 +125,39 @@ service GateService {
 
     /*
      * ============================================================
-     * SAP S/4HANA CLOUD CBO: VEHICLE ENTRY & SECURITY ENTRY
+     * SAP S/4HANA CLOUD CBO: VEHICLE GATE OPERATION
      * ============================================================
      */
 
+    @cds.redirection.target
+    entity S4VehicleGateOperations
+        as projection on externalVehicleGateOp.VehicleGateOperation;
+
+    @cds.redirection.target
+    entity S4SecurityGateEntries
+        as projection on externalVehicleGateOp.SecurityGateEntries;
+
+    entity S4WeighbridgeTransactions
+        as projection on externalVehicleGateOp.WeighbridgeTransactions;
+
+    entity S4FactoryGateEntries
+        as projection on externalVehicleGateOp.FactoryGateEntries;
+
+    entity S4DeliveryDetails
+        as projection on externalVehicleGateOp.DeliveryDetails;
+
+    entity S4PickupDetails
+        as projection on externalVehicleGateOp.PickupDetail;
+
+    // Backward compatibility aliases
     entity S4VehicleEntries
-        as projection on externalVehicleEntry.VehicleEntry;
+        as projection on externalVehicleGateOp.VehicleGateOperation;
 
     entity S4SecurityEntries
-        as projection on externalVehicleEntry.SecurityEntry;
+        as projection on externalVehicleGateOp.SecurityGateEntries;
+
+    entity S4CustomUsers
+        as projection on externalCustomUser.CustomUser;
 
 
     /*
@@ -292,6 +317,7 @@ service GateService {
      */
 
     action CreateUser(
+        UserId          : String,
         username        : String,
         password        : String,
         name            : String,
@@ -333,12 +359,16 @@ service GateService {
 
     /*
      * ============================================================
-     * SAP S/4HANA CLOUD CBO SYNC ACTION
+     * SAP S/4HANA CLOUD CBO SYNC ACTIONS
      * ============================================================
      */
 
     action SyncToS4Hana(
         gateInNumber : String
+    ) returns String;
+
+    action SyncUserToS4Hana(
+        username : String
     ) returns String;
 
 
@@ -359,7 +389,30 @@ service GateService {
         status      : String;
     };
 
+    type LoginUser {
+        UserId         : String;
+        username       : String;
+        password       : String;
+        name           : String;
+        employeeId     : String;
+        designation    : String;
+        department     : String;
+        email          : String;
+        phoneNo        : String;
+        roleCode       : String;
+        roleName       : String;
+        assignedRoles  : String;
+        status         : String;
+        active         : Boolean;
+        serviceStatus  : String;
+        icon           : String;
+        roleBadgeState : String;
+        assignedTab    : String;
+    };
+
     function userInfo() returns UserInfo;
+
+    function getLoginUsers() returns array of LoginUser;
 
 }
 

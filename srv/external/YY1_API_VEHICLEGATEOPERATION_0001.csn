@@ -1,0 +1,1481 @@
+{
+ "meta": {
+  "creator": "cds-dk 10.1.0"
+ },
+ "$version": "2.0",
+ "definitions": {
+  "YY1_API_VEHICLEGATEOPERATION_0001.SAP__Message": {
+   "kind": "type",
+   "@cds.external": true,
+   "elements": {
+    "code": {
+     "type": "cds.String",
+     "notNull": true
+    },
+    "message": {
+     "type": "cds.String",
+     "notNull": true
+    },
+    "target": {
+     "type": "cds.String"
+    },
+    "additionalTargets": {
+     "items": {
+      "type": "cds.String",
+      "notNull": true
+     }
+    },
+    "transition": {
+     "type": "cds.Boolean",
+     "notNull": true
+    },
+    "numericSeverity": {
+     "type": "cds.Integer",
+     "@odata.Type": "Edm.Byte",
+     "notNull": true
+    },
+    "longtextUrl": {
+     "type": "cds.String"
+    }
+   }
+  },
+  "YY1_API_VEHICLEGATEOPERATION_0001": {
+   "kind": "service",
+   "@cds.external": true,
+   "@Common.ApplyMultiUnitBehaviorForSortingAndFiltering": true,
+   "@Capabilities.FilterFunctions": [
+    "eq",
+    "ne",
+    "gt",
+    "ge",
+    "lt",
+    "le",
+    "and",
+    "or",
+    "contains",
+    "startswith",
+    "endswith",
+    "any",
+    "all"
+   ],
+   "@SAP__support.TechnicalInfoLinks.Url": "../../../../default/iwbep/common/0001/$metadata",
+   "@SAP__support.TechnicalInfoLinks.FunctionImport": "GetTechnicalInfoLinks",
+   "@Capabilities.SupportedFormats": [
+    "application/json",
+    "application/pdf"
+   ],
+   "@PDF.Features.DocumentDescriptionReference": "../../../../default/iwbep/common/0001/$metadata",
+   "@PDF.Features.DocumentDescriptionCollection": "MyDocumentDescriptions",
+   "@PDF.Features.ArchiveFormat": true,
+   "@PDF.Features.Border": true,
+   "@PDF.Features.CoverPage": true,
+   "@PDF.Features.FitToPage": true,
+   "@PDF.Features.FontName": true,
+   "@PDF.Features.FontSize": true,
+   "@PDF.Features.HeaderFooter": true,
+   "@PDF.Features.IANATimezoneFormat": true,
+   "@PDF.Features.Margin": true,
+   "@PDF.Features.Padding": true,
+   "@PDF.Features.ResultSizeDefault": 20000,
+   "@PDF.Features.ResultSizeMaximum": 20000,
+   "@PDF.Features.Signature": true,
+   "@PDF.Features.TextDirectionLayout": true,
+   "@PDF.Features.Treeview": true,
+   "@PDF.Features.UploadToFileShare": true,
+   "@Capabilities.BatchSupport.SupportedFormats": [
+    "application/json",
+    "multipart/mixed"
+   ],
+   "@Capabilities.KeyAsSegmentSupported": true,
+   "@Capabilities.AsynchronousRequestsSupported": true
+  },
+  "YY1_API_VEHICLEGATEOPERATION_0001.DeliveryDetails": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "MainGateEntryId": {
+     "key": true,
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "MainGateEntryId",
+     "@Common.QuickInfo": "MainGateEntryId",
+     "@Core.Computed": true
+    },
+    "DeliveryId": {
+     "key": true,
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "DeliveryId",
+     "@Common.QuickInfo": "DeliveryId"
+    },
+    "SAPUUID": {
+     "type": "cds.UUID",
+     "@Core.Computed": true,
+     "@Common.Label": "UUID",
+     "@Common.QuickInfo": "16 Byte UUID in 16 Bytes (Raw Format)"
+    },
+    "SAPParentUUID": {
+     "type": "cds.UUID",
+     "@Core.Computed": true,
+     "@Common.Label": "UUID",
+     "@Common.QuickInfo": "16 Byte UUID in 16 Bytes (Raw Format)"
+    },
+    "SAPRootUUID": {
+     "type": "cds.UUID",
+     "@Core.Computed": true,
+     "@Common.Label": "UUID",
+     "@Common.QuickInfo": "16 Byte UUID in 16 Bytes (Raw Format)"
+    },
+    "gateTransaction": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "gateTransaction",
+     "@Common.QuickInfo": "gateTransaction"
+    },
+    "PurchaseOrderNo": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "PurchaseOrderNo",
+     "@Common.QuickInfo": "PurchaseOrderNo"
+    },
+    "SalesOrderNo": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "SalesOrderNo",
+     "@Common.QuickInfo": "SalesOrderNo"
+    },
+    "InvoiceNo": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "InvoiceNo",
+     "@Common.QuickInfo": "InvoiceNo"
+    },
+    "DeliveryNo": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "DeliveryNo",
+     "@Common.QuickInfo": "DeliveryNo"
+    },
+    "supplierCode": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "supplierCode",
+     "@Common.QuickInfo": "supplierCode"
+    },
+    "supplierName": {
+     "type": "cds.String",
+     "length": 150,
+     "notNull": true,
+     "@Common.Label": "supplierName",
+     "@Common.QuickInfo": "supplierName"
+    },
+    "documentVerificationStatus": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "documentVerificationStatus",
+     "@Common.QuickInfo": "documentVerificationStatus"
+    },
+    "deliveryRemarks": {
+     "type": "cds.String",
+     "length": 250,
+     "notNull": true,
+     "@Common.Label": "deliveryRemarks",
+     "@Common.QuickInfo": "deliveryRemarks"
+    },
+    "SAP__Messages": {
+     "items": {
+      "type": "YY1_API_VEHICLEGATEOPERATION_0001.SAP__Message",
+      "notNull": true
+     }
+    },
+    "_VehicleGateOperation": {
+     "type": "cds.Association",
+     "target": "YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation",
+     "cardinality": {
+      "max": 1
+     },
+     "on": [
+      {
+       "ref": [
+        "_VehicleGateOperation",
+        "MainGateEntryId"
+       ]
+      },
+      "=",
+      {
+       "ref": [
+        "MainGateEntryId"
+       ]
+      }
+     ]
+    }
+   },
+   "@Common.Label": "CBO YY1_R_VEHICLEGATEOPERATIONTP / DeliveryDetails",
+   "@Common.Messages": {
+    "=": "SAP__Messages"
+   },
+   "@Capabilities.NavigationRestrictions.RestrictedProperties": [
+    {
+     "NavigationProperty": {
+      "=": "_VehicleGateOperation"
+     },
+     "InsertRestrictions": {
+      "Insertable": false
+     },
+     "DeepUpdateSupport": {
+      "Supported": false
+     }
+    }
+   ],
+   "@Capabilities.SearchRestrictions.Searchable": false,
+   "@Capabilities.InsertRestrictions.RequiredProperties": [
+    "DeliveryId"
+   ],
+   "@Capabilities.InsertRestrictions.Insertable": false,
+   "@Capabilities.UpdateRestrictions.DeltaUpdateSupported": true,
+   "@Capabilities.UpdateRestrictions.NonUpdatableNavigationProperties": [
+    "_VehicleGateOperation"
+   ],
+   "@Capabilities.UpdateRestrictions.QueryOptions.SelectSupported": true,
+   "@Capabilities.DeepUpdateSupport.ContentIDSupported": true
+  },
+  "YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "MainGateEntryId": {
+     "key": true,
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "MainGateEntryId",
+     "@Common.QuickInfo": "MainGateEntryId",
+     "@Core.Computed": true
+    },
+    "FactoryEntryId": {
+     "key": true,
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "FactoryEntryId",
+     "@Common.QuickInfo": "FactoryEntryId"
+    },
+    "SAPUUID": {
+     "type": "cds.UUID",
+     "@Core.Computed": true,
+     "@Common.Label": "UUID",
+     "@Common.QuickInfo": "16 Byte UUID in 16 Bytes (Raw Format)"
+    },
+    "SAPParentUUID": {
+     "type": "cds.UUID",
+     "@Core.Computed": true,
+     "@Common.Label": "UUID",
+     "@Common.QuickInfo": "16 Byte UUID in 16 Bytes (Raw Format)"
+    },
+    "SAPRootUUID": {
+     "type": "cds.UUID",
+     "@Core.Computed": true,
+     "@Common.Label": "UUID",
+     "@Common.QuickInfo": "16 Byte UUID in 16 Bytes (Raw Format)"
+    },
+    "GateInNoF": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "GateInNoF",
+     "@Common.QuickInfo": "GateInNoF"
+    },
+    "factoryGateInDateTime": {
+     "type": "cds.Timestamp",
+     "@odata.Precision": 7,
+     "@odata.Type": "Edm.DateTimeOffset",
+     "@Common.Label": "factoryGateInDateTime",
+     "@Common.QuickInfo": "factoryGateInDateTime",
+     "@Common.Heading": "Long Form of Time Stamp",
+     "@Common.DocumentationRef": "urn:sap-com:documentation:key?=type=DE&id=TZNTSTMPL"
+    },
+    "factoryGateInOperator": {
+     "type": "cds.String",
+     "length": 150,
+     "notNull": true,
+     "@Common.Label": "factoryGateInOperator",
+     "@Common.QuickInfo": "factoryGateInOperator"
+    },
+    "factoryGateInRemarks": {
+     "type": "cds.String",
+     "length": 250,
+     "notNull": true,
+     "@Common.Label": "factoryGateInRemarks",
+     "@Common.QuickInfo": "factoryGateInRemarks"
+    },
+    "factoryGateOutDateTime": {
+     "type": "cds.Timestamp",
+     "@odata.Precision": 7,
+     "@odata.Type": "Edm.DateTimeOffset",
+     "@Common.Label": "factoryGateOutDateTime",
+     "@Common.QuickInfo": "factoryGateOutDateTime",
+     "@Common.Heading": "Long Form of Time Stamp",
+     "@Common.DocumentationRef": "urn:sap-com:documentation:key?=type=DE&id=TZNTSTMPL"
+    },
+    "factoryGateOutOperator": {
+     "type": "cds.String",
+     "length": 150,
+     "notNull": true,
+     "@Common.Label": "factoryGateOutOperator",
+     "@Common.QuickInfo": "factoryGateOutOperator"
+    },
+    "factoryGateOutRemarks": {
+     "type": "cds.String",
+     "length": 250,
+     "notNull": true,
+     "@Common.Label": "factoryGateOutRemarks",
+     "@Common.QuickInfo": "factoryGateOutRemarks"
+    },
+    "FactoryGateOutType": {
+     "type": "cds.String",
+     "length": 5,
+     "notNull": true,
+     "@Common.Label": "FactoryGateOutType",
+     "@Common.QuickInfo": "FactoryGateOutType"
+    },
+    "FactoryPONumber": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "FactoryPONumber",
+     "@Common.QuickInfo": "FactoryPONumber"
+    },
+    "FactoryInvoiceNumber": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "FactoryInvoiceNumber",
+     "@Common.QuickInfo": "FactoryInvoiceNumber"
+    },
+    "FactoryInvoiceDate": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "FactoryInvoiceDate",
+     "@Common.QuickInfo": "FactoryInvoiceDate"
+    },
+    "supplierNameInFactory": {
+     "type": "cds.String",
+     "length": 250,
+     "notNull": true,
+     "@Common.Label": "supplierNameInFactory",
+     "@Common.QuickInfo": "supplierNameInFactory"
+    },
+    "transporterName": {
+     "type": "cds.String",
+     "length": 250,
+     "notNull": true,
+     "@Common.Label": "transporterName",
+     "@Common.QuickInfo": "transporterName"
+    },
+    "deliveryNoteNo": {
+     "type": "cds.String",
+     "length": 50,
+     "notNull": true,
+     "@Common.Label": "deliveryNoteNo",
+     "@Common.QuickInfo": "deliveryNoteNo"
+    },
+    "factoryArea": {
+     "type": "cds.String",
+     "length": 150,
+     "notNull": true,
+     "@Common.Label": "factoryArea",
+     "@Common.QuickInfo": "factoryArea"
+    },
+    "unloadingPoint": {
+     "type": "cds.String",
+     "length": 100,
+     "notNull": true,
+     "@Common.Label": "unloadingPoint",
+     "@Common.QuickInfo": "unloadingPoint"
+    },
+    "materialDescription": {
+     "type": "cds.String",
+     "length": 250,
+     "notNull": true,
+     "@Common.Label": "materialDescription",
+     "@Common.QuickInfo": "materialDescription"
+    },
+    "unloadingStatus": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "unloadingStatus",
+     "@Common.QuickInfo": "unloadingStatus"
+    },
+    "unloadedQuantity": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "unloadedQuantity",
+     "@Common.QuickInfo": "unloadedQuantity"
+    },
+    "quantityUnit": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "quantityUnit",
+     "@Common.QuickInfo": "quantityUnit"
+    },
+    "goodsInspected": {
+     "type": "cds.Boolean",
+     "notNull": true,
+     "@Common.Label": "goodsInspected",
+     "@Common.QuickInfo": "goodsInspected",
+     "@Common.Heading": "Truth Value"
+    },
+    "sealVerified": {
+     "type": "cds.Boolean",
+     "notNull": true,
+     "@Common.Label": "sealVerified",
+     "@Common.QuickInfo": "sealVerified",
+     "@Common.Heading": "Truth Value"
+    },
+    "FactoryOutRemarks": {
+     "type": "cds.String",
+     "length": 250,
+     "notNull": true,
+     "@Common.Label": "FactoryOutRemarks",
+     "@Common.QuickInfo": "FactoryOutRemarks"
+    },
+    "SAP__Messages": {
+     "items": {
+      "type": "YY1_API_VEHICLEGATEOPERATION_0001.SAP__Message",
+      "notNull": true
+     }
+    },
+    "_VehicleGateOperation": {
+     "type": "cds.Association",
+     "target": "YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation",
+     "cardinality": {
+      "max": 1
+     },
+     "on": [
+      {
+       "ref": [
+        "_VehicleGateOperation",
+        "MainGateEntryId"
+       ]
+      },
+      "=",
+      {
+       "ref": [
+        "MainGateEntryId"
+       ]
+      }
+     ]
+    }
+   },
+   "@Common.Label": "CBO YY1_R_VEHICLEGATEOPERATIONTP / FactoryGateEntries",
+   "@Common.Messages": {
+    "=": "SAP__Messages"
+   },
+   "@Capabilities.NavigationRestrictions.RestrictedProperties": [
+    {
+     "NavigationProperty": {
+      "=": "_VehicleGateOperation"
+     },
+     "InsertRestrictions": {
+      "Insertable": false
+     },
+     "DeepUpdateSupport": {
+      "Supported": false
+     }
+    }
+   ],
+   "@Capabilities.SearchRestrictions.Searchable": false,
+   "@Capabilities.InsertRestrictions.RequiredProperties": [
+    "FactoryEntryId"
+   ],
+   "@Capabilities.InsertRestrictions.Insertable": false,
+   "@Capabilities.UpdateRestrictions.DeltaUpdateSupported": true,
+   "@Capabilities.UpdateRestrictions.NonUpdatableNavigationProperties": [
+    "_VehicleGateOperation"
+   ],
+   "@Capabilities.UpdateRestrictions.QueryOptions.SelectSupported": true,
+   "@Capabilities.DeepUpdateSupport.ContentIDSupported": true
+  },
+  "YY1_API_VEHICLEGATEOPERATION_0001.PickupDetail": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "MainGateEntryId": {
+     "key": true,
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "MainGateEntryId",
+     "@Common.QuickInfo": "MainGateEntryId",
+     "@Core.Computed": true
+    },
+    "PickupId": {
+     "key": true,
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "PickupId",
+     "@Common.QuickInfo": "PickupId"
+    },
+    "SAPUUID": {
+     "type": "cds.UUID",
+     "@Core.Computed": true,
+     "@Common.Label": "UUID",
+     "@Common.QuickInfo": "16 Byte UUID in 16 Bytes (Raw Format)"
+    },
+    "SAPParentUUID": {
+     "type": "cds.UUID",
+     "@Core.Computed": true,
+     "@Common.Label": "UUID",
+     "@Common.QuickInfo": "16 Byte UUID in 16 Bytes (Raw Format)"
+    },
+    "SAPRootUUID": {
+     "type": "cds.UUID",
+     "@Core.Computed": true,
+     "@Common.Label": "UUID",
+     "@Common.QuickInfo": "16 Byte UUID in 16 Bytes (Raw Format)"
+    },
+    "pickupGatePassType": {
+     "type": "cds.String",
+     "length": 5,
+     "notNull": true,
+     "@Common.Label": "pickupGatePassType",
+     "@Common.QuickInfo": "pickupGatePassType"
+    },
+    "PickupGatePassDocumentNo": {
+     "type": "cds.String",
+     "length": 50,
+     "notNull": true,
+     "@Common.Label": "PickupGatePassDocumentNo",
+     "@Common.QuickInfo": "PickupGatePassDocumentNo"
+    },
+    "PickupGatePassDocumentDate": {
+     "type": "cds.Date",
+     "@Common.Label": "PickupGatePassDocumentDate",
+     "@Common.QuickInfo": "PickupGatePassDocumentDate"
+    },
+    "PickupPurpose": {
+     "type": "cds.String",
+     "length": 250,
+     "notNull": true,
+     "@Common.Label": "PickupPurpose",
+     "@Common.QuickInfo": "PickupPurpose"
+    },
+    "authorizedBy": {
+     "type": "cds.String",
+     "length": 150,
+     "notNull": true,
+     "@Common.Label": "authorizedBy",
+     "@Common.QuickInfo": "authorizedBy"
+    },
+    "PickUpGatePassVerified": {
+     "type": "cds.Boolean",
+     "notNull": true,
+     "@Common.Label": "PickUpGatePassVerified",
+     "@Common.QuickInfo": "PickUpGatePassVerified",
+     "@Common.Heading": "Truth Value"
+    },
+    "PickupRemarks": {
+     "type": "cds.String",
+     "length": 250,
+     "notNull": true,
+     "@Common.Label": "PickupRemarks",
+     "@Common.QuickInfo": "PickupRemarks"
+    },
+    "SAP__Messages": {
+     "items": {
+      "type": "YY1_API_VEHICLEGATEOPERATION_0001.SAP__Message",
+      "notNull": true
+     }
+    },
+    "_VehicleGateOperation": {
+     "type": "cds.Association",
+     "target": "YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation",
+     "cardinality": {
+      "max": 1
+     },
+     "on": [
+      {
+       "ref": [
+        "_VehicleGateOperation",
+        "MainGateEntryId"
+       ]
+      },
+      "=",
+      {
+       "ref": [
+        "MainGateEntryId"
+       ]
+      }
+     ]
+    }
+   },
+   "@Common.Label": "CBO YY1_R_VEHICLEGATEOPERATIONTP / PickupDetail",
+   "@Common.Messages": {
+    "=": "SAP__Messages"
+   },
+   "@Capabilities.NavigationRestrictions.RestrictedProperties": [
+    {
+     "NavigationProperty": {
+      "=": "_VehicleGateOperation"
+     },
+     "InsertRestrictions": {
+      "Insertable": false
+     },
+     "DeepUpdateSupport": {
+      "Supported": false
+     }
+    }
+   ],
+   "@Capabilities.SearchRestrictions.Searchable": false,
+   "@Capabilities.InsertRestrictions.RequiredProperties": [
+    "PickupId"
+   ],
+   "@Capabilities.InsertRestrictions.Insertable": false,
+   "@Capabilities.UpdateRestrictions.DeltaUpdateSupported": true,
+   "@Capabilities.UpdateRestrictions.NonUpdatableNavigationProperties": [
+    "_VehicleGateOperation"
+   ],
+   "@Capabilities.UpdateRestrictions.QueryOptions.SelectSupported": true,
+   "@Capabilities.DeepUpdateSupport.ContentIDSupported": true
+  },
+  "YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "MainGateEntryId": {
+     "key": true,
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "MainGateEntryId",
+     "@Common.QuickInfo": "MainGateEntryId",
+     "@Core.Computed": true
+    },
+    "SecuritygateId": {
+     "key": true,
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "SecuritygateId",
+     "@Common.QuickInfo": "SecuritygateId"
+    },
+    "SAPUUID": {
+     "type": "cds.UUID",
+     "@Core.Computed": true,
+     "@Common.Label": "UUID",
+     "@Common.QuickInfo": "16 Byte UUID in 16 Bytes (Raw Format)"
+    },
+    "SAPParentUUID": {
+     "type": "cds.UUID",
+     "@Core.Computed": true,
+     "@Common.Label": "UUID",
+     "@Common.QuickInfo": "16 Byte UUID in 16 Bytes (Raw Format)"
+    },
+    "SAPRootUUID": {
+     "type": "cds.UUID",
+     "@Core.Computed": true,
+     "@Common.Label": "UUID",
+     "@Common.QuickInfo": "16 Byte UUID in 16 Bytes (Raw Format)"
+    },
+    "gateInNumber": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "gateInNumber",
+     "@Common.QuickInfo": "gateInNumber"
+    },
+    "driverLicenseNo": {
+     "type": "cds.String",
+     "length": 50,
+     "notNull": true,
+     "@Common.Label": "driverLicenseNo",
+     "@Common.QuickInfo": "driverLicenseNo"
+    },
+    "driverPhoneNo": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "driverPhoneNo",
+     "@Common.QuickInfo": "driverPhoneNo"
+    },
+    "helperName": {
+     "type": "cds.String",
+     "length": 50,
+     "notNull": true,
+     "@Common.Label": "helperName",
+     "@Common.QuickInfo": "helperName"
+    },
+    "vehicleReportingDateTime": {
+     "type": "cds.Timestamp",
+     "@odata.Precision": 7,
+     "@odata.Type": "Edm.DateTimeOffset",
+     "@Common.Label": "vehicleReportingDateTime",
+     "@Common.QuickInfo": "vehicleReportingDateTime",
+     "@Common.Heading": "Long Form of Time Stamp",
+     "@Common.DocumentationRef": "urn:sap-com:documentation:key?=type=DE&id=TZNTSTMPL"
+    },
+    "securityInDateTime": {
+     "type": "cds.Timestamp",
+     "@odata.Precision": 7,
+     "@odata.Type": "Edm.DateTimeOffset",
+     "@Common.Label": "securityInDateTime",
+     "@Common.QuickInfo": "securityInDateTime",
+     "@Common.Heading": "Long Form of Time Stamp",
+     "@Common.DocumentationRef": "urn:sap-com:documentation:key?=type=DE&id=TZNTSTMPL"
+    },
+    "securityPersonnel": {
+     "type": "cds.String",
+     "length": 150,
+     "notNull": true,
+     "@Common.Label": "securityPersonnel",
+     "@Common.QuickInfo": "securityPersonnel"
+    },
+    "driverVerified": {
+     "type": "cds.Boolean",
+     "notNull": true,
+     "@Common.Label": "driverVerified",
+     "@Common.QuickInfo": "driverVerified",
+     "@Common.Heading": "Truth Value"
+    },
+    "vehicleVerified": {
+     "type": "cds.Boolean",
+     "notNull": true,
+     "@Common.Label": "vehicleVerified",
+     "@Common.QuickInfo": "vehicleVerified",
+     "@Common.Heading": "Truth Value"
+    },
+    "documentsVerified": {
+     "type": "cds.Boolean",
+     "notNull": true,
+     "@Common.Label": "documentsVerified",
+     "@Common.QuickInfo": "documentsVerified",
+     "@Common.Heading": "Truth Value"
+    },
+    "poNumber": {
+     "type": "cds.String",
+     "length": 50,
+     "notNull": true,
+     "@Common.Label": "poNumber",
+     "@Common.QuickInfo": "poNumber"
+    },
+    "soNumber": {
+     "type": "cds.String",
+     "length": 50,
+     "notNull": true,
+     "@Common.Label": "soNumber",
+     "@Common.QuickInfo": "soNumber"
+    },
+    "invoiceNumber": {
+     "type": "cds.String",
+     "length": 50,
+     "notNull": true,
+     "@Common.Label": "invoiceNumber",
+     "@Common.QuickInfo": "invoiceNumber"
+    },
+    "invoiceDate": {
+     "type": "cds.Date",
+     "@Common.Label": "invoiceDate",
+     "@Common.QuickInfo": "invoiceDate"
+    },
+    "withoutPO": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "withoutPO",
+     "@Common.QuickInfo": "withoutPO"
+    },
+    "rgpDocumentNo": {
+     "type": "cds.String",
+     "length": 50,
+     "notNull": true,
+     "@Common.Label": "rgpDocumentNo",
+     "@Common.QuickInfo": "rgpDocumentNo"
+    },
+    "nrgpDocumentNo": {
+     "type": "cds.String",
+     "length": 50,
+     "notNull": true,
+     "@Common.Label": "nrgpDocumentNo",
+     "@Common.QuickInfo": "nrgpDocumentNo"
+    },
+    "gatePassType": {
+     "type": "cds.String",
+     "length": 5,
+     "notNull": true,
+     "@Common.Label": "gatePassType",
+     "@Common.QuickInfo": "gatePassType"
+    },
+    "SecurityAssignedRoute": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "SecurityAssignedRoute",
+     "@Common.QuickInfo": "SecurityAssignedRoute"
+    },
+    "securityInRemarks": {
+     "type": "cds.String",
+     "length": 250,
+     "notNull": true,
+     "@Common.Label": "securityInRemarks",
+     "@Common.QuickInfo": "securityInRemarks"
+    },
+    "securityOutPersonnel": {
+     "type": "cds.String",
+     "length": 150,
+     "notNull": true,
+     "@Common.Label": "securityOutPersonnel",
+     "@Common.QuickInfo": "securityOutPersonnel"
+    },
+    "securityOutDateTime": {
+     "type": "cds.Timestamp",
+     "@odata.Precision": 7,
+     "@odata.Type": "Edm.DateTimeOffset",
+     "@Common.Label": "securityOutDateTime",
+     "@Common.QuickInfo": "securityOutDateTime",
+     "@Common.Heading": "Long Form of Time Stamp",
+     "@Common.DocumentationRef": "urn:sap-com:documentation:key?=type=DE&id=TZNTSTMPL"
+    },
+    "exitDriverVerified": {
+     "type": "cds.Boolean",
+     "notNull": true,
+     "@Common.Label": "exitDriverVerified",
+     "@Common.QuickInfo": "exitDriverVerified",
+     "@Common.Heading": "Truth Value"
+    },
+    "exitVehicleVerified": {
+     "type": "cds.Boolean",
+     "notNull": true,
+     "@Common.Label": "exitVehicleVerified",
+     "@Common.QuickInfo": "exitVehicleVerified",
+     "@Common.Heading": "Truth Value"
+    },
+    "exitDocumentsVerified": {
+     "type": "cds.Boolean",
+     "notNull": true,
+     "@Common.Label": "exitDocumentsVerified",
+     "@Common.QuickInfo": "exitDocumentsVerified",
+     "@Common.Heading": "Truth Value"
+    },
+    "gatePassVerified": {
+     "type": "cds.Boolean",
+     "notNull": true,
+     "@Common.Label": "gatePassVerified",
+     "@Common.QuickInfo": "gatePassVerified",
+     "@Common.Heading": "Truth Value"
+    },
+    "deliveryDetailsVerified": {
+     "type": "cds.Boolean",
+     "notNull": true,
+     "@Common.Label": "deliveryDetailsVerified",
+     "@Common.QuickInfo": "deliveryDetailsVerified",
+     "@Common.Heading": "Truth Value"
+    },
+    "emptyInspectionVerified": {
+     "type": "cds.Boolean",
+     "notNull": true,
+     "@Common.Label": "emptyInspectionVerified",
+     "@Common.QuickInfo": "emptyInspectionVerified",
+     "@Common.Heading": "Truth Value"
+    },
+    "materialInspected": {
+     "type": "cds.Boolean",
+     "notNull": true,
+     "@Common.Label": "materialInspected",
+     "@Common.QuickInfo": "materialInspected",
+     "@Common.Heading": "Truth Value"
+    },
+    "exitGatePassType": {
+     "type": "cds.String",
+     "length": 5,
+     "notNull": true,
+     "@Common.Label": "exitGatePassType",
+     "@Common.QuickInfo": "exitGatePassType"
+    },
+    "exitGatePassDocumentNo": {
+     "type": "cds.String",
+     "length": 50,
+     "notNull": true,
+     "@Common.Label": "exitGatePassDocumentNo",
+     "@Common.QuickInfo": "exitGatePassDocumentNo"
+    },
+    "securityOutRemarks": {
+     "type": "cds.String",
+     "length": 250,
+     "notNull": true,
+     "@Common.Label": "securityOutRemarks",
+     "@Common.QuickInfo": "securityOutRemarks"
+    },
+    "SAP__Messages": {
+     "items": {
+      "type": "YY1_API_VEHICLEGATEOPERATION_0001.SAP__Message",
+      "notNull": true
+     }
+    },
+    "_VehicleGateOperation": {
+     "type": "cds.Association",
+     "target": "YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation",
+     "cardinality": {
+      "max": 1
+     },
+     "on": [
+      {
+       "ref": [
+        "_VehicleGateOperation",
+        "MainGateEntryId"
+       ]
+      },
+      "=",
+      {
+       "ref": [
+        "MainGateEntryId"
+       ]
+      }
+     ]
+    }
+   },
+   "@Common.Label": "CBO YY1_R_VEHICLEGATEOPERATIONTP / SecurityGateEntries",
+   "@Common.Messages": {
+    "=": "SAP__Messages"
+   },
+   "@Capabilities.NavigationRestrictions.RestrictedProperties": [
+    {
+     "NavigationProperty": {
+      "=": "_VehicleGateOperation"
+     },
+     "InsertRestrictions": {
+      "Insertable": false
+     },
+     "DeepUpdateSupport": {
+      "Supported": false
+     }
+    }
+   ],
+   "@Capabilities.SearchRestrictions.Searchable": false,
+   "@Capabilities.InsertRestrictions.RequiredProperties": [
+    "SecuritygateId"
+   ],
+   "@Capabilities.InsertRestrictions.Insertable": false,
+   "@Capabilities.UpdateRestrictions.DeltaUpdateSupported": true,
+   "@Capabilities.UpdateRestrictions.NonUpdatableNavigationProperties": [
+    "_VehicleGateOperation"
+   ],
+   "@Capabilities.UpdateRestrictions.QueryOptions.SelectSupported": true,
+   "@Capabilities.DeepUpdateSupport.ContentIDSupported": true
+  },
+  "YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "MainGateEntryId": {
+     "key": true,
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "MainGateEntryId",
+     "@Common.QuickInfo": "MainGateEntryId"
+    },
+    "SAPUUID": {
+     "type": "cds.UUID",
+     "@Core.Computed": true,
+     "@Common.Label": "UUID",
+     "@Common.QuickInfo": "16 Byte UUID in 16 Bytes (Raw Format)"
+    },
+    "VehicleType": {
+     "type": "cds.String",
+     "length": 10,
+     "notNull": true,
+     "@Common.Label": "VehicleType",
+     "@Common.QuickInfo": "VehicleType"
+    },
+    "VehicleRegNumber": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "VehicleRegNumber",
+     "@Common.QuickInfo": "VehicleRegNumber"
+    },
+    "DriverName": {
+     "type": "cds.String",
+     "length": 100,
+     "notNull": true,
+     "@Common.Label": "DriverName",
+     "@Common.QuickInfo": "DriverName"
+    },
+    "VisitPurpose": {
+     "type": "cds.String",
+     "length": 2,
+     "notNull": true,
+     "@Common.Label": "VisitPurpose",
+     "@Common.QuickInfo": "VisitPurpose"
+    },
+    "VehicleStatus": {
+     "type": "cds.String",
+     "length": 15,
+     "notNull": true,
+     "@Common.Label": "VehicleStatus",
+     "@Common.QuickInfo": "VehicleStatus"
+    },
+    "GateInOperator": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "GateInOperator",
+     "@Common.QuickInfo": "GateInOperator"
+    },
+    "GateInTime": {
+     "type": "cds.Timestamp",
+     "@odata.Precision": 7,
+     "@odata.Type": "Edm.DateTimeOffset",
+     "@Common.Label": "GateInTime",
+     "@Common.QuickInfo": "GateInTime",
+     "@Common.Heading": "Long Form of Time Stamp",
+     "@Common.DocumentationRef": "urn:sap-com:documentation:key?=type=DE&id=TZNTSTMPL"
+    },
+    "GateOutOperator": {
+     "type": "cds.Timestamp",
+     "@odata.Precision": 7,
+     "@odata.Type": "Edm.DateTimeOffset",
+     "@Common.Label": "GateOutOperator",
+     "@Common.QuickInfo": "GateOutOperator",
+     "@Common.Heading": "Long Form of Time Stamp",
+     "@Common.DocumentationRef": "urn:sap-com:documentation:key?=type=DE&id=TZNTSTMPL"
+    },
+    "GateOutTime": {
+     "type": "cds.Timestamp",
+     "@odata.Precision": 7,
+     "@odata.Type": "Edm.DateTimeOffset",
+     "@Common.Label": "GateOutTime",
+     "@Common.QuickInfo": "GateOutTime",
+     "@Common.Heading": "Long Form of Time Stamp",
+     "@Common.DocumentationRef": "urn:sap-com:documentation:key?=type=DE&id=TZNTSTMPL"
+    },
+    "MainGateRemarks": {
+     "type": "cds.String",
+     "length": 250,
+     "notNull": true,
+     "@Common.Label": "MainGateRemarks",
+     "@Common.QuickInfo": "MainGateRemarks"
+    },
+    "assignedRoute": {
+     "type": "cds.String",
+     "length": 100,
+     "notNull": true,
+     "@Common.Label": "assignedRoute",
+     "@Common.QuickInfo": "assignedRoute"
+    },
+    "CurrentStage": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "CurrentStage",
+     "@Common.QuickInfo": "CurrentStage"
+    },
+    "SAPLastChangedBy": {
+     "type": "cds.String",
+     "length": 12,
+     "notNull": true,
+     "@Common.Label": "Last Changed By",
+     "@Common.QuickInfo": "Last Changed By",
+     "@Core.Computed": true,
+     "@Common.IsUpperCase": true,
+     "@Common.Heading": "Changed By",
+     "@Common.DocumentationRef": "urn:sap-com:documentation:key?=type=DE&id=ABP_LASTCHANGE_USER"
+    },
+    "SAPLastChangedOn": {
+     "type": "cds.Timestamp",
+     "@odata.Precision": 7,
+     "@odata.Type": "Edm.DateTimeOffset",
+     "@Common.Label": "Last Changed On",
+     "@Common.QuickInfo": "Last Changed On",
+     "@Core.Computed": true,
+     "@Common.Heading": "Changed On",
+     "@Common.DocumentationRef": "urn:sap-com:documentation:key?=type=DE&id=ABP_LASTCHANGE_TSTMPL"
+    },
+    "SAPCreatedBy": {
+     "type": "cds.String",
+     "length": 12,
+     "notNull": true,
+     "@Common.Label": "Created By",
+     "@Common.QuickInfo": "Created By",
+     "@Core.Computed": true,
+     "@Common.IsUpperCase": true,
+     "@Common.Heading": "Created By",
+     "@Common.DocumentationRef": "urn:sap-com:documentation:key?=type=DE&id=ABP_CREATION_USER"
+    },
+    "SAPCreatedOn": {
+     "type": "cds.Timestamp",
+     "@odata.Precision": 7,
+     "@odata.Type": "Edm.DateTimeOffset",
+     "@Common.Label": "Created On",
+     "@Common.QuickInfo": "Created On",
+     "@Core.Computed": true,
+     "@Common.Heading": "Created On",
+     "@Common.DocumentationRef": "urn:sap-com:documentation:key?=type=DE&id=ABP_CREATION_TSTMPL"
+    },
+    "SAPDescription": {
+     "type": "cds.String",
+     "length": 80,
+     "notNull": true,
+     "@Common.Label": "Description",
+     "@Common.QuickInfo": "Description"
+    },
+    "SAP__Messages": {
+     "items": {
+      "type": "YY1_API_VEHICLEGATEOPERATION_0001.SAP__Message",
+      "notNull": true
+     }
+    },
+    "_DeliveryDetails": {
+     "type": "cds.Composition",
+     "target": "YY1_API_VEHICLEGATEOPERATION_0001.DeliveryDetails",
+     "cardinality": {
+      "max": "*"
+     },
+     "on": [
+      {
+       "ref": [
+        "_DeliveryDetails",
+        "_VehicleGateOperation"
+       ]
+      },
+      "=",
+      {
+       "ref": [
+        "$self"
+       ]
+      }
+     ],
+     "@Common.Composition": true
+    },
+    "_FactoryGateEntries": {
+     "type": "cds.Composition",
+     "target": "YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries",
+     "cardinality": {
+      "max": "*"
+     },
+     "on": [
+      {
+       "ref": [
+        "_FactoryGateEntries",
+        "_VehicleGateOperation"
+       ]
+      },
+      "=",
+      {
+       "ref": [
+        "$self"
+       ]
+      }
+     ],
+     "@Common.Composition": true
+    },
+    "_PickupDetail": {
+     "type": "cds.Composition",
+     "target": "YY1_API_VEHICLEGATEOPERATION_0001.PickupDetail",
+     "cardinality": {
+      "max": "*"
+     },
+     "on": [
+      {
+       "ref": [
+        "_PickupDetail",
+        "_VehicleGateOperation"
+       ]
+      },
+      "=",
+      {
+       "ref": [
+        "$self"
+       ]
+      }
+     ],
+     "@Common.Composition": true
+    },
+    "_SecurityGateEntries": {
+     "type": "cds.Composition",
+     "target": "YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries",
+     "cardinality": {
+      "max": "*"
+     },
+     "on": [
+      {
+       "ref": [
+        "_SecurityGateEntries",
+        "_VehicleGateOperation"
+       ]
+      },
+      "=",
+      {
+       "ref": [
+        "$self"
+       ]
+      }
+     ],
+     "@Common.Composition": true
+    },
+    "_WeighbridgeTransactions": {
+     "type": "cds.Composition",
+     "target": "YY1_API_VEHICLEGATEOPERATION_0001.WeighbridgeTransactions",
+     "cardinality": {
+      "max": "*"
+     },
+     "on": [
+      {
+       "ref": [
+        "_WeighbridgeTransactions",
+        "_VehicleGateOperation"
+       ]
+      },
+      "=",
+      {
+       "ref": [
+        "$self"
+       ]
+      }
+     ],
+     "@Common.Composition": true
+    }
+   },
+   "@Common.ChangedBy": {
+    "=": "SAPLastChangedBy"
+   },
+   "@Common.ChangedAt": {
+    "=": "SAPLastChangedOn"
+   },
+   "@Common.CreatedBy": {
+    "=": "SAPCreatedBy"
+   },
+   "@Common.CreatedAt": {
+    "=": "SAPCreatedOn"
+   },
+   "@Common.Label": "CBO YY1_R_VEHICLEGATEOPERATIONTP / VehicleGateOperation",
+   "@Common.Messages": {
+    "=": "SAP__Messages"
+   },
+   "@Capabilities.NavigationRestrictions.RestrictedProperties": [
+    {
+     "NavigationProperty": {
+      "=": "_DeliveryDetails"
+     },
+     "InsertRestrictions": {
+      "Insertable": true
+     }
+    },
+    {
+     "NavigationProperty": {
+      "=": "_FactoryGateEntries"
+     },
+     "InsertRestrictions": {
+      "Insertable": true
+     }
+    },
+    {
+     "NavigationProperty": {
+      "=": "_PickupDetail"
+     },
+     "InsertRestrictions": {
+      "Insertable": true
+     }
+    },
+    {
+     "NavigationProperty": {
+      "=": "_SecurityGateEntries"
+     },
+     "InsertRestrictions": {
+      "Insertable": true
+     }
+    },
+    {
+     "NavigationProperty": {
+      "=": "_WeighbridgeTransactions"
+     },
+     "InsertRestrictions": {
+      "Insertable": true
+     }
+    }
+   ],
+   "@Capabilities.SearchRestrictions.Searchable": false,
+   "@Capabilities.InsertRestrictions.RequiredProperties": [
+    "MainGateEntryId"
+   ],
+   "@Capabilities.UpdateRestrictions.DeltaUpdateSupported": true,
+   "@Capabilities.UpdateRestrictions.NonUpdatableNavigationProperties": [
+    "_DeliveryDetails",
+    "_FactoryGateEntries",
+    "_PickupDetail",
+    "_SecurityGateEntries",
+    "_WeighbridgeTransactions"
+   ],
+   "@Capabilities.UpdateRestrictions.QueryOptions.SelectSupported": true,
+   "@Capabilities.DeepUpdateSupport.ContentIDSupported": true
+  },
+  "YY1_API_VEHICLEGATEOPERATION_0001.WeighbridgeTransactions": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "MainGateEntryId": {
+     "key": true,
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "MainGateEntryId",
+     "@Common.QuickInfo": "MainGateEntryId",
+     "@Core.Computed": true
+    },
+    "WeighbridgeId": {
+     "key": true,
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "WeighbridgeId",
+     "@Common.QuickInfo": "WeighbridgeId"
+    },
+    "SAPUUID": {
+     "type": "cds.UUID",
+     "@Core.Computed": true,
+     "@Common.Label": "UUID",
+     "@Common.QuickInfo": "16 Byte UUID in 16 Bytes (Raw Format)"
+    },
+    "SAPParentUUID": {
+     "type": "cds.UUID",
+     "@Core.Computed": true,
+     "@Common.Label": "UUID",
+     "@Common.QuickInfo": "16 Byte UUID in 16 Bytes (Raw Format)"
+    },
+    "SAPRootUUID": {
+     "type": "cds.UUID",
+     "@Core.Computed": true,
+     "@Common.Label": "UUID",
+     "@Common.QuickInfo": "16 Byte UUID in 16 Bytes (Raw Format)"
+    },
+    "weighbridgeNumber": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "weighbridgeNumber",
+     "@Common.QuickInfo": "weighbridgeNumber"
+    },
+    "weighmentType": {
+     "type": "cds.String",
+     "length": 10,
+     "notNull": true,
+     "@Common.Label": "weighmentType",
+     "@Common.QuickInfo": "weighmentType"
+    },
+    "weight": {
+     "type": "cds.Decimal",
+     "precision": 10,
+     "scale": 2,
+     "notNull": true,
+     "@Common.Label": "weight",
+     "@Common.QuickInfo": "weight"
+    },
+    "weightUnit": {
+     "type": "cds.String",
+     "length": 3,
+     "notNull": true,
+     "@Common.Label": "weightUnit",
+     "@Common.QuickInfo": "weightUnit"
+    },
+    "weighbridgeDateTime": {
+     "type": "cds.Timestamp",
+     "@odata.Precision": 7,
+     "@odata.Type": "Edm.DateTimeOffset",
+     "@Common.Label": "weighbridgeDateTime",
+     "@Common.QuickInfo": "weighbridgeDateTime",
+     "@Common.Heading": "Long Form of Time Stamp",
+     "@Common.DocumentationRef": "urn:sap-com:documentation:key?=type=DE&id=TZNTSTMPL"
+    },
+    "WeightOperator": {
+     "type": "cds.String",
+     "length": 150,
+     "notNull": true,
+     "@Common.Label": "WeightOperator",
+     "@Common.QuickInfo": "WeightOperator"
+    },
+    "weighRemark": {
+     "type": "cds.String",
+     "length": 250,
+     "notNull": true,
+     "@Common.Label": "weighRemark",
+     "@Common.QuickInfo": "weighRemark"
+    },
+    "SAP__Messages": {
+     "items": {
+      "type": "YY1_API_VEHICLEGATEOPERATION_0001.SAP__Message",
+      "notNull": true
+     }
+    },
+    "_VehicleGateOperation": {
+     "type": "cds.Association",
+     "target": "YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation",
+     "cardinality": {
+      "max": 1
+     },
+     "on": [
+      {
+       "ref": [
+        "_VehicleGateOperation",
+        "MainGateEntryId"
+       ]
+      },
+      "=",
+      {
+       "ref": [
+        "MainGateEntryId"
+       ]
+      }
+     ]
+    }
+   },
+   "@Common.Label": "CBO YY1_R_VEHICLEGATEOPERATIONTP / WeighbridgeTransactions",
+   "@Common.Messages": {
+    "=": "SAP__Messages"
+   },
+   "@Capabilities.NavigationRestrictions.RestrictedProperties": [
+    {
+     "NavigationProperty": {
+      "=": "_VehicleGateOperation"
+     },
+     "InsertRestrictions": {
+      "Insertable": false
+     },
+     "DeepUpdateSupport": {
+      "Supported": false
+     }
+    }
+   ],
+   "@Capabilities.SearchRestrictions.Searchable": false,
+   "@Capabilities.InsertRestrictions.RequiredProperties": [
+    "WeighbridgeId"
+   ],
+   "@Capabilities.InsertRestrictions.Insertable": false,
+   "@Capabilities.UpdateRestrictions.DeltaUpdateSupported": true,
+   "@Capabilities.UpdateRestrictions.NonUpdatableNavigationProperties": [
+    "_VehicleGateOperation"
+   ],
+   "@Capabilities.UpdateRestrictions.QueryOptions.SelectSupported": true,
+   "@Capabilities.DeepUpdateSupport.ContentIDSupported": true
+  }
+ }
+}

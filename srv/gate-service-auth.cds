@@ -6,8 +6,8 @@ using { GateService } from './gate-service';
  * ============================================================
  */
 
-// 1. Service Level: Require authentication for all endpoints
-annotate GateService with @(requires: 'authenticated-user');
+// 1. Service Level: Allow entry point (granular authorization enforced on all entities and actions below)
+annotate GateService with @(requires: 'any');
 
 // 2. Action Level Authorization
 annotate GateService.CreateGateIn            with @(requires: ['MainGateUser', 'maingate_user', 'Admin', 'admin_user', 'Superadmin', 'superadmin_user']);
@@ -24,7 +24,9 @@ annotate GateService.UpdateUser             with @(requires: ['Superadmin', 'sup
 annotate GateService.ToggleUserStatus       with @(requires: ['Superadmin', 'superadmin_user']);
 annotate GateService.DeleteUser             with @(requires: ['Superadmin', 'superadmin_user']);
 annotate GateService.SyncToS4Hana            with @(requires: ['MainGateUser', 'maingate_user', 'SecurityGateUser', 'security_user', 'Admin', 'admin_user', 'Superadmin', 'superadmin_user']);
+annotate GateService.SyncUserToS4Hana        with @(requires: ['Superadmin', 'superadmin_user']);
 annotate GateService.userInfo                with @(requires: 'authenticated-user');
+annotate GateService.getLoginUsers            with @(requires: 'any');
 
 
 // 3. Entity Level Authorization
@@ -61,13 +63,44 @@ annotate GateService.PurchaseOrders with @(restrict: [
     { grant: 'READ', to: 'authenticated-user' }
 ]);
 
-// External S/4HANA Cloud CBO (Vehicle Entry & Security Entry)
+// External S/4HANA Cloud CBO (Vehicle Gate Operation & Compositions)
+annotate GateService.S4VehicleGateOperations with @(restrict: [
+    { grant: '*', to: 'authenticated-user' }
+]);
+
+annotate GateService.S4SecurityGateEntries with @(restrict: [
+    { grant: '*', to: 'authenticated-user' }
+]);
+
+annotate GateService.S4WeighbridgeTransactions with @(restrict: [
+    { grant: '*', to: 'authenticated-user' }
+]);
+
+annotate GateService.S4FactoryGateEntries with @(restrict: [
+    { grant: '*', to: 'authenticated-user' }
+]);
+
+annotate GateService.S4DeliveryDetails with @(restrict: [
+    { grant: '*', to: 'authenticated-user' }
+]);
+
+annotate GateService.S4PickupDetails with @(restrict: [
+    { grant: '*', to: 'authenticated-user' }
+]);
+
+// Backward compatibility aliases
 annotate GateService.S4VehicleEntries with @(restrict: [
     { grant: '*', to: 'authenticated-user' }
 ]);
 
 annotate GateService.S4SecurityEntries with @(restrict: [
     { grant: '*', to: 'authenticated-user' }
+]);
+
+// External S/4HANA Cloud CBO (Custom User Management)
+annotate GateService.S4CustomUsers with @(restrict: [
+    { grant: 'READ', to: 'authenticated-user' },
+    { grant: '*',    to: ['Superadmin', 'superadmin_user'] }
 ]);
 
 // Security Gate Records

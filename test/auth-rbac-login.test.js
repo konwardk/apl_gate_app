@@ -166,8 +166,43 @@ async function runAuthRbacTests() {
     assert.ok(hasRole, 'scale_op_2 must have WeighbridgeUser role');
     console.log('  [PASS] New user immediately registered in auth cache with WeighbridgeUser role');
 
+    // ----------------------------------------------------
+    // TEST 10: getLoginUsers() returns login users from YY1_API_CUSTOMUSER_0001 / fallback
+    // ----------------------------------------------------
+    console.log('\n[TEST 10] getLoginUsers() returns active users for login screen');
+    const loginUsers = await srv.send('getLoginUsers');
+    assert.ok(Array.isArray(loginUsers), 'getLoginUsers must return an array');
+    assert.ok(loginUsers.length > 0, 'Must return at least 1 login user');
+    const sampleUser = loginUsers[0];
+    assert.ok(sampleUser.username, 'Login user must have username');
+    assert.ok(sampleUser.roleCode, 'Login user must have roleCode');
+    assert.ok(sampleUser.roleName, 'Login user must have roleName');
+    assert.ok(sampleUser.icon, 'Login user must have icon');
+    assert.ok(sampleUser.roleBadgeState, 'Login user must have roleBadgeState');
+    console.log(`  [PASS] Successfully retrieved ${loginUsers.length} login users (sample: ${sampleUser.name} - ${sampleUser.roleName})`);
+
+    // ----------------------------------------------------
+    // TEST 11: Unauthenticated request can call getLoginUsers (requires: 'any')
+    // ----------------------------------------------------
+    console.log('\n[TEST 11] Unauthenticated user calling getLoginUsers must succeed');
+    const unauthUser = new cds.User('anonymous');
+    const publicUsers = await srv.tx({ user: unauthUser }).send('getLoginUsers');
+    assert.ok(Array.isArray(publicUsers) && publicUsers.length > 0, 'Anonymous caller must receive login users');
+    console.log(`  [PASS] Public unauthenticated access to getLoginUsers succeeded with ${publicUsers.length} users`);
+
+    // ----------------------------------------------------
+    // TEST 12: Login user can authenticate and retrieve profile via userInfo()
+    // ----------------------------------------------------
+    console.log('\n[TEST 12] User managed via getLoginUsers can authenticate and retrieve profile');
+    const customUserToAuth = loginUsers.find(u => u.username === 'scale_op_2') || loginUsers[0];
+    const testAuthUser = new cds.User({ id: customUserToAuth.username, roles: [customUserToAuth.roleCode] });
+    const profile = await srv.tx({ user: testAuthUser }).send('userInfo');
+    assert.strictEqual(profile.id, customUserToAuth.username);
+    assert.ok(profile.roles.includes(customUserToAuth.roleCode));
+    console.log(`  [PASS] Authenticated as ${profile.name} (@${profile.id}), Roles: ${profile.roles.join(', ')}`);
+
     console.log('\n========================================================');
-    console.log(' ALL 9 AUTHENTICATION & RBAC TESTS PASSED SUCCESSFULLY!');
+    console.log(' ALL 12 AUTHENTICATION & RBAC TESTS PASSED SUCCESSFULLY!');
     console.log('========================================================');
 }
 

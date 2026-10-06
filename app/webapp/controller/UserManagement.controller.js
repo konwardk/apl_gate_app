@@ -499,6 +499,7 @@ sap.ui.define([
 
                 let endpoint = `${ODATA_BASE}/CreateUser`;
                 let bodyData = {
+                    UserId: (oForm.employeeId || oForm.username || "").trim().substring(0, 20),
                     username: oForm.username.trim().toLowerCase(),
                     password: oForm.password ? oForm.password.trim() : "",
                     name: oForm.name.trim(),

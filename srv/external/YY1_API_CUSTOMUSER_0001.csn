@@ -1,0 +1,309 @@
+{
+ "meta": {
+  "creator": "cds-dk 10.1.0"
+ },
+ "$version": "2.0",
+ "definitions": {
+  "YY1_API_CUSTOMUSER_0001.SAP__Message": {
+   "kind": "type",
+   "@cds.external": true,
+   "elements": {
+    "code": {
+     "type": "cds.String",
+     "notNull": true
+    },
+    "message": {
+     "type": "cds.String",
+     "notNull": true
+    },
+    "target": {
+     "type": "cds.String"
+    },
+    "additionalTargets": {
+     "items": {
+      "type": "cds.String",
+      "notNull": true
+     }
+    },
+    "transition": {
+     "type": "cds.Boolean",
+     "notNull": true
+    },
+    "numericSeverity": {
+     "type": "cds.Integer",
+     "@odata.Type": "Edm.Byte",
+     "notNull": true
+    },
+    "longtextUrl": {
+     "type": "cds.String"
+    }
+   }
+  },
+  "YY1_API_CUSTOMUSER_0001": {
+   "kind": "service",
+   "@cds.external": true,
+   "@Common.ApplyMultiUnitBehaviorForSortingAndFiltering": true,
+   "@Capabilities.FilterFunctions": [
+    "eq",
+    "ne",
+    "gt",
+    "ge",
+    "lt",
+    "le",
+    "and",
+    "or",
+    "contains",
+    "startswith",
+    "endswith",
+    "any",
+    "all"
+   ],
+   "@SAP__support.TechnicalInfoLinks.Url": "../../../../default/iwbep/common/0001/$metadata",
+   "@SAP__support.TechnicalInfoLinks.FunctionImport": "GetTechnicalInfoLinks",
+   "@Capabilities.SupportedFormats": [
+    "application/json",
+    "application/pdf"
+   ],
+   "@PDF.Features.DocumentDescriptionReference": "../../../../default/iwbep/common/0001/$metadata",
+   "@PDF.Features.DocumentDescriptionCollection": "MyDocumentDescriptions",
+   "@PDF.Features.ArchiveFormat": true,
+   "@PDF.Features.Border": true,
+   "@PDF.Features.CoverPage": true,
+   "@PDF.Features.FitToPage": true,
+   "@PDF.Features.FontName": true,
+   "@PDF.Features.FontSize": true,
+   "@PDF.Features.HeaderFooter": true,
+   "@PDF.Features.IANATimezoneFormat": true,
+   "@PDF.Features.Margin": true,
+   "@PDF.Features.Padding": true,
+   "@PDF.Features.ResultSizeDefault": 20000,
+   "@PDF.Features.ResultSizeMaximum": 20000,
+   "@PDF.Features.Signature": true,
+   "@PDF.Features.TextDirectionLayout": true,
+   "@PDF.Features.Treeview": true,
+   "@PDF.Features.UploadToFileShare": true,
+   "@Capabilities.BatchSupport.SupportedFormats": [
+    "application/json",
+    "multipart/mixed"
+   ],
+   "@Capabilities.KeyAsSegmentSupported": true,
+   "@Capabilities.AsynchronousRequestsSupported": true
+  },
+  "YY1_API_CUSTOMUSER_0001.CustomUser": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "UserId": {
+     "key": true,
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "UserId",
+     "@Common.QuickInfo": "UserId"
+    },
+    "SAPUUID": {
+     "type": "cds.UUID",
+     "@Core.Computed": true,
+     "@Common.Label": "UUID",
+     "@Common.QuickInfo": "16 Byte UUID in 16 Bytes (Raw Format)"
+    },
+    "username": {
+     "type": "cds.String",
+     "length": 50,
+     "notNull": true,
+     "@Common.Label": "username",
+     "@Common.QuickInfo": "username"
+    },
+    "password": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "password",
+     "@Common.QuickInfo": "password"
+    },
+    "name": {
+     "type": "cds.String",
+     "length": 50,
+     "notNull": true,
+     "@Common.Label": "name",
+     "@Common.QuickInfo": "name"
+    },
+    "employeeId": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "employeeId",
+     "@Common.QuickInfo": "employeeId"
+    },
+    "designation": {
+     "type": "cds.String",
+     "length": 50,
+     "notNull": true,
+     "@Common.Label": "designation",
+     "@Common.QuickInfo": "designation"
+    },
+    "department": {
+     "type": "cds.String",
+     "length": 50,
+     "notNull": true,
+     "@Common.Label": "department",
+     "@Common.QuickInfo": "department"
+    },
+    "email": {
+     "type": "cds.String",
+     "length": 100,
+     "notNull": true,
+     "@Common.Label": "email",
+     "@Common.QuickInfo": "email"
+    },
+    "phoneNo": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "phoneNo",
+     "@Common.QuickInfo": "phoneNo"
+    },
+    "serviceStatus": {
+     "type": "cds.String",
+     "length": 12,
+     "notNull": true,
+     "@Common.Label": "serviceStatus",
+     "@Common.QuickInfo": "serviceStatus"
+    },
+    "status": {
+     "type": "cds.String",
+     "length": 8,
+     "notNull": true,
+     "@Common.Label": "status",
+     "@Common.QuickInfo": "status"
+    },
+    "active": {
+     "type": "cds.Boolean",
+     "notNull": true,
+     "@Common.Label": "active",
+     "@Common.QuickInfo": "active",
+     "@Common.Heading": "Truth Value"
+    },
+    "assignedRoles": {
+     "type": "cds.String",
+     "length": 250,
+     "notNull": true,
+     "@Common.Label": "assignedRoles",
+     "@Common.QuickInfo": "assignedRoles"
+    },
+    "remarks": {
+     "type": "cds.String",
+     "length": 250,
+     "notNull": true,
+     "@Common.Label": "remarks",
+     "@Common.QuickInfo": "remarks"
+    },
+    "roleCode": {
+     "type": "cds.String",
+     "length": 20,
+     "notNull": true,
+     "@Common.Label": "roleCode",
+     "@Common.QuickInfo": "roleCode"
+    },
+    "roleName": {
+     "type": "cds.String",
+     "length": 100,
+     "notNull": true,
+     "@Common.Label": "roleName",
+     "@Common.QuickInfo": "roleName"
+    },
+    "assignedDate": {
+     "type": "cds.Date",
+     "@Common.Label": "assignedDate",
+     "@Common.QuickInfo": "assignedDate"
+    },
+    "assignedBy": {
+     "type": "cds.String",
+     "length": 100,
+     "notNull": true,
+     "@Common.Label": "assignedBy",
+     "@Common.QuickInfo": "assignedBy"
+    },
+    "SAPLastChangedBy": {
+     "type": "cds.String",
+     "length": 12,
+     "notNull": true,
+     "@Common.Label": "Last Changed By",
+     "@Common.QuickInfo": "Last Changed By",
+     "@Core.Computed": true,
+     "@Common.IsUpperCase": true,
+     "@Common.Heading": "Changed By",
+     "@Common.DocumentationRef": "urn:sap-com:documentation:key?=type=DE&id=ABP_LASTCHANGE_USER"
+    },
+    "SAPLastChangedOn": {
+     "type": "cds.Timestamp",
+     "@odata.Precision": 7,
+     "@odata.Type": "Edm.DateTimeOffset",
+     "@Common.Label": "Last Changed On",
+     "@Common.QuickInfo": "Last Changed On",
+     "@Core.Computed": true,
+     "@Common.Heading": "Changed On",
+     "@Common.DocumentationRef": "urn:sap-com:documentation:key?=type=DE&id=ABP_LASTCHANGE_TSTMPL"
+    },
+    "SAPCreatedBy": {
+     "type": "cds.String",
+     "length": 12,
+     "notNull": true,
+     "@Common.Label": "Created By",
+     "@Common.QuickInfo": "Created By",
+     "@Core.Computed": true,
+     "@Common.IsUpperCase": true,
+     "@Common.Heading": "Created By",
+     "@Common.DocumentationRef": "urn:sap-com:documentation:key?=type=DE&id=ABP_CREATION_USER"
+    },
+    "SAPCreatedOn": {
+     "type": "cds.Timestamp",
+     "@odata.Precision": 7,
+     "@odata.Type": "Edm.DateTimeOffset",
+     "@Common.Label": "Created On",
+     "@Common.QuickInfo": "Created On",
+     "@Core.Computed": true,
+     "@Common.Heading": "Created On",
+     "@Common.DocumentationRef": "urn:sap-com:documentation:key?=type=DE&id=ABP_CREATION_TSTMPL"
+    },
+    "SAPDescription": {
+     "type": "cds.String",
+     "length": 80,
+     "notNull": true,
+     "@Common.Label": "Description",
+     "@Common.QuickInfo": "Description"
+    },
+    "SAP__Messages": {
+     "items": {
+      "type": "YY1_API_CUSTOMUSER_0001.SAP__Message",
+      "notNull": true
+     }
+    }
+   },
+   "@Common.ChangedBy": {
+    "=": "SAPLastChangedBy"
+   },
+   "@Common.ChangedAt": {
+    "=": "SAPLastChangedOn"
+   },
+   "@Common.CreatedBy": {
+    "=": "SAPCreatedBy"
+   },
+   "@Common.CreatedAt": {
+    "=": "SAPCreatedOn"
+   },
+   "@Common.Label": "CBO YY1_R_CUSTOMUSERTP / CustomUser",
+   "@Common.Messages": {
+    "=": "SAP__Messages"
+   },
+   "@Capabilities.SearchRestrictions.Searchable": false,
+   "@Capabilities.InsertRestrictions.RequiredProperties": [
+    "UserId"
+   ],
+   "@Capabilities.UpdateRestrictions.DeltaUpdateSupported": true,
+   "@Capabilities.UpdateRestrictions.QueryOptions.SelectSupported": true,
+   "@Capabilities.DeepUpdateSupport.ContentIDSupported": true
+  }
+ }
+}
