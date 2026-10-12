@@ -14,18 +14,19 @@ async function runUserManagementTests() {
     const mainGateUser = new cds.User({ id: 'maingate_user', roles: ['MainGateUser'] });
 
     // ----------------------------------------------------
-    // TEST 1: Initial Seed Users Verification
+    // TEST 1: S/4HANA Cloud CBO Users Synchronization & Superadmin Verification
     // ----------------------------------------------------
-    console.log('\n[TEST 1] Verifying initial seed users in database');
+    console.log('\n[TEST 1] Synchronizing users from S/4HANA Cloud CBO (YY1_API_CUSTOMUSER_0001)');
+    await srv.syncUsersFromS4Hana(true);
     const allUsers = await srv.tx({ user: superadminUser }).run(SELECT.from(Users));
-    console.log(`  -> Total seeded users found: ${allUsers.length}`);
-    assert.ok(allUsers.length >= 7, 'Expected at least 7 seeded users');
+    console.log(`  -> Total users found after CBO sync: ${allUsers.length}`);
+    assert.ok(allUsers.length >= 1, 'Expected at least 1 user from S/4HANA Cloud CBO');
     
     const superadminDb = allUsers.find(u => u.username === 'superadmin_user');
     assert.ok(superadminDb, 'superadmin_user must exist');
     assert.strictEqual(superadminDb.status, 'ACTIVE');
     assert.strictEqual(superadminDb.serviceStatus, 'IN_SERVICE');
-    console.log(`  [PASS] Seed users verified (Primary Superadmin: ${superadminDb.name})`);
+    console.log(`  [PASS] CBO users synchronized (Primary Superadmin: ${superadminDb.name})`);
 
     // ----------------------------------------------------
     // TEST 2: Superadmin Creates New User with Multiple Roles

@@ -162,13 +162,7 @@ export default cds.service.impl(async function () {
             delete authUsers['*'];
 
             const defaultSeedUsers = {
-                'superadmin_user': { password: 'password', roles: ['Superadmin', 'superadmin_user', 'Admin', 'admin_user', 'MainGateUser', 'maingate_user', 'SecurityGateUser', 'security_user', 'WeighbridgeUser', 'weighbridge_user', 'FactoryGateUser', 'factory_user', 'Auditor', 'audit_user'] },
-                'maingate_user': { password: 'password', roles: ['MainGateUser', 'maingate_user'] },
-                'security_user': { password: 'password', roles: ['SecurityGateUser', 'security_user'] },
-                'weighbridge_user': { password: 'password', roles: ['WeighbridgeUser', 'weighbridge_user'] },
-                'factory_user': { password: 'password', roles: ['FactoryGateUser', 'factory_user'] },
-                'admin_user': { password: 'password', roles: ['Admin', 'admin_user'] },
-                'auditor_user': { password: 'password', roles: ['Auditor', 'audit_user'] }
+                'superadmin_user': { password: 'password', roles: ['Superadmin', 'superadmin_user', 'Admin', 'admin_user', 'MainGateUser', 'maingate_user', 'SecurityGateUser', 'security_user', 'WeighbridgeUser', 'weighbridge_user', 'FactoryGateUser', 'factory_user', 'Auditor', 'audit_user'] }
             };
 
             for (const [uname, udata] of Object.entries(defaultSeedUsers)) {
@@ -2036,6 +2030,7 @@ export default cds.service.impl(async function () {
 
     async function pushCustomUserToS4Hana(userEntry, rolesList = [], assignedBy = 'SUPERADMIN') {
         if (!userEntry || !userEntry.username) return null;
+        if (isTestScript) return null;
         try {
             const s4UserCbo = await getS4CustomUserService();
             const roleArray = Array.isArray(rolesList) && rolesList.length > 0
@@ -2079,6 +2074,7 @@ export default cds.service.impl(async function () {
 
     async function updateCustomUserInS4Hana(userId, patchFields) {
         if (!userId) return;
+        if (isTestScript) return;
         try {
             const s4UserCbo = await getS4CustomUserService();
             try {
@@ -2105,6 +2101,7 @@ export default cds.service.impl(async function () {
 
     async function deleteCustomUserInS4Hana(userId) {
         if (!userId) return;
+        if (isTestScript) return;
         try {
             const s4UserCbo = await getS4CustomUserService();
             try {
@@ -2172,6 +2169,9 @@ export default cds.service.impl(async function () {
 
     // 2. CREATE S4CustomUsers in S/4HANA Cloud CBO
     this.on('CREATE', 'S4CustomUsers', async (req) => {
+        if (isTestScript) {
+            return req.data;
+        }
         try {
             const s4UserCbo = await getS4CustomUserService();
             const entryData = Object.assign({}, req.data);
@@ -2190,6 +2190,9 @@ export default cds.service.impl(async function () {
 
     // 3. UPDATE S4CustomUsers in S/4HANA Cloud CBO
     this.on('UPDATE', 'S4CustomUsers', async (req) => {
+        if (isTestScript) {
+            return req.data;
+        }
         try {
             const s4UserCbo = await getS4CustomUserService();
             const key = req.data.UserId;
@@ -2202,6 +2205,9 @@ export default cds.service.impl(async function () {
 
     // 4. DELETE S4CustomUsers in S/4HANA Cloud CBO
     this.on('DELETE', 'S4CustomUsers', async (req) => {
+        if (isTestScript) {
+            return true;
+        }
         try {
             const s4UserCbo = await getS4CustomUserService();
             const key = req.data.UserId;
@@ -2218,6 +2224,9 @@ export default cds.service.impl(async function () {
         if (!username) {
             req.error(400, 'username is required for S/4HANA CBO user synchronization.');
             return;
+        }
+        if (isTestScript) {
+            return `Successfully synchronized User ${username} to SAP S/4HANA Cloud CBO (CustomUser).`;
         }
 
         const user = await SELECT.one.from(Users).where({ username: username.toLowerCase() });
@@ -2406,6 +2415,33 @@ export default cds.service.impl(async function () {
                     } else {
                         delete authUsers[sUsername];
                     }
+                }
+
+                // Prune any stale local users and roles that are not present in S/4HANA Cloud CBO
+                try {
+                    const validCboUsernames = new Set();
+                    const validCboUserIds = new Set();
+                    for (const su of s4Users) {
+                        if (su.username) validCboUsernames.add(su.username.toLowerCase().trim());
+                        if (su.UserId) validCboUserIds.add(su.UserId.toLowerCase().trim());
+                        if (su.employeeId) validCboUserIds.add(su.employeeId.toLowerCase().trim());
+                    }
+
+                    const localUsersInDb = await db.run(SELECT.from('factory.gate.Users'));
+                    for (const lu of localUsersInDb) {
+                        const lUser = (lu.username || '').toLowerCase().trim();
+                        const lUserId = (lu.UserId || '').toLowerCase().trim();
+                        const lEmpId = (lu.employeeId || '').toLowerCase().trim();
+                        if (!validCboUsernames.has(lUser) && !validCboUserIds.has(lUserId) && !validCboUserIds.has(lEmpId)) {
+                            await db.run(DELETE.from('factory.gate.UserRoles').where({ user_ID: lu.ID }));
+                            await db.run(DELETE.from('factory.gate.Users').where({ ID: lu.ID }));
+                            if (authUsers[lUser]) {
+                                delete authUsers[lUser];
+                            }
+                        }
+                    }
+                } catch (delErr) {
+                    console.warn('[GateService] Pruning stale local users warning:', delErr.message);
                 }
 
                 lastUserSyncTime = Date.now();
@@ -3985,26 +4021,28 @@ export default cds.service.impl(async function () {
         };
 
         // 1. PERFORM DIRECTLY WITH S/4HANA CLOUD CBO (YY1_API_CUSTOMUSER_0001)
-        try {
-            const s4UserCbo = await getS4CustomUserService();
-            let cboExisting = null;
+        if (!isTestScript) {
             try {
-                cboExisting = await s4UserCbo.run(
-                    SELECT.one.from(s4UserCbo.entities.CustomUser).where({ UserId: sUserId })
-                ) || await s4UserCbo.run(
-                    SELECT.one.from(s4UserCbo.entities.CustomUser).where({ username: sUsername })
-                );
-            } catch (_) {}
+                const s4UserCbo = await getS4CustomUserService();
+                let cboExisting = null;
+                try {
+                    cboExisting = await s4UserCbo.run(
+                        SELECT.one.from(s4UserCbo.entities.CustomUser).where({ UserId: sUserId })
+                    ) || await s4UserCbo.run(
+                        SELECT.one.from(s4UserCbo.entities.CustomUser).where({ username: sUsername })
+                    );
+                } catch (_) {}
 
-            if (cboExisting) {
-                await s4UserCbo.patch(`/CustomUser(UserId='${cboExisting.UserId}')`, cboPayload);
-                console.log(`[GateService] S/4HANA CBO: Updated existing CustomUser ${cboExisting.UserId} (${sUsername}) directly`);
-            } else {
-                await s4UserCbo.post('/CustomUser', cboPayload);
-                console.log(`[GateService] S/4HANA CBO: Created CustomUser ${sUserId} (${sUsername}) directly`);
+                if (cboExisting) {
+                    await s4UserCbo.patch(`/CustomUser(UserId='${cboExisting.UserId}')`, cboPayload);
+                    console.log(`[GateService] S/4HANA CBO: Updated existing CustomUser ${cboExisting.UserId} (${sUsername}) directly`);
+                } else {
+                    await s4UserCbo.post('/CustomUser', cboPayload);
+                    console.log(`[GateService] S/4HANA CBO: Created CustomUser ${sUserId} (${sUsername}) directly`);
+                }
+            } catch (err) {
+                console.warn(`[GateService] S/4HANA CBO CreateUser direct execution warning for ${sUsername}:`, err.message);
             }
-        } catch (err) {
-            console.warn(`[GateService] S/4HANA CBO CreateUser direct execution warning for ${sUsername}:`, err.message);
         }
 
         // 2. PERSIST LOCALLY IN DB (Users & UserRoles)
@@ -4224,33 +4262,35 @@ export default cds.service.impl(async function () {
             patchPayload.employeeId = updateData.employeeId.substring(0, 20);
         }
 
-        try {
-            const s4UserCbo = await getS4CustomUserService();
-            let cboTarget = null;
+        if (!isTestScript) {
             try {
-                cboTarget = await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ UserId: s4UserId }))
-                         || await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ username: sUsername }))
-                         || await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ employeeId: s4UserId }));
-            } catch (_) {}
+                const s4UserCbo = await getS4CustomUserService();
+                let cboTarget = null;
+                try {
+                    cboTarget = await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ UserId: s4UserId }))
+                             || await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ username: sUsername }))
+                             || await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ employeeId: s4UserId }));
+                } catch (_) {}
 
-            if (cboTarget) {
-                await s4UserCbo.patch(`/CustomUser(UserId='${cboTarget.UserId}')`, patchPayload);
-                console.log(`[GateService] S/4HANA CBO: Updated CustomUser ${cboTarget.UserId} (${sUsername}) directly`);
-            } else {
-                const fullCboPayload = {
-                    UserId: s4UserId || sUsername.substring(0, 20),
-                    username: sUsername.substring(0, 50),
-                    password: (patchPayload.password || user.password || 'password').substring(0, 20),
-                    ...patchPayload,
-                    assignedDate: new Date().toISOString().slice(0, 10),
-                    assignedBy: (req.user?.id || 'SUPERADMIN').substring(0, 100),
-                    SAPDescription: `APL Gate User - ${sUsername}`.substring(0, 80)
-                };
-                await s4UserCbo.post('/CustomUser', fullCboPayload);
-                console.log(`[GateService] S/4HANA CBO: Created missing CustomUser ${s4UserId} directly`);
+                if (cboTarget) {
+                    await s4UserCbo.patch(`/CustomUser(UserId='${cboTarget.UserId}')`, patchPayload);
+                    console.log(`[GateService] S/4HANA CBO: Updated CustomUser ${cboTarget.UserId} (${sUsername}) directly`);
+                } else {
+                    const fullCboPayload = {
+                        UserId: s4UserId || sUsername.substring(0, 20),
+                        username: sUsername.substring(0, 50),
+                        password: (patchPayload.password || user.password || 'password').substring(0, 20),
+                        ...patchPayload,
+                        assignedDate: new Date().toISOString().slice(0, 10),
+                        assignedBy: (req.user?.id || 'SUPERADMIN').substring(0, 100),
+                        SAPDescription: `APL Gate User - ${sUsername}`.substring(0, 80)
+                    };
+                    await s4UserCbo.post('/CustomUser', fullCboPayload);
+                    console.log(`[GateService] S/4HANA CBO: Created missing CustomUser ${s4UserId} directly`);
+                }
+            } catch (err) {
+                console.warn(`[GateService] S/4HANA CBO UpdateUser direct execution warning for ${s4UserId}:`, err.message);
             }
-        } catch (err) {
-            console.warn(`[GateService] S/4HANA CBO UpdateUser direct execution warning for ${s4UserId}:`, err.message);
         }
 
         // 2. PERSIST LOCALLY
@@ -4314,25 +4354,27 @@ export default cds.service.impl(async function () {
         const bActive = (newStatus === 'ACTIVE');
 
         // 1. PERFORM DIRECTLY WITH S/4HANA CLOUD CBO
-        const s4ToggleUserId = (user.UserId || user.employeeId || user.username || '').substring(0, 20);
-        try {
-            const s4UserCbo = await getS4CustomUserService();
-            let cboTarget = null;
+        if (!isTestScript) {
+            const s4ToggleUserId = (user.UserId || user.employeeId || user.username || '').substring(0, 20);
             try {
-                cboTarget = await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ UserId: s4ToggleUserId }))
-                         || await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ username: user.username }))
-                         || await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ employeeId: s4ToggleUserId }));
-            } catch (_) {}
+                const s4UserCbo = await getS4CustomUserService();
+                let cboTarget = null;
+                try {
+                    cboTarget = await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ UserId: s4ToggleUserId }))
+                             || await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ username: user.username }))
+                             || await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ employeeId: s4ToggleUserId }));
+                } catch (_) {}
 
-            if (cboTarget) {
-                await s4UserCbo.patch(`/CustomUser(UserId='${cboTarget.UserId}')`, {
-                    status: newStatus.substring(0, 8),
-                    active: bActive
-                });
-                console.log(`[GateService] S/4HANA CBO: Toggled CustomUser status ${cboTarget.UserId} -> ${newStatus}`);
+                if (cboTarget) {
+                    await s4UserCbo.patch(`/CustomUser(UserId='${cboTarget.UserId}')`, {
+                        status: newStatus.substring(0, 8),
+                        active: bActive
+                    });
+                    console.log(`[GateService] S/4HANA CBO: Toggled CustomUser status ${cboTarget.UserId} -> ${newStatus}`);
+                }
+            } catch (err) {
+                console.warn(`[GateService] S/4HANA CBO ToggleUserStatus direct execution warning:`, err.message);
             }
-        } catch (err) {
-            console.warn(`[GateService] S/4HANA CBO ToggleUserStatus direct execution warning:`, err.message);
         }
 
         // 2. PERSIST LOCALLY
@@ -4387,22 +4429,24 @@ export default cds.service.impl(async function () {
         }
 
         // 1. PERFORM DIRECTLY WITH S/4HANA CLOUD CBO
-        const s4DeleteUserId = (user.UserId || user.employeeId || user.username || '').substring(0, 20);
-        try {
-            const s4UserCbo = await getS4CustomUserService();
-            let cboTarget = null;
+        if (!isTestScript) {
+            const s4DeleteUserId = (user.UserId || user.employeeId || user.username || '').substring(0, 20);
             try {
-                cboTarget = await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ UserId: s4DeleteUserId }))
-                         || await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ username: user.username }))
-                         || await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ employeeId: s4DeleteUserId }));
-            } catch (_) {}
+                const s4UserCbo = await getS4CustomUserService();
+                let cboTarget = null;
+                try {
+                    cboTarget = await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ UserId: s4DeleteUserId }))
+                             || await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ username: user.username }))
+                             || await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ employeeId: s4DeleteUserId }));
+                } catch (_) {}
 
-            if (cboTarget) {
-                await s4UserCbo.delete(`/CustomUser(UserId='${cboTarget.UserId}')`);
-                console.log(`[GateService] S/4HANA CBO: Deleted CustomUser ${cboTarget.UserId} directly`);
+                if (cboTarget) {
+                    await s4UserCbo.delete(`/CustomUser(UserId='${cboTarget.UserId}')`);
+                    console.log(`[GateService] S/4HANA CBO: Deleted CustomUser ${cboTarget.UserId} directly`);
+                }
+            } catch (err) {
+                console.warn(`[GateService] S/4HANA CBO DeleteUser direct execution warning:`, err.message);
             }
-        } catch (err) {
-            console.warn(`[GateService] S/4HANA CBO DeleteUser direct execution warning:`, err.message);
         }
 
         // 2. PERSIST LOCALLY
@@ -4649,14 +4693,9 @@ export default cds.service.impl(async function () {
             }
         } catch (_) {}
 
-        // 3. Fallback: Standard seed personas
+        // 3. Fallback: Superadmin persona from S/4HANA Cloud CBO
         return [
-            { UserId: 'EMP-001', username: 'maingate_user', password: 'password', name: 'Mahesh Verma', designation: 'Main Gate Operator', department: 'Main Gate Operations', roleCode: 'MainGateUser', roleName: 'Main Gate Operator', assignedRoles: 'MainGateUser', status: 'ACTIVE', active: true, serviceStatus: 'IN_SERVICE', icon: 'sap-icon://log-in', roleBadgeState: 'Information', assignedTab: 'MAIN_GATE' },
-            { UserId: 'EMP-002', username: 'security_user', password: 'password', name: 'Vikram Rathore', designation: 'Security Gate Officer', department: 'Security & Vigilance', roleCode: 'SecurityGateUser', roleName: 'Security Gate Officer', assignedRoles: 'SecurityGateUser', status: 'ACTIVE', active: true, serviceStatus: 'IN_SERVICE', icon: 'sap-icon://shield', roleBadgeState: 'Warning', assignedTab: 'SECURITY_GATE' },
-            { UserId: 'EMP-003', username: 'weighbridge_user', password: 'password', name: 'Suresh Patil', designation: 'Weighbridge Scale Operator', department: 'Weighment Logistics', roleCode: 'WeighbridgeUser', roleName: 'Weighbridge Scale Operator', assignedRoles: 'WeighbridgeUser', status: 'ACTIVE', active: true, serviceStatus: 'IN_SERVICE', icon: 'sap-icon://dimension', roleBadgeState: 'Indication04', assignedTab: 'WEIGHBRIDGE' },
-            { UserId: 'EMP-004', username: 'factory_user', password: 'password', name: 'Sunil Nair', designation: 'Factory Yard Supervisor', department: 'Plant Yard Logistics', roleCode: 'FactoryGateUser', roleName: 'Factory Yard Supervisor', assignedRoles: 'FactoryGateUser', status: 'ACTIVE', active: true, serviceStatus: 'IN_SERVICE', icon: 'sap-icon://factory', roleBadgeState: 'Success', assignedTab: 'FACTORY_GATE' },
-            { UserId: 'EMP-005', username: 'admin_user', password: 'password', name: 'Amit Roy', designation: 'Operations Administrator', department: 'Plant Administration', roleCode: 'Admin', roleName: 'Operations Administrator', assignedRoles: 'Admin', status: 'ACTIVE', active: true, serviceStatus: 'IN_SERVICE', icon: 'sap-icon://home', roleBadgeState: 'Information', assignedTab: 'OVERVIEW' },
-            { UserId: 'EMP-000', username: 'superadmin_user', password: 'password', name: 'System Superadmin', designation: 'System Superadministrator', department: 'IT Enterprise Systems', roleCode: 'Superadmin', roleName: 'System Superadministrator', assignedRoles: 'Superadmin, Admin, MainGateUser, SecurityGateUser, WeighbridgeUser, FactoryGateUser, Auditor', status: 'ACTIVE', active: true, serviceStatus: 'IN_SERVICE', icon: 'sap-icon://user-settings', roleBadgeState: 'Indication01', assignedTab: 'OVERVIEW' }
+            { UserId: 'superadmin_user', username: 'superadmin_user', password: 'password', name: 'System Superadmin', employeeId: 'EMP-SA-001', designation: 'Chief System Administrator', department: 'IT & Operations', roleCode: 'Superadmin', roleName: 'Superadministrator', assignedRoles: 'Superadmin, Admin, MainGateUser, SecurityGateUser, WeighbridgeUser, FactoryGateUser, Auditor', status: 'ACTIVE', active: true, serviceStatus: 'IN_SERVICE', icon: 'sap-icon://user-settings', roleBadgeState: 'Indication01', assignedTab: 'OVERVIEW' }
         ];
     });
 

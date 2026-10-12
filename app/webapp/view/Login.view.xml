@@ -59,7 +59,7 @@
                     <Input
                         id="inputLoginUsername"
                         value="{/loginUsername}"
-                        placeholder="Enter username (e.g. maingate_user or SAP User ID)"
+                        placeholder="Enter username (e.g. superadmin_user or SAP User ID)"
                         width="100%"
                         liveChange=".onCredentialChange"
                         submit=".onLoginPress"

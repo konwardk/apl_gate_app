@@ -49,48 +49,6 @@
               "Auditor",
               "audit_user"
             ]
-          },
-          "maingate_user": {
-            "password": "password",
-            "roles": [
-              "MainGateUser",
-              "maingate_user"
-            ]
-          },
-          "security_user": {
-            "password": "password",
-            "roles": [
-              "SecurityGateUser",
-              "security_user"
-            ]
-          },
-          "weighbridge_user": {
-            "password": "password",
-            "roles": [
-              "WeighbridgeUser",
-              "weighbridge_user"
-            ]
-          },
-          "factory_user": {
-            "password": "password",
-            "roles": [
-              "FactoryGateUser",
-              "factory_user"
-            ]
-          },
-          "admin_user": {
-            "password": "password",
-            "roles": [
-              "Admin",
-              "admin_user"
-            ]
-          },
-          "auditor_user": {
-            "password": "password",
-            "roles": [
-              "Auditor",
-              "audit_user"
-            ]
           }
         }
       },
