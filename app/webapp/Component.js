@@ -374,14 +374,22 @@ sap.ui.define([
                             }
 
                             // Weighbridge operations stream
-                            const isAssignedWb = route === "WEIGHBRIDGE" || hasAnyWeighment || ["WEIGHBRIDGE_IN", "WEIGHBRIDGE_OUT"].includes(status) || (!route && (tx.purpose === "DELIVERY" || tx.purpose === "PICKUP"));
-                            if (isAssignedWb && status !== "CANCELLED") {
+                            const sRoute = (route || (tx.securityEntry && tx.securityEntry.assignedRoute) || "").toUpperCase().trim();
+                            const hasWeighments = Boolean(inboundWeighment || outboundWeighment || hasAnyWeighment);
+                            const isDirectFactory = (sRoute === "FACTORY" || sRoute === "FACTORY_GATE") && !hasWeighments;
+
+                            const isAssignedWb = !isDirectFactory &&
+                                status !== "GATE_IN" &&
+                                status !== "CANCELLED" &&
+                                (sRoute === "WEIGHBRIDGE" || ["WEIGHBRIDGE_IN", "WEIGHBRIDGE_OUT"].includes(status) || hasWeighments);
+
+                            if (isAssignedWb) {
                                 counts.WEIGHBRIDGE++;
-                                if (status === "GATE_IN" || (status === "SECURITY_IN" && !inboundWeighment) || (status === "WEIGHBRIDGE_IN" && !inboundWeighment)) {
+                                if (!inboundWeighment && (status === "SECURITY_IN" || status === "WEIGHBRIDGE_IN")) {
                                     counts.WEIGHBRIDGE_AWAITING_IN++;
-                                } else if (status === "FACTORY_IN" || (inboundWeighment && !outboundWeighment && status !== "FACTORY_OUT")) {
+                                } else if (inboundWeighment && !outboundWeighment && (status === "FACTORY_IN" || (status === "WEIGHBRIDGE_IN" && inboundWeighment)) && status !== "FACTORY_OUT") {
                                     counts.WEIGHBRIDGE_INSIDE_YARD++;
-                                } else if (status === "FACTORY_OUT" && !outboundWeighment) {
+                                } else if (inboundWeighment && !outboundWeighment && status === "FACTORY_OUT") {
                                     counts.WEIGHBRIDGE_AWAITING_OUT++;
                                 } else if (outboundWeighment || ["WEIGHBRIDGE_OUT", "SECURITY_OUT", "COMPLETED"].includes(status)) {
                                     counts.WEIGHBRIDGE_COMPLETED++;
@@ -465,7 +473,15 @@ sap.ui.define([
             });
 
             if (!res.ok) {
-                throw new Error("Authentication failed: Invalid username or password.");
+                if (res.status === 401 || res.status === 403) {
+                    throw new Error("User credentials not matched or not found.");
+                }
+                let errData;
+                try {
+                    errData = await res.json();
+                } catch (_) {}
+                const msg = errData?.error?.message || "User credentials not matched or not found.";
+                throw new Error(msg);
             }
 
             const info = await res.json();

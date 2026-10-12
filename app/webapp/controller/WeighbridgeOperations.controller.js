@@ -124,17 +124,47 @@ sap.ui.define([
             }
 
             const driverName = tx.driverName || (tx.driver && tx.driver.driverName) || "";
-            const isAssignedWb = (tx.assignedRoute === "WEIGHBRIDGE" || weighments.length > 0 || (!tx.assignedRoute && (tx.purpose === "DELIVERY" || tx.purpose === "PICKUP")));
+            const hasAnyWeighment = Boolean(inboundWeighment || outboundWeighment || (weighments && weighments.length > 0));
 
-            const isAwaitingInbound = (tx.status === "SECURITY_IN" && tx.assignedRoute === "WEIGHBRIDGE") ||
-                (isAssignedWb && !inboundWeighment && ["GATE_IN", "SECURITY_IN", "WEIGHBRIDGE_IN"].includes(tx.status));
-            const isInsideYard = tx.status === "FACTORY_IN" || (inboundWeighment && !outboundWeighment && tx.status !== "FACTORY_OUT");
-            const isAwaitingOutbound = tx.status === "FACTORY_OUT" && !outboundWeighment;
-            const isScaleCompleted = Boolean(outboundWeighment || tx.status === "WEIGHBRIDGE_OUT" || tx.status === "SECURITY_OUT" || tx.status === "COMPLETED");
+            const sRoute = (tx.assignedRoute || (tx.securityEntry && tx.securityEntry.assignedRoute) || "").toUpperCase().trim();
+            const isDirectFactory = (sRoute === "FACTORY" || sRoute === "FACTORY_GATE") && !hasAnyWeighment;
+
+            // Strict Weighbridge eligibility:
+            // Must NOT be at initial Main Gate (GATE_IN), must NOT be CANCELLED, and must NOT be direct factory bypass.
+            // Only appears once Security user assigns vehicle to WEIGHBRIDGE (or already at WEIGHBRIDGE_IN / has scale records).
+            const isAssignedWb = !isDirectFactory &&
+                tx.status !== "GATE_IN" &&
+                tx.status !== "CANCELLED" &&
+                (sRoute === "WEIGHBRIDGE" || ["WEIGHBRIDGE_IN", "WEIGHBRIDGE_OUT"].includes(tx.status) || hasAnyWeighment);
+
+            // Awaiting Inbound (1st Scale):
+            // Assigned to Weighbridge, no inbound scale recorded yet, and at SECURITY_IN or WEIGHBRIDGE_IN stage
+            const isAwaitingInbound = isAssignedWb &&
+                !inboundWeighment &&
+                ["SECURITY_IN", "WEIGHBRIDGE_IN"].includes(tx.status);
+
+            // Inside Yard:
+            // Inbound scale done, outbound scale not yet done, and currently inside factory yard
+            const isInsideYard = isAssignedWb &&
+                Boolean(inboundWeighment) &&
+                !outboundWeighment &&
+                (tx.status === "FACTORY_IN" || (tx.status === "WEIGHBRIDGE_IN" && Boolean(inboundWeighment))) &&
+                tx.status !== "FACTORY_OUT";
+
+            // Awaiting Outbound (2nd Scale):
+            // Inbound scale done, has exited factory yard (FACTORY_OUT), awaiting second weighment
+            const isAwaitingOutbound = isAssignedWb &&
+                Boolean(inboundWeighment) &&
+                !outboundWeighment &&
+                tx.status === "FACTORY_OUT";
+
+            // Scale Completed:
+            // Outbound scale completed, or weighbridge exit / subsequent stations completed
+            const isScaleCompleted = isAssignedWb &&
+                Boolean(outboundWeighment || tx.status === "WEIGHBRIDGE_OUT" || (["SECURITY_OUT", "COMPLETED"].includes(tx.status) && hasAnyWeighment));
 
             const canWeighIn = isAwaitingInbound;
             const canWeighOut = isAwaitingOutbound;
-            const hasAnyWeighment = Boolean(inboundWeighment || outboundWeighment || weighments.length > 0);
 
             return {
                 ...tx,
@@ -173,14 +203,14 @@ sap.ui.define([
             };
 
             try {
-                const res = await fetch(`${ODATA_BASE}/GateTransactions?$expand=weighments,transporter,supplier,driver&$orderby=createdAt desc`, { headers });
+                const res = await fetch(`${ODATA_BASE}/GateTransactions?$expand=weighments,transporter,supplier,driver,securityEntry&$orderby=createdAt desc`, { headers });
                 let raw = [];
                 if (res.ok) {
                     const data = await res.json();
                     raw = data.value || [];
                 }
 
-                const processed = raw.map(tx => this._enrichRecord(tx)).filter(tx => tx.isAssignedWb || tx.hasAnyWeighment || ["WEIGHBRIDGE_IN", "WEIGHBRIDGE_OUT", "FACTORY_OUT"].includes(tx.status));
+                const processed = raw.map(tx => this._enrichRecord(tx)).filter(tx => tx.isAssignedWb);
                 oWbModel.setProperty("/allRecords", processed);
 
                 const eligible = processed.filter(tx => tx.canWeighIn || tx.canWeighOut);
@@ -334,13 +364,13 @@ sap.ui.define([
 
         selectVehicleByGateIn: async function (gateInNumber) {
             const oWbModel = this.getView().getModel("wbModel");
-            const aEligible = oWbModel.getProperty("/eligibleVehicles") || [];
+            const aEligible = oWbModel.getProperty("/dialogEligibleVehicles") || oWbModel.getProperty("/eligibleVehicles") || oWbModel.getProperty("/allRecords") || [];
             let vehicle = aEligible.find(v =>
                 v.gateInNumber.toLowerCase() === (gateInNumber || "").toLowerCase() ||
                 (v.vehicleRegNo && v.vehicleRegNo.toLowerCase() === (gateInNumber || "").toLowerCase())
             );
 
-            // If not found in loaded queue, try direct server fetch with expand weighments
+            // If not found in loaded queue, try direct server fetch with expand weighments & securityEntry
             if (!vehicle && gateInNumber && gateInNumber.trim()) {
                 try {
                     const headers = {
@@ -348,7 +378,7 @@ sap.ui.define([
                         "Content-Type": "application/json"
                     };
                     const sQuery = encodeURIComponent(gateInNumber.trim());
-                    const res = await fetch(`${ODATA_BASE}/GateTransactions?$filter=gateInNumber eq '${sQuery}' or tolower(vehicleRegNo) eq '${sQuery.toLowerCase()}'&$expand=weighments`, { headers });
+                    const res = await fetch(`${ODATA_BASE}/GateTransactions?$filter=gateInNumber eq '${sQuery}' or tolower(vehicleRegNo) eq '${sQuery.toLowerCase()}'&$expand=weighments,transporter,supplier,driver,securityEntry`, { headers });
                     if (res.ok) {
                         const data = await res.json();
                         if (data.value && data.value.length > 0) {
@@ -1322,16 +1352,21 @@ sap.ui.define([
             const oWbModel = this.getView().getModel("wbModel");
             oWbModel.setProperty("/dialogTitle", "Record Inbound Weighment (1st Scale)");
 
+            const aAll = oWbModel.getProperty("/allRecords") || [];
+            const awaitingIn = aAll.filter(v => v.canWeighIn);
+            oWbModel.setProperty("/dialogEligibleVehicles", oTx ? [oTx] : awaitingIn);
+
             if (oTx) {
                 oWbModel.setProperty("/isVehicleSelectable", false);
                 await this.selectVehicleByGateIn(oTx.gateInNumber);
             } else {
                 oWbModel.setProperty("/isVehicleSelectable", true);
-                const aEligible = oWbModel.getProperty("/eligibleVehicles") || [];
-                const awaitingIn = aEligible.filter(v => v.canWeighIn);
-                const target = awaitingIn.length > 0 ? awaitingIn[0] : (aEligible[0] || null);
+                const target = awaitingIn.length > 0 ? awaitingIn[0] : null;
                 if (target) {
                     await this.selectVehicleByGateIn(target.gateInNumber);
+                } else {
+                    oWbModel.setProperty("/selectedGateInNumber", "");
+                    oWbModel.setProperty("/selectedVehicle", null);
                 }
             }
 
@@ -1363,16 +1398,21 @@ sap.ui.define([
             const oWbModel = this.getView().getModel("wbModel");
             oWbModel.setProperty("/dialogTitle", "Record Outbound Weighment (2nd Scale)");
 
+            const aAll = oWbModel.getProperty("/allRecords") || [];
+            const awaitingOut = aAll.filter(v => v.canWeighOut);
+            oWbModel.setProperty("/dialogEligibleVehicles", oTx ? [oTx] : awaitingOut);
+
             if (oTx) {
                 oWbModel.setProperty("/isVehicleSelectable", false);
                 await this.selectVehicleByGateIn(oTx.gateInNumber);
             } else {
                 oWbModel.setProperty("/isVehicleSelectable", true);
-                const aEligible = oWbModel.getProperty("/eligibleVehicles") || [];
-                const awaitingOut = aEligible.filter(v => v.canWeighOut);
-                const target = awaitingOut.length > 0 ? awaitingOut[0] : (aEligible[0] || null);
+                const target = awaitingOut.length > 0 ? awaitingOut[0] : null;
                 if (target) {
                     await this.selectVehicleByGateIn(target.gateInNumber);
+                } else {
+                    oWbModel.setProperty("/selectedGateInNumber", "");
+                    oWbModel.setProperty("/selectedVehicle", null);
                 }
             }
 

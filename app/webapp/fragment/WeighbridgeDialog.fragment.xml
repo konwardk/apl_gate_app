@@ -41,7 +41,7 @@
                         enabled="{= ${wbModel>/isVehicleSelectable} !== false }"
                         noDataText="No vehicles currently awaiting Weighbridge scale clearance"
                         items="{
-                            path: 'wbModel>/eligibleVehicles',
+                            path: 'wbModel>/dialogEligibleVehicles',
                             templateShareable: false
                         }">
                         <core:ListItem

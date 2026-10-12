@@ -97,9 +97,12 @@ sap.ui.define([
 
             // 2. Assigned route and section
             const sAssignedRoute = (tx.assignedRoute || secEntry.assignedRoute || "").toUpperCase().trim();
+            const hasAnyWeighment = Boolean(tx.weighments && tx.weighments.length > 0);
 
-            // Unassigned route: only when at SECURITY_IN and no route has been chosen yet
-            const canAssignRoute = (tx.status === "SECURITY_IN" && !sAssignedRoute);
+            // Can assign or re-assign route at SECURITY_IN before weighments start:
+            const canSendToWeighbridge = (tx.status === "SECURITY_IN" && sAssignedRoute !== "WEIGHBRIDGE" && !hasAnyWeighment);
+            const canSendToFactory = (tx.status === "SECURITY_IN" && sAssignedRoute !== "FACTORY" && !hasAnyWeighment);
+            const canAssignRoute = canSendToWeighbridge || canSendToFactory;
 
             // Assigned to Weighbridge:
             // Route is WEIGHBRIDGE (or currently in WEIGHBRIDGE_IN), and has not completed weighbridge exit (WEIGHBRIDGE_OUT) or final clearance
@@ -126,6 +129,8 @@ sap.ui.define([
                 hasSecurityOut: hasSecurityOut,
                 canSecurityGateIn: canSecurityGateIn,
                 canAssignRoute: canAssignRoute,
+                canSendToWeighbridge: canSendToWeighbridge,
+                canSendToFactory: canSendToFactory,
                 isAtWeighbridge: isAtWeighbridge,
                 isAtFactory: isAtFactory,
                 canSecurityGateOut: canSecurityGateOut,
@@ -145,8 +150,8 @@ sap.ui.define([
             };
 
             try {
-                // Fetch all GateTransactions expanding unified securityEntry and driver
-                const res = await fetch(`${ODATA_BASE}/GateTransactions?$expand=securityEntry,driver&$orderby=createdAt desc&$top=100`, { headers });
+                // Fetch all GateTransactions expanding unified securityEntry, driver, and weighments
+                const res = await fetch(`${ODATA_BASE}/GateTransactions?$expand=securityEntry,driver,weighments&$orderby=createdAt desc&$top=100`, { headers });
                 if (!res.ok) {
                     throw new Error(`HTTP ${res.status}: ${res.statusText}`);
                 }
@@ -577,7 +582,7 @@ sap.ui.define([
                 rgpDocumentNo: m.isPickup ? (m.rgpDocumentNo ? m.rgpDocumentNo.trim() : "") : "",
                 nrgpDocumentNo: m.isPickup ? (m.nrgpDocumentNo ? m.nrgpDocumentNo.trim() : "") : "",
                 gatePassType: m.isPickup ? (m.gatePassType || "") : "",
-                assignedRoute: m.assignedRoute || "WEIGHBRIDGE",
+                assignedRoute: (m.assignedRoute !== undefined && m.assignedRoute !== null) ? m.assignedRoute.trim() : "",
                 remarks: m.remarks ? m.remarks.trim() : ""
             };
 
@@ -615,9 +620,9 @@ sap.ui.define([
                     statusText = "Cleared Security Gate IN";
                 }
 
-                const sRouteDesc = (m.assignedRoute === "FACTORY") ? "To Factory Gate (Direct Delivery)" : "To Weighbridge (Gross/Tare Scale)";
+                const sRouteDesc = (m.assignedRoute === "FACTORY") ? "To Factory Gate (Direct Delivery)" : (m.assignedRoute === "WEIGHBRIDGE" ? "To Weighbridge (Gross/Tare Scale)" : "Unassigned (Assign from Queue)");
 
-                MessageBox.success(`Security Gate IN successfully authorized for ${m.selectedGateInNumber}!\n\nStatus: SECURITY_IN\nAssigned Route: ${sRouteDesc}\nDocumentation: ${statusText}\n\nVehicle is assigned to ${sRouteDesc}. Factory Gate IN will be recorded by the Factory Gate Operator.`, {
+                MessageBox.success(`Security Gate IN successfully authorized for ${m.selectedGateInNumber}!\n\nStatus: SECURITY_IN\nAssigned Route: ${sRouteDesc}\nDocumentation: ${statusText}\n\nVehicle is ${m.assignedRoute ? 'assigned to ' + sRouteDesc : 'awaiting route assignment in Security Queue'}.`, {
                     title: "Security Clearance Complete",
                     onClose: () => {
                         this.loadSecurityData();

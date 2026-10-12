@@ -13,6 +13,8 @@ sap.ui.define([
         onInit: function () {
             const oModel = this.getOwnerComponent().getModel();
             if (oModel) {
+                oModel.setProperty("/loginUsername", "");
+                oModel.setProperty("/loginPassword", "");
                 oModel.setProperty("/loginError", "");
                 oModel.setProperty("/isLoginBusy", false);
             }
@@ -35,7 +37,7 @@ sap.ui.define([
                     if (Array.isArray(aUsers) && aUsers.length > 0) {
                         oModel.setProperty("/loginUsers", aUsers);
 
-                        // Cache passwords for instant one-click login
+                        // Cache passwords for instant one-click login if present
                         aUsers.forEach(u => {
                             if (u.username && u.password) {
                                 models.setPasswordForUser(u.username, u.password);
@@ -64,21 +66,24 @@ sap.ui.define([
             if (oModel) {
                 oModel.setProperty("/loginError", "");
             }
+            const oUserInput = this.byId("inputLoginUsername");
+            const oPassInput = this.byId("inputLoginPassword");
+            if (oUserInput) oUserInput.setValueState(ValueState.None);
+            if (oPassInput) oPassInput.setValueState(ValueState.None);
         },
 
-        onSelectUserChange: function (oEvt) {
+        onCredentialChange: function () {
             const oModel = this.getOwnerComponent().getModel();
-            const oSelectedItem = oEvt.getParameter("selectedItem");
-            if (!oSelectedItem || !oModel) return;
-
-            const oCtx = oSelectedItem.getBindingContext();
-            if (oCtx) {
-                const uObj = oCtx.getObject();
-                const sUser = uObj.username || uObj.UserId;
-                const sPass = uObj.password || models.getPasswordForUser(sUser) || "password";
-                oModel.setProperty("/loginUsername", sUser);
-                oModel.setProperty("/loginPassword", sPass);
+            if (oModel && oModel.getProperty("/loginError")) {
                 oModel.setProperty("/loginError", "");
+            }
+            const oUserInput = this.byId("inputLoginUsername");
+            const oPassInput = this.byId("inputLoginPassword");
+            if (oUserInput && oUserInput.getValueState() === ValueState.Error) {
+                oUserInput.setValueState(ValueState.None);
+            }
+            if (oPassInput && oPassInput.getValueState() === ValueState.Error) {
+                oPassInput.setValueState(ValueState.None);
             }
         },
 
@@ -87,7 +92,7 @@ sap.ui.define([
             const oCtx = oSource.getBindingContext();
             const oModel = this.getOwnerComponent().getModel();
             let sUser = "";
-            let sPass = "password";
+            let sPass = "";
 
             if (oCtx) {
                 const uObj = oCtx.getObject();
@@ -104,8 +109,17 @@ sap.ui.define([
                 oModel.setProperty("/loginError", "");
             }
 
-            // Immediately authenticate
-            this.onLoginPress();
+            const oUserInput = this.byId("inputLoginUsername");
+            const oPassInput = this.byId("inputLoginPassword");
+            if (oUserInput) oUserInput.setValueState(ValueState.None);
+            if (oPassInput) oPassInput.setValueState(ValueState.None);
+
+            if (sPass) {
+                // If password exists, authenticate directly
+                this.onLoginPress();
+            } else if (oPassInput) {
+                oPassInput.focus();
+            }
         },
 
         onLoginPress: async function () {
@@ -118,7 +132,7 @@ sap.ui.define([
 
             if (!sUser) {
                 if (oUserInput) oUserInput.setValueState(ValueState.Error);
-                oModel.setProperty("/loginError", "Please enter a valid Username.");
+                oModel.setProperty("/loginError", "Please enter your Username / User ID.");
                 return;
             }
             if (oUserInput) oUserInput.setValueState(ValueState.None);
@@ -144,7 +158,8 @@ sap.ui.define([
                 oModel.setProperty("/selectedDashboardTab", sAssignedTab);
                 this.getOwnerComponent().navigateTo("launchpadPage", "slide");
             } catch (err) {
-                oModel.setProperty("/loginError", err.message || "Authentication failed. Invalid username or password.");
+                const sErrorMsg = err.message || "User credentials not matched.";
+                oModel.setProperty("/loginError", sErrorMsg);
                 if (oUserInput) oUserInput.setValueState(ValueState.Error);
                 if (oPassInput) oPassInput.setValueState(ValueState.Error);
             } finally {

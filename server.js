@@ -39,13 +39,18 @@ cds.on('bootstrap', (app) => {
                 const creds = Buffer.from(b64, 'base64').toString('utf8');
                 const colonIdx = creds.indexOf(':');
                 if (colonIdx > 0) {
-                    const u = creds.slice(0, colonIdx).trim().toLowerCase();
+                    const rawU = creds.slice(0, colonIdx).trim();
+                    const u = rawU.toLowerCase();
                     const p = creds.slice(colonIdx + 1).trim();
                     if (u && (!cds.env?.requires?.auth?.users?.[u] || cds.env.requires.auth.users[u].password !== p)) {
                         try {
                             const s4Cbo = await cds.connect.to('YY1_API_CUSTOMUSER_0001');
                             const s4User = await s4Cbo.run(
+                                SELECT.one.from(s4Cbo.entities.CustomUser).where({ username: rawU })
+                            ) || await s4Cbo.run(
                                 SELECT.one.from(s4Cbo.entities.CustomUser).where({ username: u })
+                            ) || await s4Cbo.run(
+                                SELECT.one.from(s4Cbo.entities.CustomUser).where({ UserId: rawU })
                             ) || await s4Cbo.run(
                                 SELECT.one.from(s4Cbo.entities.CustomUser).where({ UserId: u })
                             );
@@ -58,11 +63,13 @@ cds.on('bootstrap', (app) => {
                                     expRoles.push(r);
                                     if (r.toLowerCase() !== r) expRoles.push(r.toLowerCase());
                                 }
-                                cds.env.requires.auth.users[u] = new cds.User({
+                                const userObj = new cds.User({
                                     id: u,
                                     password: s4User.password,
                                     roles: expRoles
                                 });
+                                cds.env.requires.auth.users[u] = userObj;
+                                cds.env.requires.auth.users[rawU] = userObj;
                             }
                         } catch (_) {}
                     }

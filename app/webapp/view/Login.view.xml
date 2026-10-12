@@ -55,25 +55,15 @@
 
                 <!-- Login Form -->
                 <VBox class="sapUiSmallMarginTop">
-                    <Label text="Select User from SAP S/4HANA Cloud (YY1_API_CUSTOMUSER_0001)" labelFor="selectLoginUser" class="login-field-label" />
-                    <Select
-                        id="selectLoginUser"
-                        items="{/loginUsers}"
-                        selectedKey="{/loginUsername}"
-                        change=".onSelectUserChange"
-                        width="100%"
-                        class="sapUiTinyMarginBottom">
-                        <core:Item key="{username}" text="{name} (@{username}) — {roleName}" />
-                    </Select>
-
-                    <Label text="Username / User ID" required="true" labelFor="inputLoginUsername" class="login-field-label sapUiTinyMarginTop" />
+                    <Label text="Username / User ID" required="true" labelFor="inputLoginUsername" class="login-field-label" />
                     <Input
                         id="inputLoginUsername"
                         value="{/loginUsername}"
-                        placeholder="Enter username (e.g. maingate_user)"
+                        placeholder="Enter username (e.g. maingate_user or SAP User ID)"
                         width="100%"
+                        liveChange=".onCredentialChange"
                         submit=".onLoginPress"
-                        valueLiveUpdate="true"
+                        editable="{= !${/isLoginBusy} }"
                         class="sapUiTinyMarginBottom" />
 
                     <Label text="Password" required="true" labelFor="inputLoginPassword" class="login-field-label sapUiSmallMarginTop" />
@@ -83,8 +73,9 @@
                         value="{/loginPassword}"
                         placeholder="Enter password"
                         width="100%"
+                        liveChange=".onCredentialChange"
                         submit=".onLoginPress"
-                        valueLiveUpdate="true"
+                        editable="{= !${/isLoginBusy} }"
                         class="sapUiMediumMarginBottom" />
 
                     <Button
@@ -93,6 +84,7 @@
                         icon="sap-icon://log-in"
                         type="Emphasized"
                         press=".onLoginPress"
+                        enabled="{= !${/isLoginBusy} }"
                         width="100%"
                         class="login-submit-btn" />
                 </VBox>

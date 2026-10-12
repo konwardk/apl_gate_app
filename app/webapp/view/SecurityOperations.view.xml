@@ -194,6 +194,11 @@
                                     text="{= ${secModel>assignedRoute} === 'WEIGHBRIDGE' ? 'Route: Weighbridge' : (${secModel>assignedRoute} === 'FACTORY' ? 'Route: Factory Gate' : ${secModel>assignedRoute}) }"
                                     state="{= ${secModel>assignedRoute} === 'WEIGHBRIDGE' ? 'Information' : 'Success' }"
                                     class="sapUiTinyMarginTop" />
+                                <ObjectStatus
+                                    visible="{= !${secModel>assignedRoute} &amp;&amp; ${secModel>status} === 'SECURITY_IN' }"
+                                    text="Route: Pending Assignment"
+                                    state="Warning"
+                                    class="sapUiTinyMarginTop" />
                             </VBox>
 
                             <!-- 8. Actions -->
@@ -211,13 +216,13 @@
                                     press=".onRowGateInPress"
                                     class="sapUiTinyMarginEnd" />
 
-                                <!-- Route assignment buttons (only if vehicle is at SECURITY_IN and route has not yet been assigned) -->
+                                <!-- Route assignment buttons (only if vehicle is at SECURITY_IN and eligible for routing) -->
                                 <Button
                                     text="To Weighbridge"
                                     icon="sap-icon://dimension"
                                     type="Default"
                                     tooltip="Assign Route: Send vehicle to Weighbridge for gross/tare weighment"
-                                    visible="{secModel>canAssignRoute}"
+                                    visible="{secModel>canSendToWeighbridge}"
                                     press=".onRowSendToWeighbridgePress"
                                     class="sapUiTinyMarginEnd" />
                                 <Button
@@ -225,7 +230,7 @@
                                     icon="sap-icon://factory"
                                     type="Emphasized"
                                     tooltip="Assign Route: Send vehicle directly to Factory Gate (Bypass Weighbridge)"
-                                    visible="{secModel>canAssignRoute}"
+                                    visible="{secModel>canSendToFactory}"
                                     press=".onRowSendToFactoryPress"
                                     class="sapUiTinyMarginEnd" />
 

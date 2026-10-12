@@ -204,6 +204,7 @@
                         width="100%">
                         <core:Item key="WEIGHBRIDGE" text="To Weighbridge (Gross / Tare Scale Weighment)" />
                         <core:Item key="FACTORY" text="To Factory Gate (Direct Delivery / Bypass Weighbridge)" />
+                        <core:Item key="" text="Assign Later (From Security Queue)" />
                     </Select>
 
                     <Label text="Remarks" />

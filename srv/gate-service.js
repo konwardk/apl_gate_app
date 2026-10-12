@@ -3875,7 +3875,7 @@ export default cds.service.impl(async function () {
             (username === 'auditor_user' ? 'Pooja Hegde' : (req.user?.id || 'User')))))));
 
         if (!req.user?.id || req.user.id === 'anonymous' || roles.length === 0) {
-            return req.reject(401, 'Invalid username or password.');
+            return req.reject(401, 'User credentials not matched or not found.');
         }
 
         const resolvedName = s4User?.name || userDb?.name || fallbackName;
