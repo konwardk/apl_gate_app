@@ -504,6 +504,7 @@ type VerificationStatus : String enum {
    ============================================================ */
 
 entity Users : cuid, managed {
+    UserId          : String(20);
     username        : String(50) @mandatory;
     password        : String(100) @mandatory;
     name            : String(100) @mandatory;

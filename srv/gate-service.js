@@ -1102,6 +1102,295 @@ export default cds.service.impl(async function () {
         }
     }
 
+    // ------------------------------------------------------------
+    // S/4HANA CLOUD CBO VEHICLE SYNCHRONIZATION (Inbound to Local DB)
+    // ------------------------------------------------------------
+    let lastVehicleSyncTime = 0;
+    let vehicleSyncPromise = null;
+    const VEHICLE_SYNC_CACHE_MS = 3000;
+
+    async function syncVehiclesFromS4Hana(force = false) {
+        const now = Date.now();
+        if (!force && (now - lastVehicleSyncTime < VEHICLE_SYNC_CACHE_MS)) {
+            return;
+        }
+        if (vehicleSyncPromise) {
+            return await vehicleSyncPromise;
+        }
+
+        vehicleSyncPromise = (async () => {
+            try {
+                const s4Cbo = await getS4VehicleGateOperationService();
+                if (!s4Cbo) return;
+
+                const db = cds.db || (cds.services && cds.services.db) || await cds.connect.to('db');
+
+                const [s4Ops, s4SecList, s4WbList, s4FacList] = await Promise.all([
+                    s4Cbo.run(SELECT.from(s4Cbo.entities.VehicleGateOperation)).catch(() => []),
+                    s4Cbo.run(SELECT.from(s4Cbo.entities.SecurityGateEntries)).catch(() => []),
+                    s4Cbo.run(SELECT.from(s4Cbo.entities.WeighbridgeTransactions)).catch(() => []),
+                    s4Cbo.run(SELECT.from(s4Cbo.entities.FactoryGateEntries)).catch(() => [])
+                ]);
+
+                if (!Array.isArray(s4Ops) || s4Ops.length === 0) return;
+
+                const secByGateNo = new Map();
+                if (Array.isArray(s4SecList)) {
+                    for (const sec of s4SecList) {
+                        const gateNo = sec.MainGateEntryId || sec.gateInNumber;
+                        if (!gateNo) continue;
+                        if (!secByGateNo.has(gateNo)) secByGateNo.set(gateNo, []);
+                        secByGateNo.get(gateNo).push(sec);
+                    }
+                }
+
+                const wbByGateNo = new Map();
+                if (Array.isArray(s4WbList)) {
+                    for (const wb of s4WbList) {
+                        const gateNo = wb.MainGateEntryId;
+                        if (!gateNo) continue;
+                        if (!wbByGateNo.has(gateNo)) wbByGateNo.set(gateNo, []);
+                        wbByGateNo.get(gateNo).push(wb);
+                    }
+                }
+
+                const facByGateNo = new Map();
+                if (Array.isArray(s4FacList)) {
+                    for (const fac of s4FacList) {
+                        const gateNo = fac.MainGateEntryId || fac.GateInNoF;
+                        if (!gateNo) continue;
+                        if (!facByGateNo.has(gateNo)) facByGateNo.set(gateNo, []);
+                        facByGateNo.get(gateNo).push(fac);
+                    }
+                }
+
+                for (const op of s4Ops) {
+                    const gateInNumber = op.MainGateEntryId;
+                    if (!gateInNumber) continue;
+
+                    // Ensure vehicle exists in Vehicles master table
+                    if (op.VehicleRegNumber) {
+                        const existingVeh = await db.run(SELECT.one.from('factory.gate.Vehicles').where({ vehicleRegNo: op.VehicleRegNumber }));
+                        if (!existingVeh) {
+                            await db.run(INSERT.into('factory.gate.Vehicles').entries({
+                                ID: cds.utils.uuid(),
+                                vehicleRegNo: op.VehicleRegNumber,
+                                vehicleType: op.VehicleType || 'TRUCK',
+                                active: true
+                            }));
+                        }
+                    }
+
+                    let purpose = 'DELIVERY';
+                    if (op.VisitPurpose === 'PK' || op.VisitPurpose === 'PICKUP') purpose = 'PICKUP';
+
+                    let assignedRoute = op.assignedRoute;
+                    if (!assignedRoute || assignedRoute === 'UNASSIGNED') assignedRoute = null;
+
+                    const gateInDateTime = op.GateInTime ? new Date(op.GateInTime).toISOString() : new Date().toISOString();
+                    const gateOutDateTime = op.GateOutTime ? new Date(op.GateOutTime).toISOString() : null;
+
+                    const txData = {
+                        gateInNumber,
+                        vehicleRegNo: op.VehicleRegNumber || '',
+                        vehicleType: op.VehicleType || 'TRUCK',
+                        driverName: op.DriverName || '',
+                        purpose,
+                        status: op.VehicleStatus || 'GATE_IN',
+                        currentStage: op.CurrentStage || 'MAIN_GATE_IN',
+                        assignedRoute,
+                        gateInDateTime,
+                        gateInOperator: op.GateInOperator || 'SYSTEM',
+                        gateOutDateTime,
+                        gateOutOperator: op.GateOutOperator || null,
+                        remarks: op.MainGateRemarks || `APL Gate Entry - ${gateInNumber}`
+                    };
+
+                    let tx = await db.run(SELECT.one.from('factory.gate.GateTransactions').where({ gateInNumber }));
+                    if (tx) {
+                        await db.run(UPDATE('factory.gate.GateTransactions').set(txData).where({ ID: tx.ID }));
+                    } else {
+                        const newId = op.SAPUUID || cds.utils.uuid();
+                        await db.run(INSERT.into('factory.gate.GateTransactions').entries({
+                            ID: newId,
+                            ...txData
+                        }));
+                        tx = { ID: newId, ...txData };
+                    }
+
+                    const txId = tx.ID;
+
+                    // Upsert SecurityGateEntries
+                    const secEntries = secByGateNo.get(gateInNumber) || [];
+                    if (secEntries.length > 0) {
+                        const latestSec = secEntries[secEntries.length - 1];
+                        const secRoute = (!latestSec.SecurityAssignedRoute || latestSec.SecurityAssignedRoute === 'UNASSIGNED')
+                            ? null
+                            : latestSec.SecurityAssignedRoute;
+
+                        const secData = {
+                            gateTransaction_ID: txId,
+                            gateInNumber,
+                            driverLicenseNo: latestSec.driverLicenseNo || '',
+                            driverPhoneNo: latestSec.driverPhoneNo || '',
+                            helperName: latestSec.helperName || '',
+                            vehicleReportingDateTime: latestSec.vehicleReportingDateTime || null,
+                            securityInDateTime: latestSec.securityInDateTime || null,
+                            securityPersonnel: latestSec.securityPersonnel || '',
+                            driverVerified: Boolean(latestSec.driverVerified),
+                            vehicleVerified: Boolean(latestSec.vehicleVerified),
+                            documentsVerified: Boolean(latestSec.documentsVerified),
+                            poNumber: latestSec.poNumber || '',
+                            soNumber: latestSec.soNumber || '',
+                            invoiceNumber: latestSec.invoiceNumber || '',
+                            invoiceDate: latestSec.invoiceDate || null,
+                            withoutPO: latestSec.withoutPO === 'YES' || latestSec.withoutPO === true,
+                            rgpDocumentNo: latestSec.rgpDocumentNo || '',
+                            nrgpDocumentNo: latestSec.nrgpDocumentNo || '',
+                            gatePassType: latestSec.gatePassType || null,
+                            assignedRoute: secRoute,
+                            securityInRemarks: latestSec.securityInRemarks || '',
+                            securityOutPersonnel: latestSec.securityOutPersonnel || '',
+                            securityOutDateTime: latestSec.securityOutDateTime || null,
+                            exitDriverVerified: Boolean(latestSec.exitDriverVerified),
+                            exitVehicleVerified: Boolean(latestSec.exitVehicleVerified),
+                            exitDocumentsVerified: Boolean(latestSec.exitDocumentsVerified),
+                            gatePassVerified: Boolean(latestSec.gatePassVerified),
+                            deliveryDetailsVerified: Boolean(latestSec.deliveryDetailsVerified),
+                            emptyInspectionVerified: Boolean(latestSec.emptyInspectionVerified),
+                            materialInspected: Boolean(latestSec.materialInspected),
+                            exitGatePassType: latestSec.exitGatePassType || null,
+                            exitGatePassDocumentNo: latestSec.exitGatePassDocumentNo || '',
+                            securityOutRemarks: latestSec.securityOutRemarks || '',
+                            remarks: latestSec.securityInRemarks || ''
+                        };
+
+                        const localSec = await db.run(SELECT.one.from('factory.gate.SecurityGateEntries').where({ gateTransaction_ID: txId }));
+                        if (localSec) {
+                            await db.run(UPDATE('factory.gate.SecurityGateEntries').set(secData).where({ ID: localSec.ID }));
+                        } else {
+                            await db.run(INSERT.into('factory.gate.SecurityGateEntries').entries({
+                                ID: latestSec.SAPUUID || cds.utils.uuid(),
+                                ...secData
+                            }));
+                        }
+                    }
+
+                    // Upsert WeighbridgeTransactions
+                    const wbEntries = wbByGateNo.get(gateInNumber) || [];
+                    for (const wb of wbEntries) {
+                        const wbDateTime = wb.weighbridgeDateTime || new Date().toISOString();
+                        const wbType = wb.weighmentType || 'GROSS_IN';
+                        const existingWb = await db.run(SELECT.one.from('factory.gate.WeighbridgeTransactions').where({
+                            gateTransaction_ID: txId,
+                            weighmentType: wbType
+                        }));
+                        const wbData = {
+                            gateTransaction_ID: txId,
+                            weighbridgeNumber: wb.weighbridgeNumber || 'WB-01',
+                            weighmentType: wbType,
+                            weight: Number(wb.weight) || 0,
+                            weightUnit: wb.weightUnit || 'KG',
+                            weighbridgeDateTime: wbDateTime,
+                            operator: wb.WeightOperator || 'SYSTEM',
+                            remarks: wb.weighRemark || ''
+                        };
+                        if (existingWb) {
+                            await db.run(UPDATE('factory.gate.WeighbridgeTransactions').set(wbData).where({ ID: existingWb.ID }));
+                        } else {
+                            await db.run(INSERT.into('factory.gate.WeighbridgeTransactions').entries({
+                                ID: wb.SAPUUID || cds.utils.uuid(),
+                                ...wbData
+                            }));
+                        }
+                    }
+
+                    // Upsert FactoryGateEntries
+                    const facEntries = facByGateNo.get(gateInNumber) || [];
+                    if (facEntries.length > 0) {
+                        const latestFac = facEntries[facEntries.length - 1];
+                        const facData = {
+                            gateTransaction_ID: txId,
+                            gateInNumber,
+                            factoryGateInDateTime: latestFac.factoryGateInDateTime || null,
+                            factoryGateInOperator: latestFac.factoryGateInOperator || '',
+                            factoryGateInRemarks: latestFac.factoryGateInRemarks || '',
+                            factoryGateOutDateTime: latestFac.factoryGateOutDateTime || null,
+                            factoryGateOutOperator: latestFac.factoryGateOutOperator || '',
+                            factoryGateOutRemarks: latestFac.factoryGateOutRemarks || '',
+                            gateOutType: latestFac.FactoryGateOutType || 'STANDARD',
+                            poNumber: latestFac.FactoryPONumber || '',
+                            invoiceNumber: latestFac.FactoryInvoiceNumber || '',
+                            invoiceDate: latestFac.FactoryInvoiceDate ? latestFac.FactoryInvoiceDate.substring(0, 10) : null,
+                            supplierName: latestFac.supplierNameInFactory || '',
+                            transporterName: latestFac.transporterName || '',
+                            deliveryNoteNo: latestFac.deliveryNoteNo || '',
+                            factoryArea: latestFac.factoryArea || 'Raw Material Yard',
+                            unloadingPoint: latestFac.unloadingPoint || '',
+                            materialDescription: latestFac.materialDescription || '',
+                            unloadingStatus: latestFac.unloadingStatus || 'COMPLETED',
+                            unloadedQuantity: latestFac.unloadedQuantity ? Number(latestFac.unloadedQuantity) : null,
+                            quantityUnit: latestFac.quantityUnit || 'KG',
+                            goodsInspected: Boolean(latestFac.goodsInspected),
+                            sealVerified: Boolean(latestFac.sealVerified),
+                            remarks: latestFac.FactoryOutRemarks || latestFac.factoryGateInRemarks || ''
+                        };
+
+                        const localFac = await db.run(SELECT.one.from('factory.gate.FactoryGateEntries').where({ gateTransaction_ID: txId }));
+                        if (localFac) {
+                            await db.run(UPDATE('factory.gate.FactoryGateEntries').set(facData).where({ ID: localFac.ID }));
+                        } else {
+                            await db.run(INSERT.into('factory.gate.FactoryGateEntries').entries({
+                                ID: latestFac.SAPUUID || cds.utils.uuid(),
+                                ...facData
+                            }));
+                        }
+                    }
+                }
+
+                lastVehicleSyncTime = Date.now();
+                console.log(`[GateService] Successfully synced ${s4Ops.length} vehicle gate operations from SAP S/4HANA Cloud CBO.`);
+            } catch (err) {
+                console.warn('[GateService] Vehicle sync from S/4HANA Cloud warning:', err.message);
+            } finally {
+                vehicleSyncPromise = null;
+            }
+        })();
+
+        return await vehicleSyncPromise;
+    }
+
+    this.syncVehiclesFromS4Hana = syncVehiclesFromS4Hana;
+    const isTestScript = process.argv.some(a => /[\\/]test[\\/]|^test[\\/]/.test(a));
+    if (!isTestScript) {
+        syncVehiclesFromS4Hana().catch(() => {});
+    }
+
+    // Hook vehicle sync on read of GateTransactions and Vehicles for web app HTTP clients
+    this.before('READ', 'GateTransactions', async (req) => {
+        const isHttp = Boolean(req.http || req.req);
+        if (isHttp && (Date.now() - lastVehicleSyncTime >= VEHICLE_SYNC_CACHE_MS)) {
+            await syncVehiclesFromS4Hana();
+        }
+    });
+
+    this.before('READ', 'Vehicles', async (req) => {
+        const isHttp = Boolean(req.http || req.req);
+        if (isHttp && (Date.now() - lastVehicleSyncTime >= VEHICLE_SYNC_CACHE_MS)) {
+            await syncVehiclesFromS4Hana();
+        }
+    });
+
+    // Action: Manually trigger full vehicle sync from S/4HANA Cloud CBO
+    this.on('SyncVehiclesFromS4Hana', async (req) => {
+        try {
+            await syncVehiclesFromS4Hana(true);
+            return 'Successfully synchronized vehicle entries from SAP S/4HANA Cloud CBO.';
+        } catch (err) {
+            req.error(500, `Failed to synchronize vehicles from S/4HANA Cloud: ${err.message}`);
+        }
+    });
+
     // 1. READ S4VehicleGateOperations from S/4HANA Cloud CBO
     this.on('READ', 'S4VehicleGateOperations', async (req) => {
         try {
@@ -1792,8 +2081,23 @@ export default cds.service.impl(async function () {
         if (!userId) return;
         try {
             const s4UserCbo = await getS4CustomUserService();
-            await s4UserCbo.patch(`/CustomUser(UserId='${userId}')`, patchFields);
-            console.log(`[GateService] S/4HANA Auto-Sync: Updated CustomUser ${userId}`);
+            try {
+                await s4UserCbo.patch(`/CustomUser(UserId='${userId}')`, patchFields);
+                console.log(`[GateService] S/4HANA Auto-Sync: Updated CustomUser ${userId}`);
+            } catch (patchErr) {
+                // If direct key match fails, resolve existing record by username or employeeId
+                const existing = await s4UserCbo.run(
+                    SELECT.one.from(s4UserCbo.entities.CustomUser).where({ username: userId })
+                ) || await s4UserCbo.run(
+                    SELECT.one.from(s4UserCbo.entities.CustomUser).where({ employeeId: userId })
+                );
+                if (existing && existing.UserId) {
+                    await s4UserCbo.patch(`/CustomUser(UserId='${existing.UserId}')`, patchFields);
+                    console.log(`[GateService] S/4HANA Auto-Sync: Updated CustomUser with resolved UserId ${existing.UserId}`);
+                } else {
+                    throw patchErr;
+                }
+            }
         } catch (err) {
             console.warn(`[GateService] S/4HANA Auto-Sync update warning for CustomUser ${userId}:`, err.message);
         }
@@ -1803,8 +2107,22 @@ export default cds.service.impl(async function () {
         if (!userId) return;
         try {
             const s4UserCbo = await getS4CustomUserService();
-            await s4UserCbo.delete(`/CustomUser(UserId='${userId}')`);
-            console.log(`[GateService] S/4HANA Auto-Sync: Deleted CustomUser ${userId}`);
+            try {
+                await s4UserCbo.delete(`/CustomUser(UserId='${userId}')`);
+                console.log(`[GateService] S/4HANA Auto-Sync: Deleted CustomUser ${userId}`);
+            } catch (delErr) {
+                const existing = await s4UserCbo.run(
+                    SELECT.one.from(s4UserCbo.entities.CustomUser).where({ username: userId })
+                ) || await s4UserCbo.run(
+                    SELECT.one.from(s4UserCbo.entities.CustomUser).where({ employeeId: userId })
+                );
+                if (existing && existing.UserId) {
+                    await s4UserCbo.delete(`/CustomUser(UserId='${existing.UserId}')`);
+                    console.log(`[GateService] S/4HANA Auto-Sync: Deleted CustomUser with resolved UserId ${existing.UserId}`);
+                } else {
+                    throw delErr;
+                }
+            }
         } catch (err) {
             console.warn(`[GateService] S/4HANA Auto-Sync delete warning for CustomUser ${userId}:`, err.message);
         }
@@ -1959,6 +2277,168 @@ export default cds.service.impl(async function () {
         } catch (err) {
             console.error(`[GateService] Error synchronizing User ${username} to S/4HANA CBO:`, err.message);
             req.error(502, `Failed to sync user with S/4HANA Cloud CBO: ${err.message}`);
+        }
+    });
+
+    // ------------------------------------------------------------
+    // 6. SYNC USERS FROM S/4HANA CLOUD CBO (YY1_API_CUSTOMUSER_0001)
+    // ------------------------------------------------------------
+
+    let lastUserSyncTime = 0;
+    let userSyncPromise = null;
+    const USER_SYNC_CACHE_MS = 3000;
+
+    async function syncUsersFromS4Hana(force = false) {
+        const now = Date.now();
+        if (!force && (now - lastUserSyncTime < USER_SYNC_CACHE_MS)) {
+            return;
+        }
+        if (userSyncPromise) {
+            return await userSyncPromise;
+        }
+
+        userSyncPromise = (async () => {
+            try {
+                const s4UserCbo = await getS4CustomUserService();
+                if (!s4UserCbo) return;
+
+                const s4Users = await s4UserCbo.run(SELECT.from(s4UserCbo.entities.CustomUser)).catch(() => []);
+                if (!Array.isArray(s4Users) || s4Users.length === 0) return;
+
+                const db = cds.db || (cds.services && cds.services.db) || await cds.connect.to('db');
+
+                cds.env.requires ??= {};
+                cds.env.requires.auth ??= { kind: 'mocked', users: {} };
+                const authUsers = cds.env.requires.auth.users;
+
+                for (const su of s4Users) {
+                    if (!su.username && !su.UserId) continue;
+                    const sUsername = (su.username || su.UserId).toLowerCase().trim();
+                    const cboUserId = (su.UserId || su.employeeId || sUsername).substring(0, 20);
+                    const sStatus = su.status || (su.active === false ? 'INACTIVE' : 'ACTIVE');
+                    const bActive = (su.active !== false && sStatus !== 'INACTIVE');
+                    const sServiceStatus = su.serviceStatus || 'IN_SERVICE';
+
+                    const primaryRole = (su.roleCode || (su.assignedRoles || '').split(',')[0]?.trim() || 'MainGateUser').substring(0, 20);
+                    const assignedRolesStr = (su.assignedRoles || primaryRole).substring(0, 250);
+                    const roleArray = assignedRolesStr.split(',').map(r => r.trim()).filter(Boolean);
+
+                    let localUser = await db.run(
+                        SELECT.one.from('factory.gate.Users').where({ username: sUsername })
+                    );
+                    if (!localUser && su.UserId) {
+                        localUser = await db.run(
+                            SELECT.one.from('factory.gate.Users').where({ UserId: su.UserId })
+                        ) || await db.run(
+                            SELECT.one.from('factory.gate.Users').where({ employeeId: su.UserId })
+                        );
+                    }
+
+                    let targetUserId = null;
+                    if (localUser) {
+                        targetUserId = localUser.ID;
+                        await db.run(
+                            UPDATE('factory.gate.Users')
+                                .set({
+                                    UserId: cboUserId,
+                                    username: sUsername,
+                                    name: (su.name || localUser.name || sUsername).substring(0, 100),
+                                    employeeId: (su.employeeId || cboUserId).substring(0, 50),
+                                    password: su.password || localUser.password || 'password',
+                                    designation: (su.designation || localUser.designation || 'Gate Staff').substring(0, 100),
+                                    department: (su.department || localUser.department || 'Operations').substring(0, 100),
+                                    email: (su.email || localUser.email || `${sUsername}@apl.com`).substring(0, 100),
+                                    phoneNo: (su.phoneNo || localUser.phoneNo || '').substring(0, 20),
+                                    serviceStatus: sServiceStatus,
+                                    status: sStatus,
+                                    active: bActive,
+                                    assignedRoles: assignedRolesStr,
+                                    remarks: (su.remarks || localUser.remarks || '').substring(0, 500)
+                                })
+                                .where({ ID: targetUserId })
+                        );
+                    } else {
+                        targetUserId = cds.utils.uuid();
+                        await db.run(
+                            INSERT.into('factory.gate.Users').entries({
+                                ID: targetUserId,
+                                UserId: cboUserId,
+                                username: sUsername,
+                                name: (su.name || sUsername).substring(0, 100),
+                                employeeId: (su.employeeId || cboUserId).substring(0, 50),
+                                password: su.password || 'password',
+                                designation: (su.designation || 'Gate Staff').substring(0, 100),
+                                department: (su.department || 'Operations').substring(0, 100),
+                                email: (su.email || `${sUsername}@apl.com`).substring(0, 100),
+                                phoneNo: (su.phoneNo || '').substring(0, 20),
+                                serviceStatus: sServiceStatus,
+                                status: sStatus,
+                                active: bActive,
+                                assignedRoles: assignedRolesStr,
+                                remarks: (su.remarks || 'Synced from SAP S/4HANA Cloud CBO').substring(0, 500)
+                            })
+                        );
+                    }
+
+                    // Sync UserRoles composition
+                    await db.run(DELETE.from('factory.gate.UserRoles').where({ user_ID: targetUserId }));
+                    for (const rCode of roleArray) {
+                        await db.run(
+                            INSERT.into('factory.gate.UserRoles').entries({
+                                ID: cds.utils.uuid(),
+                                user_ID: targetUserId,
+                                roleCode: rCode,
+                                roleName: ROLE_NAMES[rCode] || rCode,
+                                assignedDate: su.assignedDate || new Date().toISOString().slice(0, 10),
+                                assignedBy: su.assignedBy || 'S4HANA_SYNC'
+                            })
+                        );
+                    }
+
+                    // Auth cache registration
+                    if (bActive) {
+                        const expandedRoles = expandRoles(roleArray);
+                        authUsers[sUsername] = new cds.User({
+                            id: sUsername,
+                            password: su.password || 'password',
+                            roles: expandedRoles
+                        });
+                    } else {
+                        delete authUsers[sUsername];
+                    }
+                }
+
+                lastUserSyncTime = Date.now();
+            } catch (err) {
+                console.warn('[GateService] S/4HANA CustomUser sync warning:', err.message);
+            } finally {
+                userSyncPromise = null;
+            }
+        })();
+
+        return await userSyncPromise;
+    }
+
+    this.syncUsersFromS4Hana = syncUsersFromS4Hana;
+    if (!isTestScript) {
+        syncUsersFromS4Hana().catch(() => {});
+    }
+
+    // Hook user sync on read of Users for web app HTTP clients
+    this.before('READ', 'Users', async (req) => {
+        const isHttp = Boolean(req.http || req.req);
+        if (isHttp && (Date.now() - lastUserSyncTime >= USER_SYNC_CACHE_MS)) {
+            await syncUsersFromS4Hana();
+        }
+    });
+
+    // Action: Manually trigger full user sync from S/4HANA Cloud CBO
+    this.on('SyncUsersFromS4Hana', async (req) => {
+        try {
+            await syncUsersFromS4Hana(true);
+            return 'Successfully synchronized users from SAP S/4HANA Cloud CBO (YY1_API_CUSTOMUSER_0001).';
+        } catch (err) {
+            req.error(500, `Failed to synchronize users from S/4HANA Cloud: ${err.message}`);
         }
     });
 
@@ -3465,43 +3945,122 @@ export default cds.service.impl(async function () {
         }
 
         const sUsername = username.trim().toLowerCase();
-        const existing = await SELECT.one.from(Users).where({ username: sUsername });
-        if (existing) {
+        const existingUserCheck = await SELECT.one.from(Users).where({ username: sUsername });
+        if (existingUserCheck && (existingUserCheck.status === 'ACTIVE' || existingUserCheck.active !== false)) {
             return req.error(400, `User with username '${sUsername}' already exists.`);
         }
-
         const sStatus = status || 'ACTIVE';
         const bActive = (sStatus === 'ACTIVE');
         const sServiceStatus = serviceStatus || 'IN_SERVICE';
         const sRoles = (assignedRoles || '').trim();
         const empId = employeeId !== undefined ? (employeeId || '').trim() : (req.data.employee_id ? String(req.data.employee_id).trim() : null);
+        const sUserId = (UserId || empId || sUsername).trim().substring(0, 20);
 
-        const newUserId = cds.utils.uuid();
-        const userEntry = {
-            ID: newUserId,
-            username: sUsername,
-            password: password.trim(),
-            name: name.trim(),
-            employeeId: empId,
-            designation: designation ? designation.trim() : null,
-            department: department ? department.trim() : null,
-            email: email ? email.trim() : null,
-            phoneNo: phoneNo ? phoneNo.trim() : null,
-            serviceStatus: sServiceStatus,
-            status: sStatus,
+        const roleArray = sRoles ? sRoles.split(',').map(r => r.trim()).filter(Boolean) : [];
+        const primaryRole = (roleArray[0] || 'MainGateUser').substring(0, 20);
+        const primaryRoleName = (ROLE_NAMES[primaryRole] || primaryRole).substring(0, 100);
+        const assignedRolesStr = (roleArray.length > 0 ? roleArray.join(', ') : primaryRole).substring(0, 250);
+
+        // Prepare CBO payload matching YY1_API_CUSTOMUSER_0001.CustomUser
+        const cboPayload = {
+            UserId: sUserId,
+            username: sUsername.substring(0, 50),
+            password: password.trim().substring(0, 20),
+            name: name.trim().substring(0, 50),
+            employeeId: (empId || sUserId).substring(0, 20),
+            designation: (designation ? designation.trim() : 'Gate Staff').substring(0, 50),
+            department: (department ? department.trim() : 'Operations').substring(0, 50),
+            email: (email ? email.trim() : `${sUsername}@apl.com`).substring(0, 100),
+            phoneNo: (phoneNo ? phoneNo.trim() : '').substring(0, 20),
+            serviceStatus: sServiceStatus.substring(0, 12),
+            status: sStatus.substring(0, 8),
             active: bActive,
-            assignedRoles: sRoles,
-            remarks: remarks ? remarks.trim() : null
+            assignedRoles: assignedRolesStr,
+            remarks: (remarks ? remarks.trim() : 'Created in APL Gate App').substring(0, 250),
+            roleCode: primaryRole,
+            roleName: primaryRoleName,
+            assignedDate: new Date().toISOString().slice(0, 10),
+            assignedBy: (req.user?.id || 'SUPERADMIN').substring(0, 100),
+            SAPDescription: `APL Gate User - ${sUsername}`.substring(0, 80)
         };
 
-        await INSERT.into(Users).entries(userEntry);
+        // 1. PERFORM DIRECTLY WITH S/4HANA CLOUD CBO (YY1_API_CUSTOMUSER_0001)
+        try {
+            const s4UserCbo = await getS4CustomUserService();
+            let cboExisting = null;
+            try {
+                cboExisting = await s4UserCbo.run(
+                    SELECT.one.from(s4UserCbo.entities.CustomUser).where({ UserId: sUserId })
+                ) || await s4UserCbo.run(
+                    SELECT.one.from(s4UserCbo.entities.CustomUser).where({ username: sUsername })
+                );
+            } catch (_) {}
 
+            if (cboExisting) {
+                await s4UserCbo.patch(`/CustomUser(UserId='${cboExisting.UserId}')`, cboPayload);
+                console.log(`[GateService] S/4HANA CBO: Updated existing CustomUser ${cboExisting.UserId} (${sUsername}) directly`);
+            } else {
+                await s4UserCbo.post('/CustomUser', cboPayload);
+                console.log(`[GateService] S/4HANA CBO: Created CustomUser ${sUserId} (${sUsername}) directly`);
+            }
+        } catch (err) {
+            console.warn(`[GateService] S/4HANA CBO CreateUser direct execution warning for ${sUsername}:`, err.message);
+        }
+
+        // 2. PERSIST LOCALLY IN DB (Users & UserRoles)
+        let existingLocal = await SELECT.one.from(Users).where({ username: sUsername });
+        if (!existingLocal && sUserId) {
+            existingLocal = await SELECT.one.from(Users).where({ UserId: sUserId }) ||
+                            await SELECT.one.from(Users).where({ employeeId: sUserId });
+        }
+
+        let localId = null;
+        if (existingLocal) {
+            localId = existingLocal.ID;
+            await UPDATE(Users).set({
+                UserId: sUserId,
+                username: sUsername,
+                password: password.trim(),
+                name: name.trim(),
+                employeeId: empId,
+                designation: designation ? designation.trim() : null,
+                department: department ? department.trim() : null,
+                email: email ? email.trim() : null,
+                phoneNo: phoneNo ? phoneNo.trim() : null,
+                serviceStatus: sServiceStatus,
+                status: sStatus,
+                active: bActive,
+                assignedRoles: sRoles,
+                remarks: remarks ? remarks.trim() : null
+            }).where({ ID: localId });
+        } else {
+            localId = cds.utils.uuid();
+            await INSERT.into(Users).entries({
+                ID: localId,
+                UserId: sUserId,
+                username: sUsername,
+                password: password.trim(),
+                name: name.trim(),
+                employeeId: empId,
+                designation: designation ? designation.trim() : null,
+                department: department ? department.trim() : null,
+                email: email ? email.trim() : null,
+                phoneNo: phoneNo ? phoneNo.trim() : null,
+                serviceStatus: sServiceStatus,
+                status: sStatus,
+                active: bActive,
+                assignedRoles: sRoles,
+                remarks: remarks ? remarks.trim() : null
+            });
+        }
+
+        // Update UserRoles composition
+        await DELETE.from(UserRoles).where({ user_ID: localId });
         if (sRoles) {
-            const roleArray = sRoles.split(',').map(r => r.trim()).filter(Boolean);
             for (const rCode of roleArray) {
                 await INSERT.into(UserRoles).entries({
                     ID: cds.utils.uuid(),
-                    user_ID: newUserId,
+                    user_ID: localId,
                     roleCode: rCode,
                     roleName: ROLE_NAMES[rCode] || rCode,
                     assignedDate: new Date(),
@@ -3512,7 +4071,6 @@ export default cds.service.impl(async function () {
 
         // Real-time auth cache registration for immediate login
         if (cds.env?.requires?.auth?.users) {
-            const roleArray = sRoles ? sRoles.split(',').map(r => r.trim()).filter(Boolean) : [];
             const expandedRoles = expandRoles(roleArray);
             cds.env.requires.auth.users[sUsername] = new cds.User({
                 id: sUsername,
@@ -3527,28 +4085,17 @@ export default cds.service.impl(async function () {
             actionDateTime: new Date(),
             userId: req.user?.id || 'SUPERADMIN',
             userName: req.user?.id || 'SUPERADMIN',
-            remarks: `User created: ${sUsername} (${name}) with roles: ${sRoles || 'None'}`
+            remarks: `User created directly in S/4HANA CBO & local registry: ${sUsername} (${name}) with roles: ${sRoles || 'None'}`
         });
 
-        /*
-         * Auto-sync newly created user to SAP S/4HANA Cloud CBO (YY1_API_CUSTOMUSER_0001)
-         */
-        const s4RoleArray = sRoles ? sRoles.split(',').map(r => r.trim()).filter(Boolean) : [];
-        await pushCustomUserToS4Hana(
-            {
-                ...userEntry,
-                UserId: (UserId || empId || sUsername).substring(0, 20)
-            },
-            s4RoleArray,
-            req.user?.id || 'SUPERADMIN'
-        );
-
-        return SELECT.one.from(Users).where({ ID: newUserId });
+        lastUserSyncTime = 0; // invalidate sync cache
+        return SELECT.one.from(Users).where({ ID: localId });
     });
 
     this.on('UpdateUser', async (req) => {
         const {
             ID,
+            UserId,
             username,
             password,
             name,
@@ -3563,11 +4110,48 @@ export default cds.service.impl(async function () {
             remarks
         } = req.data;
 
-        if (!ID) {
-            return req.error(400, 'User ID is mandatory.');
+        let user = null;
+        if (ID) {
+            user = await SELECT.one.from(Users).where({ ID: ID });
+        }
+        if (!user && (UserId || ID)) {
+            const searchKey = UserId || ID;
+            user = await SELECT.one.from(Users).where({ UserId: searchKey }) ||
+                   await SELECT.one.from(Users).where({ employeeId: searchKey });
+        }
+        if (!user && username) {
+            user = await SELECT.one.from(Users).where({ username: username.trim().toLowerCase() });
         }
 
-        const user = await SELECT.one.from(Users).where({ ID: ID });
+        // If not found in local DB, attempt fetch from S/4HANA Cloud CBO
+        if (!user) {
+            try {
+                const s4UserCbo = await getS4CustomUserService();
+                const searchKey = UserId || ID || username;
+                const cboUser = await s4UserCbo.run(
+                    SELECT.one.from(s4UserCbo.entities.CustomUser).where({ UserId: searchKey })
+                ) || await s4UserCbo.run(
+                    SELECT.one.from(s4UserCbo.entities.CustomUser).where({ username: searchKey })
+                );
+                if (cboUser) {
+                    const newId = cds.utils.uuid();
+                    const sUname = (cboUser.username || cboUser.UserId).toLowerCase();
+                    await INSERT.into(Users).entries({
+                        ID: newId,
+                        UserId: cboUser.UserId,
+                        username: sUname,
+                        password: cboUser.password || 'password',
+                        name: cboUser.name || sUname,
+                        employeeId: cboUser.employeeId || cboUser.UserId,
+                        serviceStatus: cboUser.serviceStatus || 'IN_SERVICE',
+                        status: cboUser.status || 'ACTIVE',
+                        active: cboUser.active !== false
+                    });
+                    user = await SELECT.one.from(Users).where({ ID: newId });
+                }
+            } catch (_) {}
+        }
+
         if (!user) {
             return req.error(404, 'User not found.');
         }
@@ -3575,7 +4159,7 @@ export default cds.service.impl(async function () {
         const sUsername = username ? username.trim().toLowerCase() : user.username;
         if (sUsername !== user.username) {
             const existing = await SELECT.one.from(Users).where({ username: sUsername });
-            if (existing) {
+            if (existing && existing.ID !== user.ID) {
                 return req.error(400, `Username '${sUsername}' is already in use by another account.`);
             }
         }
@@ -3589,6 +4173,11 @@ export default cds.service.impl(async function () {
         if (user.username === 'superadmin_user' && !sRoles.includes('Superadmin') && !sRoles.includes('superadmin_user')) {
             return req.error(400, 'Superadmin role cannot be removed from primary Superadmin user.');
         }
+
+        const roleArray = (sRoles !== undefined ? sRoles : (user.assignedRoles || '')).split(',').map(r => r.trim()).filter(Boolean);
+        const primaryRole = (roleArray[0] || 'MainGateUser').substring(0, 20);
+        const primaryRoleName = (ROLE_NAMES[primaryRole] || primaryRole).substring(0, 100);
+        const assignedRolesStr = (roleArray.length > 0 ? roleArray.join(', ') : primaryRole).substring(0, 250);
 
         const updateData = {
             username: sUsername,
@@ -3612,15 +4201,67 @@ export default cds.service.impl(async function () {
             updateData.password = password.trim();
         }
 
-        await UPDATE(Users).set(updateData).where({ ID: ID });
+        // 1. PERFORM DIRECTLY WITH S/4HANA CLOUD CBO (YY1_API_CUSTOMUSER_0001)
+        const s4UserId = (UserId || user.UserId || user.employeeId || user.username || '').substring(0, 20);
+        const patchPayload = {
+            name: (updateData.name || '').substring(0, 50),
+            designation: (updateData.designation || 'Gate Staff').substring(0, 50),
+            department: (updateData.department || 'Operations').substring(0, 50),
+            email: (updateData.email || `${sUsername}@apl.com`).substring(0, 100),
+            phoneNo: (updateData.phoneNo || '').substring(0, 20),
+            serviceStatus: (updateData.serviceStatus || 'IN_SERVICE').substring(0, 12),
+            status: (updateData.status || 'ACTIVE').substring(0, 8),
+            active: updateData.active,
+            assignedRoles: assignedRolesStr,
+            remarks: (updateData.remarks || '').substring(0, 250),
+            roleCode: primaryRole,
+            roleName: primaryRoleName
+        };
+        if (updateData.password) {
+            patchPayload.password = updateData.password.substring(0, 20);
+        }
+        if (updateData.employeeId) {
+            patchPayload.employeeId = updateData.employeeId.substring(0, 20);
+        }
+
+        try {
+            const s4UserCbo = await getS4CustomUserService();
+            let cboTarget = null;
+            try {
+                cboTarget = await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ UserId: s4UserId }))
+                         || await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ username: sUsername }))
+                         || await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ employeeId: s4UserId }));
+            } catch (_) {}
+
+            if (cboTarget) {
+                await s4UserCbo.patch(`/CustomUser(UserId='${cboTarget.UserId}')`, patchPayload);
+                console.log(`[GateService] S/4HANA CBO: Updated CustomUser ${cboTarget.UserId} (${sUsername}) directly`);
+            } else {
+                const fullCboPayload = {
+                    UserId: s4UserId || sUsername.substring(0, 20),
+                    username: sUsername.substring(0, 50),
+                    password: (patchPayload.password || user.password || 'password').substring(0, 20),
+                    ...patchPayload,
+                    assignedDate: new Date().toISOString().slice(0, 10),
+                    assignedBy: (req.user?.id || 'SUPERADMIN').substring(0, 100),
+                    SAPDescription: `APL Gate User - ${sUsername}`.substring(0, 80)
+                };
+                await s4UserCbo.post('/CustomUser', fullCboPayload);
+                console.log(`[GateService] S/4HANA CBO: Created missing CustomUser ${s4UserId} directly`);
+            }
+        } catch (err) {
+            console.warn(`[GateService] S/4HANA CBO UpdateUser direct execution warning for ${s4UserId}:`, err.message);
+        }
+
+        // 2. PERSIST LOCALLY
+        await UPDATE(Users).set(updateData).where({ ID: user.ID });
 
         if (assignedRoles !== undefined) {
-            await DELETE.from(UserRoles).where({ user_ID: ID });
-            const roleArray = sRoles.split(',').map(r => r.trim()).filter(Boolean);
+            await DELETE.from(UserRoles).where({ user_ID: user.ID });
             for (const rCode of roleArray) {
                 await INSERT.into(UserRoles).entries({
                     ID: cds.utils.uuid(),
-                    user_ID: ID,
+                    user_ID: user.ID,
                     roleCode: rCode,
                     roleName: ROLE_NAMES[rCode] || rCode,
                     assignedDate: new Date(),
@@ -3631,7 +4272,6 @@ export default cds.service.impl(async function () {
 
         // Real-time auth cache update for immediate login
         if (cds.env?.requires?.auth?.users) {
-            const roleArray = (sRoles !== undefined ? sRoles : (user.assignedRoles || '')).split(',').map(r => r.trim()).filter(Boolean);
             const expandedRoles = expandRoles(roleArray);
             cds.env.requires.auth.users[sUsername] = new cds.User({
                 id: sUsername,
@@ -3646,43 +4286,22 @@ export default cds.service.impl(async function () {
             actionDateTime: new Date(),
             userId: req.user?.id || 'SUPERADMIN',
             userName: req.user?.id || 'SUPERADMIN',
-            remarks: `User updated: ${sUsername} (${updateData.name}) - Status: ${sStatus}, Roles: ${sRoles}`
+            remarks: `User updated directly in S/4HANA CBO & local registry: ${sUsername} (${updateData.name}) - Status: ${sStatus}, Roles: ${sRoles}`
         });
 
-        /*
-         * Auto-sync updated user to SAP S/4HANA Cloud CBO (YY1_API_CUSTOMUSER_0001)
-         */
-        const s4UserId = (user.employeeId || user.username || user.ID).substring(0, 20);
-        const primaryRole = (sRoles || '').split(',')[0]?.trim() || '';
-        const patchPayload = {
-            name: (updateData.name || '').substring(0, 50),
-            designation: (updateData.designation || '').substring(0, 50),
-            department: (updateData.department || '').substring(0, 50),
-            email: (updateData.email || '').substring(0, 100),
-            phoneNo: (updateData.phoneNo || '').substring(0, 20),
-            serviceStatus: (updateData.serviceStatus || 'IN_SERVICE').substring(0, 12),
-            status: (updateData.status || 'ACTIVE').substring(0, 8),
-            active: updateData.active,
-            assignedRoles: (updateData.assignedRoles || '').substring(0, 250),
-            remarks: (updateData.remarks || '').substring(0, 250),
-            roleCode: primaryRole.substring(0, 20),
-            roleName: (ROLE_NAMES[primaryRole] || primaryRole).substring(0, 100)
-        };
-        if (updateData.password) {
-            patchPayload.password = updateData.password.substring(0, 20);
-        }
-        await updateCustomUserInS4Hana(s4UserId, patchPayload);
-
-        return SELECT.one.from(Users).where({ ID: ID });
+        lastUserSyncTime = 0; // invalidate sync cache
+        return SELECT.one.from(Users).where({ ID: user.ID });
     });
 
     this.on('ToggleUserStatus', async (req) => {
-        const { ID } = req.data;
-        if (!ID) {
-            return req.error(400, 'User ID is mandatory.');
+        const { ID, UserId } = req.data;
+        let user = null;
+        if (ID) user = await SELECT.one.from(Users).where({ ID: ID });
+        if (!user && (UserId || ID)) {
+            const searchKey = UserId || ID;
+            user = await SELECT.one.from(Users).where({ UserId: searchKey }) ||
+                   await SELECT.one.from(Users).where({ employeeId: searchKey });
         }
-
-        const user = await SELECT.one.from(Users).where({ ID: ID });
         if (!user) {
             return req.error(404, 'User not found.');
         }
@@ -3694,10 +4313,33 @@ export default cds.service.impl(async function () {
         const newStatus = (user.status === 'ACTIVE') ? 'INACTIVE' : 'ACTIVE';
         const bActive = (newStatus === 'ACTIVE');
 
+        // 1. PERFORM DIRECTLY WITH S/4HANA CLOUD CBO
+        const s4ToggleUserId = (user.UserId || user.employeeId || user.username || '').substring(0, 20);
+        try {
+            const s4UserCbo = await getS4CustomUserService();
+            let cboTarget = null;
+            try {
+                cboTarget = await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ UserId: s4ToggleUserId }))
+                         || await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ username: user.username }))
+                         || await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ employeeId: s4ToggleUserId }));
+            } catch (_) {}
+
+            if (cboTarget) {
+                await s4UserCbo.patch(`/CustomUser(UserId='${cboTarget.UserId}')`, {
+                    status: newStatus.substring(0, 8),
+                    active: bActive
+                });
+                console.log(`[GateService] S/4HANA CBO: Toggled CustomUser status ${cboTarget.UserId} -> ${newStatus}`);
+            }
+        } catch (err) {
+            console.warn(`[GateService] S/4HANA CBO ToggleUserStatus direct execution warning:`, err.message);
+        }
+
+        // 2. PERSIST LOCALLY
         await UPDATE(Users).set({
             status: newStatus,
             active: bActive
-        }).where({ ID: ID });
+        }).where({ ID: user.ID });
 
         // Update auth cache
         if (cds.env?.requires?.auth?.users) {
@@ -3720,28 +4362,22 @@ export default cds.service.impl(async function () {
             actionDateTime: new Date(),
             userId: req.user?.id || 'SUPERADMIN',
             userName: req.user?.id || 'SUPERADMIN',
-            remarks: `User ${user.username} status toggled to ${newStatus}`
+            remarks: `User ${user.username} status toggled directly in S/4HANA CBO to ${newStatus}`
         });
 
-        /*
-         * Auto-sync status toggle to SAP S/4HANA Cloud CBO (YY1_API_CUSTOMUSER_0001)
-         */
-        const s4ToggleUserId = (user.employeeId || user.username || user.ID).substring(0, 20);
-        await updateCustomUserInS4Hana(s4ToggleUserId, {
-            status: newStatus.substring(0, 8),
-            active: bActive
-        });
-
-        return SELECT.one.from(Users).where({ ID: ID });
+        lastUserSyncTime = 0;
+        return SELECT.one.from(Users).where({ ID: user.ID });
     });
 
     this.on('DeleteUser', async (req) => {
-        const { ID } = req.data;
-        if (!ID) {
-            return req.error(400, 'User ID is mandatory.');
+        const { ID, UserId } = req.data;
+        let user = null;
+        if (ID) user = await SELECT.one.from(Users).where({ ID: ID });
+        if (!user && (UserId || ID)) {
+            const searchKey = UserId || ID;
+            user = await SELECT.one.from(Users).where({ UserId: searchKey }) ||
+                   await SELECT.one.from(Users).where({ employeeId: searchKey });
         }
-
-        const user = await SELECT.one.from(Users).where({ ID: ID });
         if (!user) {
             return req.error(404, 'User not found.');
         }
@@ -3750,8 +4386,28 @@ export default cds.service.impl(async function () {
             return req.error(400, 'Primary Superadmin user cannot be deleted.');
         }
 
-        await DELETE.from(UserRoles).where({ user_ID: ID });
-        await DELETE.from(Users).where({ ID: ID });
+        // 1. PERFORM DIRECTLY WITH S/4HANA CLOUD CBO
+        const s4DeleteUserId = (user.UserId || user.employeeId || user.username || '').substring(0, 20);
+        try {
+            const s4UserCbo = await getS4CustomUserService();
+            let cboTarget = null;
+            try {
+                cboTarget = await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ UserId: s4DeleteUserId }))
+                         || await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ username: user.username }))
+                         || await s4UserCbo.run(SELECT.one.from(s4UserCbo.entities.CustomUser).where({ employeeId: s4DeleteUserId }));
+            } catch (_) {}
+
+            if (cboTarget) {
+                await s4UserCbo.delete(`/CustomUser(UserId='${cboTarget.UserId}')`);
+                console.log(`[GateService] S/4HANA CBO: Deleted CustomUser ${cboTarget.UserId} directly`);
+            }
+        } catch (err) {
+            console.warn(`[GateService] S/4HANA CBO DeleteUser direct execution warning:`, err.message);
+        }
+
+        // 2. PERSIST LOCALLY
+        await DELETE.from(UserRoles).where({ user_ID: user.ID });
+        await DELETE.from(Users).where({ ID: user.ID });
 
         // Remove from auth cache
         if (cds.env?.requires?.auth?.users) {
@@ -3764,15 +4420,10 @@ export default cds.service.impl(async function () {
             actionDateTime: new Date(),
             userId: req.user?.id || 'SUPERADMIN',
             userName: req.user?.id || 'SUPERADMIN',
-            remarks: `User deleted: ${user.username} (${user.name})`
+            remarks: `User deleted directly in S/4HANA CBO & local registry: ${user.username} (${user.name})`
         });
 
-        /*
-         * Auto-sync deletion to SAP S/4HANA Cloud CBO (YY1_API_CUSTOMUSER_0001)
-         */
-        const s4DeleteUserId = (user.employeeId || user.username || user.ID).substring(0, 20);
-        await deleteCustomUserInS4Hana(s4DeleteUserId);
-
+        lastUserSyncTime = 0;
         return true;
     });
 

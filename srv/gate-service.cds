@@ -333,7 +333,8 @@ service GateService {
     ) returns Users;
 
     action UpdateUser(
-        ID              : UUID,
+        ID              : String,
+        UserId          : String,
         username        : String,
         password        : String,
         name            : String,
@@ -349,11 +350,13 @@ service GateService {
     ) returns Users;
 
     action ToggleUserStatus(
-        ID              : UUID
+        ID              : String,
+        UserId          : String
     ) returns Users;
 
     action DeleteUser(
-        ID              : UUID
+        ID              : String,
+        UserId          : String
     ) returns Boolean;
 
 
@@ -370,6 +373,10 @@ service GateService {
     action SyncUserToS4Hana(
         username : String
     ) returns String;
+
+    action SyncVehiclesFromS4Hana() returns String;
+
+    action SyncUsersFromS4Hana() returns String;
 
 
 

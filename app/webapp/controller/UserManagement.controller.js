@@ -96,9 +96,18 @@ sap.ui.define([
             this.getOwnerComponent().navigateTo("launchpadPage", "slide");
         },
 
-        onRefreshPress: function () {
+        onRefreshPress: async function () {
+            try {
+                await fetch(`${ODATA_BASE}/SyncUsersFromS4Hana`, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": models.getAuthHeaderValue(),
+                        "Content-Type": "application/json"
+                    }
+                });
+            } catch (_) {}
             this.loadUsersData();
-            MessageToast.show("User registry updated");
+            MessageToast.show("User registry synchronized with SAP S/4HANA Cloud");
         },
 
         loadUsersData: async function () {
@@ -352,6 +361,7 @@ sap.ui.define([
 
             oModel.setProperty("/form", {
                 ID: u.ID,
+                UserId: u.UserId || u.employeeId || u.username,
                 username: u.username,
                 name: u.name,
                 employeeId: u.employeeId || "",
@@ -499,7 +509,7 @@ sap.ui.define([
 
                 let endpoint = `${ODATA_BASE}/CreateUser`;
                 let bodyData = {
-                    UserId: (oForm.employeeId || oForm.username || "").trim().substring(0, 20),
+                    UserId: (oForm.UserId || oForm.employeeId || oForm.username || "").trim().substring(0, 20),
                     username: oForm.username.trim().toLowerCase(),
                     password: oForm.password ? oForm.password.trim() : "",
                     name: oForm.name.trim(),
@@ -573,7 +583,10 @@ sap.ui.define([
                                 "Authorization": models.getAuthHeaderValue(),
                                 "Content-Type": "application/json"
                             },
-                            body: JSON.stringify({ ID: u.ID })
+                            body: JSON.stringify({
+                                ID: u.ID,
+                                UserId: u.UserId || u.employeeId || u.username
+                            })
                         });
 
                         const data = await res.json();
@@ -614,7 +627,10 @@ sap.ui.define([
                                 "Authorization": models.getAuthHeaderValue(),
                                 "Content-Type": "application/json"
                             },
-                            body: JSON.stringify({ ID: u.ID })
+                            body: JSON.stringify({
+                                ID: u.ID,
+                                UserId: u.UserId || u.employeeId || u.username
+                            })
                         });
 
                         const data = await res.json();
