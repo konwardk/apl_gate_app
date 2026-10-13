@@ -88,54 +88,6 @@
                         width="100%"
                         class="login-submit-btn" />
                 </VBox>
-
-                <ToolbarSeparator class="sapUiMediumMarginTop sapUiMediumMarginBottom" />
-
-                <!-- SAP S/4HANA Cloud CBO Managed Users Section (YY1_API_CUSTOMUSER_0001) -->
-                <VBox class="login-quick-section">
-                    <HBox alignItems="Center" justifyContent="SpaceBetween" class="sapUiTinyMarginBottom">
-                        <HBox alignItems="Center">
-                            <core:Icon src="sap-icon://cloud" size="18px" color="#0070f2" class="sapUiTinyMarginEnd" />
-                            <Title text="SAP S/4HANA Cloud Users" level="H4" titleStyle="H4" />
-                        </HBox>
-                        <HBox alignItems="Center">
-                            <Button
-                                id="btnRefreshUsers"
-                                icon="sap-icon://refresh"
-                                type="Transparent"
-                                tooltip="Refresh Users from SAP S/4HANA Cloud (YY1_API_CUSTOMUSER_0001)"
-                                press=".onRefreshUsers"
-                                class="sapUiTinyMarginEnd" />
-                            <ObjectStatus
-                                text="{= ${/loginUsers} ? (${/loginUsers}.length + ' Users Available') : 'Loading Users...' }"
-                                state="Information"
-                                inverted="true" />
-                        </HBox>
-                    </HBox>
-                    <Text text="Users are managed via YY1_API_CUSTOMUSER_0001 in SAP Cloud. Click any user below to sign in:" class="sapUiTinyMarginBottom text-muted" />
-
-                    <!-- Dynamic Grid bound to users from YY1_API_CUSTOMUSER_0001 -->
-                    <layout:Grid
-                        id="gridLoginUsers"
-                        defaultSpan="XL6 L6 M6 S12"
-                        hSpacing="0.5"
-                        vSpacing="0.5"
-                        class="login-persona-grid"
-                        content="{/loginUsers}">
-                        <VBox class="login-persona-tile" press=".onQuickPersonaSelect">
-                            <HBox alignItems="Center" justifyContent="SpaceBetween">
-                                <HBox alignItems="Center">
-                                    <core:Icon src="{icon}" size="20px" class="persona-icon-custom sapUiTinyMarginEnd" />
-                                    <VBox>
-                                        <Text text="{name}" class="persona-title" />
-                                        <Text text="{= '@' + ${username} + ' • ' + ${roleName} }" class="persona-sub" />
-                                    </VBox>
-                                </HBox>
-                                <ObjectStatus text="{roleCode}" state="{roleBadgeState}" inverted="false" />
-                            </HBox>
-                        </VBox>
-                    </layout:Grid>
-                </VBox>
             </VBox>
 
             <Text text="SAP Cloud Application Programming Model (CAP) • Role-Based Access Control (RBAC)" class="login-footer-text sapUiSmallMarginTop" />

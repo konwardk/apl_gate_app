@@ -65,7 +65,10 @@ sap.ui.define([
             });
             this.getView().setModel(this._oFacModel, "facModel");
 
-            this.loadFactoryData();
+            // Only load data if user is authenticated (prevents 401 error toast on startup)
+            if (models.getAuthHeaderValue()) {
+                this.loadFactoryData();
+            }
         },
 
         _enrichRecord: function (tx) {
@@ -141,8 +144,14 @@ sap.ui.define([
         },
 
         loadFactoryData: async function () {
+            const authHeader = models.getAuthHeaderValue();
+            if (!authHeader) {
+                // Not authenticated yet; skip loading to prevent 401 error toast on startup
+                return;
+            }
+
             const headers = {
-                "Authorization": models.getAuthHeaderValue(),
+                "Authorization": authHeader,
                 "Content-Type": "application/json"
             };
 
@@ -151,6 +160,10 @@ sap.ui.define([
                 const url = `${ODATA_BASE}/GateTransactions?$expand=securityEntry,factoryEntry,weighments,transporter,supplier,driver,deliveryDetails&$orderby=createdAt desc`;
                 const res = await fetch(url, { headers });
                 if (!res.ok) {
+                    if (res.status === 401 || res.status === 403) {
+                        console.warn(`[FactoryOperations] Unauthorized to load factory data (HTTP ${res.status}).`);
+                        return;
+                    }
                     throw new Error(`Failed to fetch transactions: ${res.statusText}`);
                 }
 
@@ -193,7 +206,9 @@ sap.ui.define([
                 }
             } catch (err) {
                 console.error("Error loading factory data:", err);
-                MessageToast.show("Failed to load Factory Gate data");
+                if (models.getAuthHeaderValue()) {
+                    MessageToast.show("Failed to load Factory Gate data");
+                }
             }
         },
 

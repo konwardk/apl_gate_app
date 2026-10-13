@@ -56,12 +56,19 @@ sap.ui.define([
             this.getView().setModel(this._oMasterModel, "masterModel");
 
             this._originalData = null;
-            this.loadMasterData();
+            if (models.getAuthHeaderValue()) {
+                this.loadMasterData();
+            }
         },
 
         loadMasterData: async function () {
+            const authHeader = models.getAuthHeaderValue();
+            if (!authHeader) {
+                return;
+            }
+
             const headers = {
-                "Authorization": models.getAuthHeaderValue(),
+                "Authorization": authHeader,
                 "Content-Type": "application/json"
             };
 

@@ -83,7 +83,10 @@ sap.ui.define([
             });
             this.getView().setModel(oSecModel, "secModel");
 
-            this.loadSecurityData();
+            // Only load data if user is authenticated (prevents 401 toast on startup)
+            if (models.getAuthHeaderValue()) {
+                this.loadSecurityData();
+            }
         },
 
         _enrichSecurityRecord: function (tx) {
@@ -140,12 +143,18 @@ sap.ui.define([
         },
 
         loadSecurityData: async function () {
+            const authHeader = models.getAuthHeaderValue();
+            if (!authHeader) {
+                // Not authenticated yet; skip loading to prevent 401 error toast on startup
+                return;
+            }
+
             const oSecModel = this.getView().getModel("secModel");
             const oTable = this.byId("secTxTable");
             if (oTable) oTable.setBusy(true);
 
             const headers = {
-                "Authorization": models.getAuthHeaderValue(),
+                "Authorization": authHeader,
                 "Content-Type": "application/json"
             };
 
@@ -153,6 +162,10 @@ sap.ui.define([
                 // Fetch all GateTransactions expanding unified securityEntry, driver, and weighments
                 const res = await fetch(`${ODATA_BASE}/GateTransactions?$expand=securityEntry,driver,weighments&$orderby=createdAt desc&$top=100`, { headers });
                 if (!res.ok) {
+                    if (res.status === 401 || res.status === 403) {
+                        console.warn(`[SecurityOperations] Unauthorized to load security records (HTTP ${res.status}).`);
+                        return;
+                    }
                     throw new Error(`HTTP ${res.status}: ${res.statusText}`);
                 }
 
@@ -182,7 +195,9 @@ sap.ui.define([
                 this._applyFilters();
             } catch (err) {
                 console.error("Error loading security operations data:", err);
-                MessageToast.show("Failed to load security records: " + err.message);
+                if (models.getAuthHeaderValue()) {
+                    MessageToast.show("Failed to load security records: " + err.message);
+                }
             } finally {
                 if (oTable) oTable.setBusy(false);
             }

@@ -89,7 +89,10 @@ sap.ui.define([
             });
             this.getView().setModel(oUserModel, "userModel");
 
-            this.loadUsersData();
+            // Only load user management data if user is already authenticated
+            if (models.getAuthHeaderValue()) {
+                this.loadUsersData();
+            }
         },
 
         onNavBack: function () {
@@ -115,16 +118,26 @@ sap.ui.define([
             const oModel = oView.getModel("userModel");
             if (!oModel) return;
 
+            const sAuthHeader = models.getAuthHeaderValue();
+            if (!sAuthHeader) {
+                // Not authenticated yet; skip fetching to avoid HTTP 401 error on app startup
+                return;
+            }
+
             try {
                 oView.setBusy(true);
                 const res = await fetch(`${ODATA_BASE}/Users?$expand=userRoles&$orderby=createdAt desc`, {
                     headers: {
-                        "Authorization": models.getAuthHeaderValue(),
+                        "Authorization": sAuthHeader,
                         "Content-Type": "application/json"
                     }
                 });
 
                 if (!res.ok) {
+                    if (res.status === 401 || res.status === 403) {
+                        console.warn(`[UserManagement] User not authorized to load users (HTTP ${res.status}).`);
+                        return;
+                    }
                     throw new Error(`Failed to load users (HTTP ${res.status})`);
                 }
 

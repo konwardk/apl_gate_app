@@ -61,7 +61,10 @@ sap.ui.define([
             });
             this.getView().setModel(oWbModel, "wbModel");
 
-            this.loadWeighbridgeData();
+            // Only load data if user is authenticated (prevents 401 error on startup)
+            if (models.getAuthHeaderValue()) {
+                this.loadWeighbridgeData();
+            }
         },
 
         _enrichRecord: function (tx) {
@@ -196,9 +199,15 @@ sap.ui.define([
         },
 
         loadWeighbridgeData: async function () {
+            const authHeader = models.getAuthHeaderValue();
+            if (!authHeader) {
+                // Not authenticated yet; skip loading to prevent 401 error on startup
+                return;
+            }
+
             const oWbModel = this.getView().getModel("wbModel");
             const headers = {
-                "Authorization": models.getAuthHeaderValue(),
+                "Authorization": authHeader,
                 "Content-Type": "application/json"
             };
 
