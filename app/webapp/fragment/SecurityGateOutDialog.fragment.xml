@@ -128,15 +128,11 @@
                     <core:Title text="4. Gate Pass &amp; Authorization" />
 
                     <Label text="Gate Pass Type" />
-                    <Select
+                    <Input
                         id="dialogSecOutPassType"
-                        selectedKey="{secModel>/outGatePassType}"
-                        width="100%">
-                        <core:Item key="RGP" text="RGP - Returnable Gate Pass" />
-                        <core:Item key="NRGP" text="NRGP - Non-Returnable Gate Pass" />
-                        <core:Item key="DELIVERY_NOTE" text="DELIVERY_NOTE - Delivery Note / Consignment Completed" />
-                        <core:Item key="OTHER" text="OTHER - Standard Outbound Gate Pass" />
-                    </Select>
+                        value="{path: 'secModel>/outGatePassType', formatter: '.formatter.getGateOutTypeDesc'}"
+                        editable="false"
+                        width="100%" />
 
                     <Label
                         text="Gate Pass Doc Number"

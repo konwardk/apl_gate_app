@@ -98,10 +98,12 @@ sap.ui.define([
 
         loadTransaction: async function (txOrId) {
             let sId = "";
+            let oInitialTx = null;
             if (typeof txOrId === "string") {
                 sId = txOrId;
             } else if (txOrId && txOrId.ID) {
                 sId = txOrId.ID;
+                oInitialTx = txOrId;
             }
 
             if (!sId) {
@@ -112,6 +114,12 @@ sap.ui.define([
             const oPage = this.byId("editGateEntryPageControl");
             if (oPage) {
                 oPage.setBusy(true);
+            }
+
+            // Immediately display initial data if object was provided
+            if (oInitialTx) {
+                const currentData = Object.assign({}, this._oEditModel.getData(), oInitialTx);
+                this._oEditModel.setData(currentData);
             }
 
             // Ensure master data is loaded
@@ -140,6 +148,23 @@ sap.ui.define([
                 }
                 if (data.auditLogs && Array.isArray(data.auditLogs)) {
                     data.auditLogs.sort((a, b) => new Date(b.actionDateTime || 0) - new Date(a.actionDateTime || 0));
+                }
+
+                // Fallback / recovery for gateOutOperator:
+                // 1. From passed-in transaction object
+                if (!data.gateOutOperator && oInitialTx && oInitialTx.gateOutOperator) {
+                    data.gateOutOperator = oInitialTx.gateOutOperator;
+                }
+                // 2. From auditLogs action MAIN_GATE_OUT
+                if (!data.gateOutOperator && data.auditLogs && Array.isArray(data.auditLogs)) {
+                    const outLog = data.auditLogs.find(a => a.action === 'MAIN_GATE_OUT' || a.action === 'STATUS_UPDATE_COMPLETED');
+                    if (outLog && (outLog.userName || outLog.userId)) {
+                        data.gateOutOperator = outLog.userName || outLog.userId;
+                    }
+                }
+                // 3. Fallback for COMPLETED transaction
+                if (!data.gateOutOperator && data.status === 'COMPLETED') {
+                    data.gateOutOperator = data.modifiedBy || models.getActiveUser() || "MainGateOperator";
                 }
 
                 data.vehicleRegNoState = ValueState.None;
@@ -203,6 +228,19 @@ sap.ui.define([
         onGateOutDateTimeChange: function (oEvt) {
             const oDate = oEvt.getSource().getDateValue();
             this._oEditModel.setProperty("/gateOutDateTime", oDate ? oDate.toISOString() : null);
+        },
+
+        onStatusChange: function (oEvt) {
+            const sNewStatus = oEvt.getParameter("selectedItem") ? oEvt.getParameter("selectedItem").getKey() : "";
+            if (sNewStatus === "COMPLETED") {
+                if (!this._oEditModel.getProperty("/gateOutDateTime")) {
+                    this._oEditModel.setProperty("/gateOutDateTime", new Date().toISOString());
+                }
+                if (!this._oEditModel.getProperty("/gateOutOperator")) {
+                    this._oEditModel.setProperty("/gateOutOperator", models.getActiveUser() || "MainGateOperator");
+                }
+                this._oEditModel.setProperty("/currentStage", "COMPLETED");
+            }
         },
 
         _hasUnsavedChanges: function () {
@@ -287,10 +325,12 @@ sap.ui.define([
             };
 
             // Automatically set gateOutDateTime if status completed
-            if (payload.status === "COMPLETED" && !payload.gateOutDateTime) {
-                payload.gateOutDateTime = new Date().toISOString();
+            if (payload.status === "COMPLETED") {
+                if (!payload.gateOutDateTime) {
+                    payload.gateOutDateTime = new Date().toISOString();
+                }
                 if (!payload.gateOutOperator) {
-                    payload.gateOutOperator = models.getActiveUser();
+                    payload.gateOutOperator = models.getActiveUser() || "MainGateOperator";
                 }
             }
 

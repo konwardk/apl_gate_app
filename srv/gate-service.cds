@@ -256,6 +256,7 @@ service GateService {
         goodsInspected          : Boolean,
         sealVerified            : Boolean,
         gateOutType             : String,
+        gatePassType            : String,
         factoryGateOutRemarks   : String,
         remarks                 : String
     ) returns GateTransactions;
@@ -268,6 +269,7 @@ service GateService {
         factoryGateOutDateTime  : Timestamp,
         factoryGateOutOperator  : String,
         gateOutType             : String,
+        gatePassType            : String,
         factoryArea             : String,
         unloadingPoint          : String,
         poNumber                : String,

@@ -57,6 +57,9 @@
 
                     <Label text="Gate IN Operator" />
                     <Text text="{= ${detailModel>/gateInOperator} || '-' }" />
+
+                    <Label text="Gate OUT Operator" />
+                    <Text text="{= ${detailModel>/gateOutOperator} || '-' }" />
                 </form:content>
             </form:SimpleForm>
         </content>

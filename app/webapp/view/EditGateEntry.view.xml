@@ -107,6 +107,10 @@
                             <Label text="Gate OUT Time" design="Bold" />
                             <Text text="{path: 'editModel>/gateOutDateTime', formatter: '.formatter.formatDateTime'}" />
                         </VBox>
+                        <VBox>
+                            <Label text="Gate OUT Operator" design="Bold" />
+                            <Text text="{= ${editModel>/gateOutOperator} || '-' }" />
+                        </VBox>
                     </layout:Grid>
                 </content>
             </Panel>
@@ -188,7 +192,9 @@
 
                                 <Label text="Transaction Status" required="true" />
                                 <Select
+                                    id="selectEditStatus"
                                     selectedKey="{editModel>/status}"
+                                    change=".onStatusChange"
                                     width="100%">
                                     <core:Item key="GATE_IN" text="GATE_IN (Main Gate Check-In Completed)" />
                                     <core:Item key="SECURITY_IN" text="SECURITY_IN (Security Gate Inbound Verified)" />
@@ -233,6 +239,7 @@
                                 <Input
                                     id="inputEditGateOutOperator"
                                     value="{editModel>/gateOutOperator}"
+                                    valueLiveUpdate="true"
                                     placeholder="Operator who recorded Gate OUT" />
 
                                 <Label text="Gate OUT Date &amp; Time" />

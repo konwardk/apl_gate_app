@@ -120,7 +120,13 @@ async function testFactoryGateOperations() {
     assert.strictEqual(updatedFacEntry1.gateOutType, 'STANDARD', 'Gate OUT type must be stored');
     assert.strictEqual(updatedFacEntry1.factoryGateInRemarks, 'Tanker connected to discharge pump line', 'Gate IN remarks preserved');
     assert.strictEqual(updatedFacEntry1.factoryGateOutRemarks, 'Discharge completed into Tank T-02 without leakage', 'Gate OUT remarks stored separately');
-    console.log(`[Step 5 PASS] Factory Gate OUT recorded with distinct operators: InOp=${updatedFacEntry1.factoryGateInOperator}, OutOp=${updatedFacEntry1.factoryGateOutOperator}, Unloaded=${updatedFacEntry1.unloadedQuantity} ${updatedFacEntry1.quantityUnit}`);
+
+    const syncedSecEntry = await srv.tx({ user: securityUser }).run(
+        SELECT.one.from(SecurityGateEntries).where({ gateTransaction_ID: gateTx1.ID })
+    );
+    assert.strictEqual(syncedSecEntry.exitGatePassType, 'STANDARD', 'Gate Pass Type assigned at Factory Gate OUT must be propagated to SecurityGateEntries');
+
+    console.log(`[Step 5 PASS] Factory Gate OUT recorded with distinct operators: InOp=${updatedFacEntry1.factoryGateInOperator}, OutOp=${updatedFacEntry1.factoryGateOutOperator}, Unloaded=${updatedFacEntry1.unloadedQuantity} ${updatedFacEntry1.quantityUnit}, SyncedGatePassType=${syncedSecEntry.exitGatePassType}`);
 
     // Verify Audit Trail
     const adminUser = new cds.User({ id: 'admin_user', roles: ['Admin', 'Auditor'] });

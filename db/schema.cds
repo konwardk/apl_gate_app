@@ -490,6 +490,11 @@ type WeightUnit : String enum {
 type GatePassType : String enum {
     RGP;
     NRGP;
+    STANDARD;
+    DELIVERY_NOTE;
+    MATERIAL_RETURN;
+    EMPTY_VEHICLE;
+    OTHER;
 }
 
 type VerificationStatus : String enum {

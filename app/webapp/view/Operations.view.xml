@@ -156,8 +156,14 @@
                                 text="{status}"
                                 state="{path: 'status', formatter: '.formatter.getStatusState'}" />
                             <Text text="{currentStage}" />
-                            <Text text="{path: 'gateInDateTime', formatter: '.formatter.formatDateTime'}" />
-                            <Text text="{path: 'gateOutDateTime', formatter: '.formatter.formatDateTime'}" />
+                            <VBox>
+                                <Text text="{path: 'gateInDateTime', formatter: '.formatter.formatDateTime'}" />
+                                <Text text="{= ${gateInOperator} ? ('Op: ' + ${gateInOperator}) : '' }" class="sapUiTinyMarginTop" visible="{= !!${gateInOperator} }" />
+                            </VBox>
+                            <VBox>
+                                <Text text="{path: 'gateOutDateTime', formatter: '.formatter.formatDateTime'}" />
+                                <Text text="{= ${gateOutOperator} ? ('Op: ' + ${gateOutOperator}) : '' }" class="sapUiTinyMarginTop" visible="{= !!${gateOutOperator} }" />
+                            </VBox>
                             <HBox justifyContent="End" alignItems="Center" wrap="NoWrap" class="sapUiTinyMarginBeginEnd">
                                 <!-- Gate OUT button: ONLY shown and clickable if all other operations are performed completely (status: SECURITY_OUT) -->
                                 <Button

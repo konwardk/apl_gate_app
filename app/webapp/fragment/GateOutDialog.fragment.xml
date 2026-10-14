@@ -54,6 +54,7 @@
                     <Input
                         id="inputGateOutOperator"
                         value="{gateOutModel>/operator}"
+                        valueLiveUpdate="true"
                         placeholder="Enter Main Gate Operator Name / ID"
                         maxLength="100"
                         required="true" />

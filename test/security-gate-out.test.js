@@ -118,6 +118,7 @@ async function testSecurityGateOut() {
     assert.ok(consolidated.securityOutDateTime, 'Outbound timestamp populated');
     assert.strictEqual(consolidated.emptyInspectionVerified, true, 'Empty inspection flag populated');
     assert.strictEqual(consolidated.deliveryDetailsVerified, true, 'Delivery details verified flag populated');
+    assert.strictEqual(consolidated.exitGatePassType, 'STANDARD', 'Outbound Gate Pass Type populated');
     assert.strictEqual(consolidated.securityOutRemarks, 'Outbound empty truck bed inspected and cleared');
 
     console.log(`[TEST 3 PASS] Single consolidated entity verified:`);

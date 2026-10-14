@@ -105,18 +105,20 @@
                         placeholder="Enter Factory Gate OUT Operator name"
                         required="true" />
 
-                    <Label text="Gate Out Type" required="true" />
+                    <Label text="Gate Pass Type" required="true" />
                     <ComboBox
                         id="dialogFacComboGateOutType"
                         selectedKey="{facModel>/form/gateOutType}"
-                        placeholder="Select Gate Out Type (RGP, NRGP, etc.)"
+                        placeholder="Select Gate Pass Type (STANDARD, RGP, NRGP, etc.)"
                         width="100%">
                         <items>
                             <core:Item key="STANDARD" text="STANDARD - Delivery / Consignment Completed" />
                             <core:Item key="RGP" text="RGP - Returnable Gate Pass (Returnable Packaging/Cylinders)" />
                             <core:Item key="NRGP" text="NRGP - Non-Returnable Gate Pass (Dispatched Scrap/Finished Goods)" />
+                            <core:Item key="DELIVERY_NOTE" text="DELIVERY_NOTE - Delivery Note / Consignment Completed" />
                             <core:Item key="MATERIAL_RETURN" text="MATERIAL_RETURN - Material Return / Quality Rejection" />
                             <core:Item key="EMPTY_VEHICLE" text="EMPTY_VEHICLE - Empty Vehicle Yard Clearance" />
+                            <core:Item key="OTHER" text="OTHER - Standard Outbound Gate Pass" />
                         </items>
                     </ComboBox>
 

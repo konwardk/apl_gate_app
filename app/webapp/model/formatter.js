@@ -149,11 +149,15 @@ sap.ui.define([
                 case "NRGP":
                     return "NRGP - Non-Returnable Gate Pass";
                 case "STANDARD":
-                    return "Standard Clearance (Delivery Completed)";
+                    return "STANDARD - Delivery / Consignment Completed";
+                case "DELIVERY_NOTE":
+                    return "DELIVERY_NOTE - Delivery Note / Consignment Completed";
                 case "MATERIAL_RETURN":
-                    return "Material Return / Rejection";
+                    return "MATERIAL_RETURN - Material Return / Quality Rejection";
                 case "EMPTY_VEHICLE":
-                    return "Empty Vehicle Exit";
+                    return "EMPTY_VEHICLE - Empty Vehicle Yard Clearance";
+                case "OTHER":
+                    return "OTHER - Standard Outbound Gate Pass";
                 default:
                     return type || "Standard Clearance";
             }
@@ -166,10 +170,12 @@ sap.ui.define([
                 case "NRGP":
                     return ValueState.Information;
                 case "STANDARD":
+                case "DELIVERY_NOTE":
                     return ValueState.Success;
                 case "MATERIAL_RETURN":
                     return ValueState.Error;
                 case "EMPTY_VEHICLE":
+                case "OTHER":
                     return ValueState.None;
                 default:
                     return ValueState.None;

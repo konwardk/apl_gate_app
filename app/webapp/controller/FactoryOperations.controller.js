@@ -45,6 +45,7 @@ sap.ui.define([
                     factoryArea: "Raw Material Yard",
                     unloadingPoint: "",
                     gateOutType: "STANDARD",
+                    gatePassType: "STANDARD",
                     factoryGateInDateTime: new Date().toISOString(),
                     factoryGateInDateTimeStr: new Date().toISOString().substring(0, 19),
                     factoryGateInOperator: models.getActiveUser(),
@@ -487,13 +488,13 @@ sap.ui.define([
             }
             const facOutOp = (fac && fac.factoryGateOutOperator) || ((oTx.status === "FACTORY_IN" && (!fac || fac.remarks !== "Direct Factory Entry assigned at Security Gate IN")) ? models.getActiveUser() : "");
 
-            // Determine Gate Out Type
-            let gateOutType = (fac && fac.gateOutType) || "STANDARD";
+            // Determine Gate Out / Gate Pass Type
+            let gateOutType = (fac && (fac.gateOutType || fac.gatePassType)) || "STANDARD";
             const rawRemarks = (fac && fac.remarks) || "";
-            if (sec && sec.gatePassType && (!fac || !fac.gateOutType)) {
-                gateOutType = sec.gatePassType;
+            if (sec && (sec.exitGatePassType || sec.gatePassType) && (!fac || (!fac.gateOutType && !fac.gatePassType))) {
+                gateOutType = sec.exitGatePassType || sec.gatePassType;
             }
-            if (rawRemarks && (!fac || !fac.gateOutType)) {
+            if (rawRemarks && (!fac || (!fac.gateOutType && !fac.gatePassType))) {
                 const match = rawRemarks.match(/\[Gate Out Type:\s*([^\]]+)\]/i);
                 if (match) {
                     gateOutType = match[1].trim();
@@ -516,6 +517,7 @@ sap.ui.define([
                 factoryArea: (fac && fac.factoryArea) || "Raw Material Yard",
                 unloadingPoint: (fac && fac.unloadingPoint) || "",
                 gateOutType: gateOutType,
+                gatePassType: gateOutType,
                 factoryGateInDateTime: facInTimeIso,
                 factoryGateInDateTimeStr: facInTimeStr,
                 factoryGateInOperator: facInOp,
@@ -717,6 +719,7 @@ sap.ui.define([
                 goodsInspected: form.goodsInspected !== undefined ? Boolean(form.goodsInspected) : true,
                 sealVerified: form.sealVerified !== undefined ? Boolean(form.sealVerified) : true,
                 gateOutType: sGateOutType,
+                gatePassType: sGateOutType,
                 factoryGateOutRemarks: sUserRemarks,
                 remarks: sPrefixedRemarks
             };
@@ -806,6 +809,7 @@ sap.ui.define([
                 factoryGateOutOperator: outOp,
                 factoryGateOutRemarks: sOutRemarks,
                 gateOutType: sGateOutType,
+                gatePassType: sGateOutType,
                 factoryArea: form.factoryArea || "Raw Material Yard",
                 unloadingPoint: form.unloadingPoint || "",
                 poNumber: form.poNumber || "",

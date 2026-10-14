@@ -159,8 +159,8 @@ sap.ui.define([
             };
 
             try {
-                // Fetch all GateTransactions expanding unified securityEntry, driver, and weighments
-                const res = await fetch(`${ODATA_BASE}/GateTransactions?$expand=securityEntry,driver,weighments&$orderby=createdAt desc&$top=100`, { headers });
+                // Fetch all GateTransactions expanding unified securityEntry, factoryEntry, driver, and weighments
+                const res = await fetch(`${ODATA_BASE}/GateTransactions?$expand=securityEntry,factoryEntry,driver,weighments&$orderby=createdAt desc&$top=100`, { headers });
                 if (!res.ok) {
                     if (res.status === 401 || res.status === 403) {
                         console.warn(`[SecurityOperations] Unauthorized to load security records (HTTP ${res.status}).`);
@@ -789,8 +789,10 @@ sap.ui.define([
             oSecModel.setProperty("/outMaterialInspected", true);
             oSecModel.setProperty("/outDocumentsVerified", true);
             oSecModel.setProperty("/outGatePassVerified", false);
-            oSecModel.setProperty("/outDeliveryDetailsVerified", false);
-            oSecModel.setProperty("/outGatePassType", "RGP");
+            const initialPassType = (oPreselectedTx && oPreselectedTx.factoryEntry && (oPreselectedTx.factoryEntry.gateOutType || oPreselectedTx.factoryEntry.gatePassType)) ||
+                                    (oPreselectedTx && oPreselectedTx.securityEntry && (oPreselectedTx.securityEntry.exitGatePassType || oPreselectedTx.securityEntry.gatePassType)) ||
+                                    (oPreselectedTx && oPreselectedTx.purpose === "PICKUP" ? "RGP" : "STANDARD");
+            oSecModel.setProperty("/outGatePassType", initialPassType);
             oSecModel.setProperty("/outGatePassDocumentNo", "");
             oSecModel.setProperty("/outRemarks", "");
             oSecModel.setProperty("/outInboundRecord", null);
@@ -905,27 +907,46 @@ sap.ui.define([
                         "Content-Type": "application/json"
                     };
 
-                    const [resSec, resWb] = await Promise.all([
+                    const [resSec, resWb, resFac] = await Promise.all([
                         fetch(`${ODATA_BASE}/SecurityGateEntries?$filter=gateTransaction_ID eq '${matched.ID}'`, { headers }),
-                        fetch(`${ODATA_BASE}/WeighbridgeTransactions?$filter=gateTransaction_ID eq '${matched.ID}'&$orderby=weighbridgeDateTime desc`, { headers })
+                        fetch(`${ODATA_BASE}/WeighbridgeTransactions?$filter=gateTransaction_ID eq '${matched.ID}'&$orderby=weighbridgeDateTime desc`, { headers }),
+                        fetch(`${ODATA_BASE}/FactoryGateEntries?$filter=gateTransaction_ID eq '${matched.ID}'`, { headers })
                     ]);
 
+                    let secRecord = null;
                     if (resSec.ok) {
                         const dSec = await resSec.json();
-                        const secRecord = (dSec.value && dSec.value[0]) || null;
+                        secRecord = (dSec.value && dSec.value[0]) || null;
                         oSecModel.setProperty("/outInboundRecord", secRecord);
 
-                        if (secRecord) {
-                            if (secRecord.rgpDocumentNo) {
-                                oSecModel.setProperty("/outGatePassType", "RGP");
-                                oSecModel.setProperty("/outGatePassDocumentNo", secRecord.rgpDocumentNo);
-                            } else if (secRecord.nrgpDocumentNo) {
-                                oSecModel.setProperty("/outGatePassType", "NRGP");
-                                oSecModel.setProperty("/outGatePassDocumentNo", secRecord.nrgpDocumentNo);
-                            } else if (secRecord.exitGatePassDocumentNo) {
-                                oSecModel.setProperty("/outGatePassDocumentNo", secRecord.exitGatePassDocumentNo);
-                            }
+                    }
+
+                    let facRecord = null;
+                    if (resFac && resFac.ok) {
+                        const dFac = await resFac.json();
+                        facRecord = (dFac.value && dFac.value[0]) || null;
+                        oSecModel.setProperty("/outFactoryRecord", facRecord);
+                    }
+
+                    // Gate Pass Type assigned during Factory Gate Operations
+                    const assignedGatePassType = (facRecord && (facRecord.gateOutType || facRecord.gatePassType)) ||
+                                                 (matched.factoryEntry && (matched.factoryEntry.gateOutType || matched.factoryEntry.gatePassType)) ||
+                                                 (secRecord && (secRecord.exitGatePassType || secRecord.gatePassType)) ||
+                                                 (matched.purpose === "PICKUP" ? "RGP" : "STANDARD");
+
+                    oSecModel.setProperty("/outGatePassType", assignedGatePassType);
+
+                    if (secRecord) {
+                        if (secRecord.rgpDocumentNo) {
+                            oSecModel.setProperty("/outGatePassDocumentNo", secRecord.rgpDocumentNo);
+                        } else if (secRecord.nrgpDocumentNo) {
+                            oSecModel.setProperty("/outGatePassDocumentNo", secRecord.nrgpDocumentNo);
+                        } else if (secRecord.exitGatePassDocumentNo) {
+                            oSecModel.setProperty("/outGatePassDocumentNo", secRecord.exitGatePassDocumentNo);
                         }
+                    }
+                    if (!oSecModel.getProperty("/outGatePassDocumentNo") && facRecord && facRecord.deliveryNoteNo) {
+                        oSecModel.setProperty("/outGatePassDocumentNo", facRecord.deliveryNoteNo);
                     }
 
                     if (resWb.ok) {
@@ -979,7 +1000,7 @@ sap.ui.define([
             const payload = {
                 gateInNumber: m.outSelectedGateInNumber,
                 securityPersonnel: m.outSecurityPersonnel.trim(),
-                gatePassType: m.outGatePassType || "RGP",
+                gatePassType: m.outGatePassType || (isPickup ? "RGP" : "STANDARD"),
                 gatePassDocumentNo: m.outGatePassDocumentNo ? m.outGatePassDocumentNo.trim() : "",
                 driverVerified: Boolean(m.outDriverVerified),
                 vehicleVerified: Boolean(m.outVehicleVerified),

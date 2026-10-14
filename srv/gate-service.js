@@ -3390,6 +3390,7 @@ export default cds.service.impl(async function () {
             goodsInspected,
             sealVerified,
             gateOutType,
+            gatePassType,
             factoryGateOutRemarks,
             remarks
         } = req.data;
@@ -3409,7 +3410,7 @@ export default cds.service.impl(async function () {
         const sOperator = factoryGateOutOperator || req.user?.id || 'SYSTEM';
         const outTimestamp = factoryGateOutDateTime ? new Date(factoryGateOutDateTime) : new Date();
         const sOutRemarks = factoryGateOutRemarks || remarks || '';
-        const sGateOutType = gateOutType || 'STANDARD';
+        const sGateOutType = gatePassType || gateOutType || 'STANDARD';
 
         const existing = await SELECT.one.from(FactoryGateEntries).where({ gateTransaction_ID: transaction.ID });
         if (existing) {
@@ -3443,6 +3444,16 @@ export default cds.service.impl(async function () {
                 sealVerified: sealVerified !== undefined ? Boolean(sealVerified) : true,
                 remarks: remarks || 'Factory yard operations completed'
             });
+        }
+
+        // Propagate assigned Gate Pass Type into SecurityGateEntries for downstream Security Gate OUT
+        const existingSec = await SELECT.one.from(SecurityGateEntries).where({ gateTransaction_ID: transaction.ID });
+        if (existingSec) {
+            await UPDATE(SecurityGateEntries)
+                .set({
+                    exitGatePassType: sGateOutType
+                })
+                .where({ ID: existingSec.ID });
         }
 
         await UPDATE(GateTransactions)
@@ -3509,6 +3520,7 @@ export default cds.service.impl(async function () {
             factoryGateOutDateTime,
             factoryGateOutOperator,
             gateOutType,
+            gatePassType,
             factoryArea,
             unloadingPoint,
             poNumber: reqPoNumber,
@@ -3562,7 +3574,7 @@ export default cds.service.impl(async function () {
         const outOp = factoryGateOutOperator || (factoryGateOutDateTime ? (req.user?.id || 'SYSTEM') : null);
         const inTime = factoryGateInDateTime ? new Date(factoryGateInDateTime) : new Date();
         const outTime = factoryGateOutDateTime ? new Date(factoryGateOutDateTime) : null;
-        const sGateOutType = gateOutType || 'STANDARD';
+        const sGateOutType = gatePassType || gateOutType || 'STANDARD';
 
         const isOutRecorded = Boolean(outTime) || transaction.status === 'FACTORY_IN';
         const newStatus = isOutRecorded ? 'FACTORY_OUT' : 'FACTORY_IN';
@@ -3623,6 +3635,17 @@ export default cds.service.impl(async function () {
                 sealVerified: sealVerified !== undefined ? Boolean(sealVerified) : true,
                 remarks: remarks || ''
             });
+        }
+
+        if (isOutRecorded) {
+            const existingSecForSync = await SELECT.one.from(SecurityGateEntries).where({ gateTransaction_ID: transaction.ID });
+            if (existingSecForSync) {
+                await UPDATE(SecurityGateEntries)
+                    .set({
+                        exitGatePassType: sGateOutType
+                    })
+                    .where({ ID: existingSecForSync.ID });
+            }
         }
 
         await UPDATE(GateTransactions)
@@ -3693,7 +3716,13 @@ export default cds.service.impl(async function () {
             .from(SecurityGateEntries)
             .where({ gateTransaction_ID: transaction.ID });
 
-        let determinedPassType = gatePassType;
+        // Locate existing Factory Gate record where Gate Pass Type was assigned
+        const existingFac = await SELECT.one
+            .from(FactoryGateEntries)
+            .where({ gateTransaction_ID: transaction.ID });
+
+        // Prioritize Gate Pass Type assigned during Factory Gate operations
+        let determinedPassType = existingFac?.gateOutType || existingSec?.exitGatePassType || gatePassType || existingSec?.gatePassType || (isPickup ? 'RGP' : 'STANDARD');
         let determinedDocNo = gatePassDocumentNo;
 
         if (isPickup) {

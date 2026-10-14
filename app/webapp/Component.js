@@ -1020,6 +1020,7 @@ sap.ui.define([
                 }
                 const oOpInput = Fragment.byId(sId, "inputGateOutOperator");
                 if (oOpInput) {
+                    oOpInput.setValue(defaultOperator);
                     oOpInput.setValueState(ValueState.None);
                     oOpInput.setValueStateText("");
                 }
@@ -1094,7 +1095,7 @@ sap.ui.define([
             }
 
             const oOpInput = Fragment.byId(sId, "inputGateOutOperator");
-            const sOperator = (oModel && oModel.getProperty("/operator") || "").trim();
+            const sOperator = (oOpInput && oOpInput.getValue && oOpInput.getValue().trim() ? oOpInput.getValue().trim() : ((oModel && oModel.getProperty("/operator")) || "")).trim();
 
             if (!sOperator) {
                 if (oOpInput) {
