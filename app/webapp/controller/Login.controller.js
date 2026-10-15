@@ -76,10 +76,11 @@ sap.ui.define([
                 await this.getOwnerComponent().authenticateUser(sUser, sPass);
                 // Clear password field after successful sign-in
                 oModel.setProperty("/loginPassword", "");
-                // Redirect user to their specific role's tab on the Dashboard
+                // Pre-configure assigned tab according to the user's role
                 const sAssignedTab = oModel.getProperty("/assignedTab") || "OVERVIEW";
                 oModel.setProperty("/selectedDashboardTab", sAssignedTab);
-                this.getOwnerComponent().navigateTo("launchpadPage", "slide");
+                // Redirect user to the Vehicle Stream selection screen
+                this.getOwnerComponent().navigateTo("landingPage", "slide");
             } catch (err) {
                 const sErrorMsg = err.message || "User credentials not matched.";
                 oModel.setProperty("/loginError", sErrorMsg);

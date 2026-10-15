@@ -82,9 +82,9 @@ sap.ui.define([
         "admin_user": "OVERVIEW",
         "Superadmin": "OVERVIEW",
         "superadmin_user": "OVERVIEW",
-        "Auditor": "REPORTS_AUDIT",
-        "audit_user": "REPORTS_AUDIT",
-        "auditor_user": "REPORTS_AUDIT"
+        "Auditor": "OVERVIEW",
+        "audit_user": "OVERVIEW",
+        "auditor_user": "OVERVIEW"
     };
 
     const DEFAULT_LOGIN_USERS = [
@@ -122,6 +122,32 @@ sap.ui.define([
 
         getActiveUser: function () {
             return sessionStorage.getItem("gate_active_user") || localStorage.getItem("gate_active_user") || "";
+        },
+
+        getUserDisplayName: function (username) {
+            const saved = this.getSavedUserInfo();
+            if (saved && saved.name && saved.name.trim()) {
+                if (!username || (saved.id && saved.id.toLowerCase() === String(username).toLowerCase())) {
+                    return saved.name.trim();
+                }
+            }
+            const u = (username || this.getActiveUser() || "").toLowerCase();
+            const names = {
+                "superadmin_user": "System Superadmin",
+                "superadmin": "System Superadmin",
+                "maingate_user": "Main Gate Operator",
+                "security_user": "Security Gate Officer",
+                "weighbridge_user": "Weighbridge Scale Operator",
+                "factory_user": "Factory Yard Supervisor",
+                "admin_user": "Operations Administrator",
+                "auditor_user": "Compliance Auditor",
+                "audit_user": "Compliance Auditor"
+            };
+            if (names[u]) return names[u];
+            if (u.includes("_")) {
+                return u.split("_").map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
+            }
+            return username || u || "System User";
         },
 
         getAuthHeaderValue: function () {
@@ -219,10 +245,10 @@ sap.ui.define([
                 assignedTab = "FACTORY_GATE";
             } else if (isAuditor) {
                 primaryRole = "Auditor";
-                assignedScreen = "launchpadPage";
-                assignedScreenTitle = "Compliance Dashboard";
-                assignedScreenIcon = "sap-icon://history";
-                assignedTab = "REPORTS_AUDIT";
+                assignedScreen = "reportsPage";
+                assignedScreenTitle = "Operational Reports";
+                assignedScreenIcon = "sap-icon://pdf-attachment";
+                assignedTab = "OVERVIEW";
             }
 
             return {

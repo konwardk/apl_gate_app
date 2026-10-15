@@ -39,7 +39,7 @@ sap.ui.define([
                 ],
                 weightUnit: "KG",
                 weighbridgeDateTimeStr: nowIso,
-                operator: activeUser.includes("weighbridge") ? activeUser : "weighbridge_user",
+                operator: models.getUserDisplayName(),
                 selectedGateInNumber: "",
                 selectedVehicle: null,
                 expectedWeighmentType: "GROSS_IN",
@@ -272,13 +272,21 @@ sap.ui.define([
             }
 
             if (q) {
-                filtered = filtered.filter(t =>
-                    (t.gateInNumber && t.gateInNumber.toLowerCase().includes(q)) ||
-                    (t.vehicleRegNo && t.vehicleRegNo.toLowerCase().includes(q)) ||
-                    (t.driverName && t.driverName.toLowerCase().includes(q)) ||
-                    (t.transporter && t.transporter.transporterName && t.transporter.transporterName.toLowerCase().includes(q)) ||
-                    (t.purpose && t.purpose.toLowerCase().includes(q))
-                );
+                filtered = filtered.filter(t => {
+                    const statusText = (formatter.getStatusText(t.status) || "").toLowerCase();
+                    const stageText = (formatter.getStageText(t.currentStage) || "").toLowerCase();
+                    const purposeText = (formatter.getPurposeText(t.purpose) || "").toLowerCase();
+                    return (t.gateInNumber && t.gateInNumber.toLowerCase().includes(q)) ||
+                        (t.vehicleRegNo && t.vehicleRegNo.toLowerCase().includes(q)) ||
+                        (t.driverName && t.driverName.toLowerCase().includes(q)) ||
+                        (t.transporter && t.transporter.transporterName && t.transporter.transporterName.toLowerCase().includes(q)) ||
+                        (t.purpose && t.purpose.toLowerCase().includes(q)) ||
+                        purposeText.includes(q) ||
+                        (t.status && t.status.toLowerCase().includes(q)) ||
+                        statusText.includes(q) ||
+                        (t.currentStage && t.currentStage.toLowerCase().includes(q)) ||
+                        stageText.includes(q);
+                });
             }
 
             oWbModel.setProperty("/displayedRecords", filtered);
@@ -657,7 +665,7 @@ sap.ui.define([
             oWbModel.setProperty("/expectedWeighmentType", sDefaultType);
             oWbModel.setProperty("/weightUnit", "KG");
             oWbModel.setProperty("/weighbridgeDateTimeStr", new Date().toISOString().substring(0, 19));
-            oWbModel.setProperty("/operator", activeUser.includes("weighbridge") ? activeUser : "weighbridge_user");
+            oWbModel.setProperty("/operator", models.getUserDisplayName());
             oWbModel.setProperty("/remarks", "");
             oWbModel.setProperty("/calculatedNetWeight", 0);
             oWbModel.setProperty("/calculatedNetWeightMT", "0.00");
@@ -854,7 +862,7 @@ sap.ui.define([
                 weighmentType: (targetWb && targetWb.weighmentType) ? targetWb.weighmentType : (tx.purpose === "PICKUP" ? "TARE_IN" : "GROSS_IN"),
                 weight: targetWb ? targetWb.weight : (tx.grossWeight || 0),
                 weightUnit: (targetWb && targetWb.weightUnit) ? targetWb.weightUnit : (tx.weightUnit || "KG"),
-                operator: (targetWb && targetWb.operator) ? targetWb.operator : (tx.operator || models.getActiveUser()),
+                operator: models.getUserDisplayName((targetWb && targetWb.operator) ? targetWb.operator : (tx.operator || models.getActiveUser())),
                 remarks: (targetWb && targetWb.remarks) ? targetWb.remarks : (tx.remarks || "None"),
                 weighbridgeDateTime: (targetWb && targetWb.weighbridgeDateTime) ? targetWb.weighbridgeDateTime : (tx.weighbridgeDateTime || new Date()),
                 hasNetCalculation: hasNet,
@@ -915,7 +923,7 @@ sap.ui.define([
                     weighmentType: item.weighmentType,
                     weight: item.weight,
                     weightUnit: item.weightUnit || 'KG',
-                    operator: item.operator || models.getActiveUser(),
+                    operator: models.getUserDisplayName(item.operator || models.getActiveUser()),
                     remarks: item.remarks || "None",
                     weighbridgeDateTime: item.weighbridgeDateTime || new Date(),
                     hasNetCalculation: false,

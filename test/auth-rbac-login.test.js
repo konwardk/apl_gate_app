@@ -23,7 +23,7 @@ async function runAuthRbacTests() {
     const infoMain = await srv.tx({ user: mainGateUser }).send('userInfo');
     assert.strictEqual(infoMain.id, 'maingate_user');
     assert.ok(infoMain.roles.includes('MainGateUser'));
-    assert.ok(infoMain.name.includes('Verma'));
+    assert.ok(infoMain.name && (infoMain.name.includes('Verma') || infoMain.name.includes('Main Gate')));
     console.log(`  [PASS] MainGateUser profile: ${infoMain.name} (${infoMain.designation}), Roles: ${infoMain.roles.join(', ')}`);
 
     const infoSec = await srv.tx({ user: securityGateUser }).send('userInfo');

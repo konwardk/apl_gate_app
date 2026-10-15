@@ -19,7 +19,7 @@
     "watch": "cds watch",
     "build": "cds build --production && node -e \"const fs=require('fs'); fs.cpSync('app', 'gen/srv/app', {recursive: true})\"",
     "build:mta": "mbt build",
-    "test": "node test/gate-crud.test.js && node test/security-gate.test.js && node test/weighbridge.test.js && node test/gate-out.test.js && node test/security-gate-out.test.js && node test/bypass-weighbridge.test.js && node test/entry-wise-edit.test.js && node test/factory-gate.test.js && node test/security-route-assign.test.js && node test/po-service.test.js && node test/user-management.test.js && node test/auth-rbac-login.test.js && node test/cbo-integration.test.js && node test/custom-user-cbo.test.js"
+    "test": "node test/gate-crud.test.js && node test/security-gate.test.js && node test/weighbridge.test.js && node test/gate-out.test.js && node test/security-gate-out.test.js && node test/bypass-weighbridge.test.js && node test/entry-wise-edit.test.js && node test/factory-gate.test.js && node test/security-route-assign.test.js && node test/po-service.test.js && node test/s4-supplier.test.js && node test/user-management.test.js && node test/auth-rbac-login.test.js && node test/cbo-integration.test.js && node test/custom-user-cbo.test.js"
   },
   "sapux": [
     "app/gate-entry",
@@ -129,6 +129,29 @@
         "[development]": {
           "credentials": {
             "url": "https://my443544-api.s4hana.cloud.sap/sap/opu/odata4/sap/yy1_api_vehiclegateoperation/srvd_a2x/sap/yy1_api_vehiclegateoperation/0001",
+            "authentication": "BasicAuthentication",
+            "username": "BTP_S4_INTEGRATION",
+            "password": "Assampetrochemical@123#"
+          }
+        }
+      },
+      "YY1_SUPPLIER_CDS": {
+        "kind": "odata",
+        "credentials": {
+          "url": "https://my443544-api.s4hana.cloud.sap/sap/opu/odata/sap/YY1_SUPPLIER_CDS",
+          "authentication": "BasicAuthentication",
+          "username": "BTP_S4_INTEGRATION",
+          "password": "Assampetrochemical@123#"
+        },
+        "[production]": {
+          "credentials": {
+            "destination": "S4HANA_CLOUD_SUPPLIER",
+            "path": "/sap/opu/odata/sap/YY1_SUPPLIER_CDS"
+          }
+        },
+        "[development]": {
+          "credentials": {
+            "url": "https://my443544-api.s4hana.cloud.sap/sap/opu/odata/sap/YY1_SUPPLIER_CDS",
             "authentication": "BasicAuthentication",
             "username": "BTP_S4_INTEGRATION",
             "password": "Assampetrochemical@123#"

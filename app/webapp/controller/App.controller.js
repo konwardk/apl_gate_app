@@ -13,7 +13,7 @@ sap.ui.define([
             const bAuth = oModel ? oModel.getProperty("/isAuthenticated") : false;
 
             if (bAuth) {
-                this.getOwnerComponent().navigateTo("launchpadPage", "show");
+                this.getOwnerComponent().navigateTo("landingPage", "show");
             } else {
                 this.getOwnerComponent().navigateTo("loginPage", "show");
             }
@@ -26,7 +26,7 @@ sap.ui.define([
                 this.getOwnerComponent().navigateTo("loginPage", "slide");
                 return;
             }
-            this.getOwnerComponent().navigateTo("launchpadPage", "slide");
+            this.getOwnerComponent().navigateTo("landingPage", "slide");
         },
 
         onAssignedWorkspaceNav: function () {
@@ -40,6 +40,11 @@ sap.ui.define([
         },
 
         onLaunchpadNav: function () {
+            const oModel = this.getOwnerComponent().getModel();
+            const sAssignedTab = oModel ? (oModel.getProperty("/assignedTab") || "OVERVIEW") : "OVERVIEW";
+            if (oModel) {
+                oModel.setProperty("/selectedDashboardTab", sAssignedTab);
+            }
             this.getOwnerComponent().navigateTo("launchpadPage", "slide");
         },
 

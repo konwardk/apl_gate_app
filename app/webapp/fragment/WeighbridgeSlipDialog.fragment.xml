@@ -64,14 +64,14 @@
                         <Label text="{slipModel>/vehicleRegNo}" design="Bold" />
 
                         <Label text="Vehicle Type" />
-                        <Text text="{slipModel>/vehicleType}" />
+                        <Text text="{path: 'slipModel>/vehicleType', formatter: '.formatter.getVehicleTypeText'}" />
 
                         <Label text="Driver Name" />
                         <Text text="{= ${slipModel>/driverName} || 'Not Recorded' }" />
 
                         <Label text="Purpose of Visit" />
                         <ObjectStatus
-                            text="{slipModel>/purpose}"
+                            text="{path: 'slipModel>/purpose', formatter: '.formatter.getPurposeText'}"
                             state="{path: 'slipModel>/purpose', formatter: '.formatter.getPurposeState'}" />
 
                         <core:Title text="Scale &amp; Weighing Metadata" />

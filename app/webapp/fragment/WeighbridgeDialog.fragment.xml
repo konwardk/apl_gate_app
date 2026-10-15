@@ -57,15 +57,15 @@
                             design="Bold"
                             class="sapUiTinyMarginEnd" />
                         <ObjectStatus
-                            text="{= 'Stage: ' + (${wbModel>/selectedVehicle/currentStage} || '-') }"
+                            text="{path: 'wbModel>/selectedVehicle/status', formatter: '.formatter.getStatusText'}"
                             state="{path: 'wbModel>/selectedVehicle/status', formatter: '.formatter.getStatusState'}" />
                     </HBox>
 
                     <Label text="Vehicle &amp; Purpose" />
                     <HBox alignItems="Center">
-                        <Text text="{= ${wbModel>/selectedVehicle/vehicleType} || 'TRUCK' }" class="sapUiTinyMarginEnd" />
+                        <Text text="{path: 'wbModel>/selectedVehicle/vehicleType', formatter: '.formatter.getVehicleTypeText'}" class="sapUiTinyMarginEnd" />
                         <ObjectStatus
-                            text="{= ${wbModel>/selectedVehicle/purpose} || '-' }"
+                            text="{path: 'wbModel>/selectedVehicle/purpose', formatter: '.formatter.getPurposeText'}"
                             state="{path: 'wbModel>/selectedVehicle/purpose', formatter: '.formatter.getPurposeState'}"
                             class="sapUiTinyMarginEnd" />
                         <Text text="{= ${wbModel>/selectedVehicle/driverName} ? '(' + ${wbModel>/selectedVehicle/driverName} + ')' : '' }" />
@@ -151,7 +151,9 @@
                     <Input
                         id="dialogWbOperatorInput"
                         value="{wbModel>/operator}"
-                        placeholder="Operator name / ID"
+                        editable="false"
+                        class="grayed-out-input"
+                        placeholder="Weighbridge Operator Name"
                         required="true" />
 
                     <Label text="Remarks" />

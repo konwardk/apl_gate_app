@@ -120,14 +120,20 @@ sap.ui.define([
 
             // 2. Search query filter
             if (q) {
-                aFiltered = aFiltered.filter(t =>
-                    (t.gateInNumber && t.gateInNumber.toLowerCase().includes(q)) ||
-                    (t.vehicleRegNo && t.vehicleRegNo.toLowerCase().includes(q)) ||
-                    (t.driverName && t.driverName.toLowerCase().includes(q)) ||
-                    (t.purpose && t.purpose.toLowerCase().includes(q)) ||
-                    (t.status && t.status.toLowerCase().includes(q)) ||
-                    (t.currentStage && t.currentStage.toLowerCase().includes(q))
-                );
+                aFiltered = aFiltered.filter(t => {
+                    const statusText = (formatter.getStatusText(t.status) || "").toLowerCase();
+                    const stageText = (formatter.getStageText(t.currentStage) || "").toLowerCase();
+                    const purposeText = (formatter.getPurposeText(t.purpose) || "").toLowerCase();
+                    return (t.gateInNumber && t.gateInNumber.toLowerCase().includes(q)) ||
+                        (t.vehicleRegNo && t.vehicleRegNo.toLowerCase().includes(q)) ||
+                        (t.driverName && t.driverName.toLowerCase().includes(q)) ||
+                        (t.purpose && t.purpose.toLowerCase().includes(q)) ||
+                        purposeText.includes(q) ||
+                        (t.status && t.status.toLowerCase().includes(q)) ||
+                        statusText.includes(q) ||
+                        (t.currentStage && t.currentStage.toLowerCase().includes(q)) ||
+                        stageText.includes(q);
+                });
             }
 
             oComp.getModel().setProperty("/transactions", aFiltered);

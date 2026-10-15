@@ -34,14 +34,14 @@
                 press=".onNavFactoryGateOps" />
             <Button
                 id="btnTopSecGateIn"
-                text="Security Gate IN"
+                text="Security IN"
                 icon="sap-icon://shield"
                 type="Emphasized"
                 tooltip="Perform Inbound Security Check &amp; PO/Invoice Verification"
                 press=".onOpenSecurityGateInDialog" />
             <Button
                 id="btnTopSecGateOut"
-                text="Security Gate OUT"
+                text="Security Exit"
                 icon="sap-icon://log-out"
                 type="Success"
                 tooltip="Perform Outbound Security Check &amp; Exit Pass Clearance"
@@ -74,16 +74,16 @@
                             selectionChange=".onFilterCategoryChange">
                             <items>
                                 <SegmentedButtonItem key="ALL" text="All ({= ${secModel>/allRecordsCount} })" />
-                                <SegmentedButtonItem key="WAITING_IN" text="Awaiting Gate IN ({= ${secModel>/waitingInCount} })" />
-                                <SegmentedButtonItem key="IN_PLANT" text="Inside Plant ({= ${secModel>/inPlantCount} })" />
-                                <SegmentedButtonItem key="WAITING_OUT" text="Awaiting Gate OUT ({= ${secModel>/waitingOutCount} })" />
-                                <SegmentedButtonItem key="CLEARED" text="Cleared ({= ${secModel>/clearedCount} })" />
+                                <SegmentedButtonItem key="WAITING_IN" text="Awaiting IN ({= ${secModel>/waitingInCount} })" />
+                                <SegmentedButtonItem key="IN_PLANT" text="In Plant ({= ${secModel>/inPlantCount} })" />
+                                <SegmentedButtonItem key="WAITING_OUT" text="Awaiting Exit ({= ${secModel>/waitingOutCount} })" />
+                                <SegmentedButtonItem key="CLEARED" text="Exit Cleared ({= ${secModel>/clearedCount} })" />
                             </items>
                         </SegmentedButton>
                         <SearchField
                             id="secSearchField"
                             width="260px"
-                            placeholder="Search Gate IN #, Vehicle, Driver..."
+                            placeholder="Search Vehicle, Pass, Driver..."
                             liveChange=".onSearchLiveChange"
                             search=".onSearch" />
                         <Button
@@ -101,10 +101,10 @@
                     <Column><header><Text text="Gate IN # / Vehicle" /></header></Column>
                     <Column><header><Text text="Driver / License" /></header></Column>
                     <Column><header><Text text="Purpose" /></header></Column>
-                    <Column><header><Text text="Security Gate IN" /></header></Column>
-                    <Column><header><Text text="Security Gate OUT" /></header></Column>
-                    <Column><header><Text text="Docs / Gate Pass" /></header></Column>
-                    <Column><header><Text text="Stage / Status" /></header></Column>
+                    <Column><header><Text text="Security IN" /></header></Column>
+                    <Column><header><Text text="Security Exit" /></header></Column>
+                    <Column><header><Text text="Docs / Pass" /></header></Column>
+                    <Column><header><Text text="Status / Stage" /></header></Column>
                     <Column hAlign="End" width="420px"><header><Text text="Actions" /></header></Column>
                 </columns>
                 <items>
@@ -120,15 +120,15 @@
                                 <Label text="{= ${secModel>driverName} || ${secModel>driver/driverName} || '-' }" design="Bold" />
                                 <Text
                                     text="{= 'DL: ' + (${secModel>securityEntry/driverLicenseNo} || ${secModel>driver/drivingLicenseNo} || 'Pending') }"
-                                    class="sapUiTinyMarginTop" />
+                                    class="sapUiTinyMarginTop text-muted" />
                             </VBox>
 
                             <!-- 3. Purpose -->
                             <ObjectStatus
-                                text="{secModel>purpose}"
+                                text="{path: 'secModel>purpose', formatter: '.formatter.getPurposeText'}"
                                 state="{path: 'secModel>purpose', formatter: '.formatter.getPurposeState'}" />
 
-                            <!-- 4. Security Gate IN -->
+                            <!-- 4. Security IN -->
                             <VBox>
                                 <Text
                                     visible="{= !!${secModel>securityEntry/securityInDateTime} }"
@@ -140,11 +140,11 @@
                                     class="sapUiTinyMarginTop" />
                                 <ObjectStatus
                                     visible="{= !${secModel>securityEntry/securityInDateTime} }"
-                                    text="Pending Gate IN"
+                                    text="Pending IN"
                                     state="Warning" />
                             </VBox>
 
-                            <!-- 5. Security Gate OUT -->
+                            <!-- 5. Security Exit -->
                             <VBox>
                                 <Text
                                     visible="{= !!${secModel>securityEntry/securityOutDateTime} }"
@@ -156,7 +156,7 @@
                                     class="sapUiTinyMarginTop" />
                                 <ObjectStatus
                                     visible="{= !${secModel>securityEntry/securityOutDateTime} &amp;&amp; (${secModel>status} === 'WEIGHBRIDGE_OUT' || ${secModel>status} === 'FACTORY_OUT') }"
-                                    text="Awaiting Gate OUT"
+                                    text="Awaiting Exit"
                                     state="Warning" />
                                 <ObjectStatus
                                     visible="{= !${secModel>securityEntry/securityOutDateTime} &amp;&amp; ${secModel>status} === 'SECURITY_IN' }"
@@ -164,7 +164,7 @@
                                     state="Information" />
                                 <ObjectStatus
                                     visible="{= !${secModel>securityEntry/securityOutDateTime} &amp;&amp; (${secModel>status} === 'WEIGHBRIDGE_IN' || ${secModel>status} === 'FACTORY_IN') }"
-                                    text="Inside Plant"
+                                    text="In Plant"
                                     state="Information" />
                                 <Text
                                     visible="{= !${secModel>securityEntry/securityOutDateTime} &amp;&amp; ${secModel>status} === 'GATE_IN' }"
@@ -178,25 +178,25 @@
                                 <Text
                                     text="{= ${secModel>securityEntry/invoiceNumber} ? ('Inv: ' + ${secModel>securityEntry/invoiceNumber}) : '' }"
                                     visible="{= !!${secModel>securityEntry/invoiceNumber} }"
-                                    class="sapUiTinyMarginTop" />
+                                    class="sapUiTinyMarginTop text-muted" />
                             </VBox>
 
                             <!-- 7. Current Stage & Status -->
                             <VBox>
                                 <ObjectStatus
-                                    text="{secModel>status}"
+                                    text="{path: 'secModel>status', formatter: '.formatter.getStatusText'}"
                                     state="{path: 'secModel>status', formatter: '.formatter.getStatusState'}" />
                                 <Text
-                                    text="{secModel>currentStage}"
-                                    class="sapUiTinyMarginTop" />
+                                    text="{path: 'secModel>currentStage', formatter: '.formatter.getStageText'}"
+                                    class="sapUiTinyMarginTop text-muted" />
                                 <ObjectStatus
                                     visible="{= !!${secModel>assignedRoute} }"
-                                    text="{= ${secModel>assignedRoute} === 'WEIGHBRIDGE' ? 'Route: Weighbridge' : (${secModel>assignedRoute} === 'FACTORY' ? 'Route: Factory Gate' : ${secModel>assignedRoute}) }"
+                                    text="{= ${secModel>assignedRoute} === 'WEIGHBRIDGE' ? 'Route: Scale' : (${secModel>assignedRoute} === 'FACTORY' ? 'Route: Yard' : ${secModel>assignedRoute}) }"
                                     state="{= ${secModel>assignedRoute} === 'WEIGHBRIDGE' ? 'Information' : 'Success' }"
                                     class="sapUiTinyMarginTop" />
                                 <ObjectStatus
                                     visible="{= !${secModel>assignedRoute} &amp;&amp; ${secModel>status} === 'SECURITY_IN' }"
-                                    text="Route: Pending Assignment"
+                                    text="Route: Pending"
                                     state="Warning"
                                     class="sapUiTinyMarginTop" />
                             </VBox>
@@ -208,35 +208,35 @@
                                     class="sapUiNoMargin">
                                 <!-- Gate IN button: visible only before Security Gate IN is performed -->
                                 <Button
-                                    text="Gate IN"
+                                    text="IN"
                                     icon="sap-icon://shield"
                                     type="Emphasized"
-                                    tooltip="Process Security Gate IN"
+                                    tooltip="Process Security IN"
                                     visible="{secModel>canSecurityGateIn}"
                                     press=".onRowGateInPress"
                                     class="sapUiTinyMarginEnd" />
 
                                 <!-- Route assignment buttons (only if vehicle is at SECURITY_IN and eligible for routing) -->
                                 <Button
-                                    text="To Weighbridge"
+                                    text="To Scale"
                                     icon="sap-icon://dimension"
                                     type="Default"
-                                    tooltip="Assign Route: Send vehicle to Weighbridge for gross/tare weighment"
+                                    tooltip="Assign Route: Send vehicle to Weighbridge for scale weighment"
                                     visible="{secModel>canSendToWeighbridge}"
                                     press=".onRowSendToWeighbridgePress"
                                     class="sapUiTinyMarginEnd" />
                                 <Button
-                                    text="To Factory"
+                                    text="To Yard"
                                     icon="sap-icon://factory"
                                     type="Emphasized"
-                                    tooltip="Assign Route: Send vehicle directly to Factory Gate (Bypass Weighbridge)"
+                                    tooltip="Assign Route: Send vehicle directly to Factory Yard"
                                     visible="{secModel>canSendToFactory}"
                                     press=".onRowSendToFactoryPress"
                                     class="sapUiTinyMarginEnd" />
 
                                 <!-- Assigned Section indicator buttons: once Gate IN is done, shows where it is assigned -->
                                 <Button
-                                    text="At Weighbridge"
+                                    text="At Scale"
                                     icon="sap-icon://dimension"
                                     type="Information"
                                     tooltip="Assigned to Weighbridge. Operation pending at Weighbridge. Click to navigate to Weighbridge Operations."
@@ -244,7 +244,7 @@
                                     press=".onRowNavToWeighbridge"
                                     class="sapUiTinyMarginEnd" />
                                 <Button
-                                    text="At Factory"
+                                    text="At Yard"
                                     icon="sap-icon://factory"
                                     type="Information"
                                     tooltip="Assigned to Factory Gate. Operation pending in Factory Yard. Click to navigate to Factory Operations."
@@ -254,10 +254,10 @@
 
                                 <!-- Gate OUT button: visible ONLY when next operation in Weighbridge or Factory is completed -->
                                 <Button
-                                    text="Gate OUT"
+                                    text="Exit"
                                     icon="sap-icon://log-out"
                                     type="Success"
-                                    tooltip="Process Security Gate OUT (Weighbridge/Factory operations complete)"
+                                    tooltip="Process Security Exit Clearance"
                                     visible="{secModel>canSecurityGateOut}"
                                     press=".onRowGateOutPress"
                                     class="sapUiTinyMarginEnd" />
@@ -273,7 +273,7 @@
                                 <Button
                                     icon="sap-icon://print"
                                     type="Transparent"
-                                    tooltip="Print Gate IN Pass"
+                                    tooltip="Print Gate Pass"
                                     press=".onRowPrintPress" />
                                 <Button
                                     icon="sap-icon://detail-view"

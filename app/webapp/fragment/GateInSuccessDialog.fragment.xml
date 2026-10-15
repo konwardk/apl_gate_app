@@ -28,7 +28,7 @@
                     titleStyle="H1"
                     class="sapUiSmallMarginTop success-gate-number" />
                 <ObjectStatus
-                    text="Status: GATE_IN (Main Gate Entered)"
+                    text="Status: IN (Main Gate Entered)"
                     state="Success"
                     class="sapUiSmallMarginTop sapUiSmallMarginBottom" />
                 <form:SimpleForm
@@ -43,13 +43,13 @@
                         <Label text="Vehicle Reg No" />
                         <Text text="{gateInSuccess>/vehicleRegNo}" />
                         <Label text="Vehicle Type" />
-                        <Text text="{gateInSuccess>/vehicleType}" />
+                        <Text text="{path: 'gateInSuccess>/vehicleType', formatter: '.formatter.getVehicleTypeText'}" />
                         <Label text="Driver Name" />
                         <Text text="{gateInSuccess>/driverName}" />
                         <Label text="Gate Operator" />
                         <Text text="{gateInSuccess>/gateInOperator}" />
                         <Label text="Purpose" />
-                        <Text text="{gateInSuccess>/purpose}" />
+                        <Text text="{path: 'gateInSuccess>/purpose', formatter: '.formatter.getPurposeText'}" />
                         <Label text="Timestamp" />
                         <Text text="{path: 'gateInSuccess>/gateInDateTime', formatter: '.formatter.formatDateTime'}" />
                     </form:content>

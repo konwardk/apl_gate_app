@@ -20,7 +20,7 @@
                 level="H2"
                 titleStyle="H3" />
             <ObjectStatus
-                text="{secEditModel>/transactionStatus}"
+                text="{path: 'secEditModel>/transactionStatus', formatter: '.formatter.getStatusText'}"
                 state="{path: 'secEditModel>/transactionStatus', formatter: '.formatter.getStatusState'}"
                 class="sapUiTinyMarginBegin" />
             <ToolbarSpacer />
@@ -80,18 +80,18 @@
                         <VBox>
                             <Label text="Visit Purpose" design="Bold" />
                             <ObjectStatus
-                                text="{secEditModel>/purpose}"
+                                text="{path: 'secEditModel>/purpose', formatter: '.formatter.getPurposeText'}"
                                 state="{path: 'secEditModel>/purpose', formatter: '.formatter.getPurposeState'}" />
                         </VBox>
                         <VBox>
                             <Label text="Process Status" design="Bold" />
                             <ObjectStatus
-                                text="{secEditModel>/transactionStatus}"
+                                text="{path: 'secEditModel>/transactionStatus', formatter: '.formatter.getStatusText'}"
                                 state="{path: 'secEditModel>/transactionStatus', formatter: '.formatter.getStatusState'}" />
                         </VBox>
                         <VBox>
                             <Label text="Current Stage" design="Bold" />
-                            <Text text="{= ${secEditModel>/currentStage} || '-' }" />
+                            <Text text="{path: 'secEditModel>/currentStage', formatter: '.formatter.getStageText'}" />
                         </VBox>
                         <VBox>
                             <Label text="Inbound Security Status" design="Bold" />

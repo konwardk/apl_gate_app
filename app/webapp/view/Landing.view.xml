@@ -7,12 +7,16 @@
             <!-- Vehicle Selection Hero Section -->
             <VBox alignItems="Center" class="vehicle-selection-hero">
                 <Title
-                    text="Select Vehicle Category"
+                    text="Select Vehicle Stream"
                     level="H1"
                     titleStyle="H1"
                     class="sapUiMediumMarginTop sapUiTinyMarginBottom" />
+                <HBox alignItems="Center" visible="{/isAuthenticated}" class="sapUiTinyMarginBottom">
+                    <Text text="Signed in as: " class="text-muted sapUiTinyMarginEnd" />
+                    <ObjectStatus text="{/userPrimaryRoleTitle}" state="Information" inverted="true" />
+                </HBox>
                 <Text
-                    text="Choose the vehicle processing stream to enter gate operations."
+                    text="Choose your vehicle processing stream to access your role-based operations dashboard."
                     class="sapUiSmallMarginBottom" />
             </VBox>
 
@@ -22,10 +26,11 @@
                     header="TANKER"
                     subheader="Tanker Management System"
                     sizeBehavior="Responsive"
-                    state="Disabled"
+                    state="Loaded"
+                    press=".onTankerTilePress"
                     class="vehicle-select-tile sapUiMediumMargin">
                     <tileContent>
-                        <TileContent footer="">
+                        <TileContent footer="External S/4HANA Cloud TMS">
                             <content>
                                 <NumericContent
                                     icon="sap-icon://mileage"
@@ -38,12 +43,12 @@
 
                 <GenericTile
                     header="OTHER VEHICLE"
-                    subheader="Main Gate Operations &amp; Launchpad"
+                    subheader="Operations Launchpad &amp; Role Dashboard"
                     sizeBehavior="Responsive"
                     press=".onOtherVehiclePress"
                     class="vehicle-select-tile sapUiMediumMargin">
                     <tileContent>
-                        <TileContent footer="Trucks, Containers, Trailers, LCV &amp; Other Cargo">
+                        <TileContent footer="{= ${/userPrimaryRoleTitle} ? 'Enter ' + ${/userPrimaryRoleTitle} + ' Dashboard' : 'Trucks, Containers, Trailers &amp; Other Cargo' }">
                             <content>
                                 <NumericContent
                                     icon="sap-icon://shipping-status"
@@ -105,7 +110,7 @@
                 </GenericTile>
 
                 <GenericTile
-                    header="Ready for Gate OUT"
+                    header="Ready for Gate Exit"
                     subheader="Cleared Security"
                     press=".onKpiPress"
                     class="kpi-tile-card">

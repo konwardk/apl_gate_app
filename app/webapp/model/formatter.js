@@ -32,12 +32,14 @@ sap.ui.define([
         getStatusState: function (status) {
             switch (status) {
                 case "COMPLETED":
+                case "GATE_OUT":
                     return ValueState.Success;
                 case "SECURITY_OUT":
                     return ValueState.Warning;
                 case "SECURITY_IN":
                 case "WEIGHBRIDGE_IN":
                 case "FACTORY_IN":
+                case "FACTORY_OUT":
                 case "WEIGHBRIDGE_OUT":
                     return ValueState.Information;
                 case "GATE_IN":
@@ -54,21 +56,22 @@ sap.ui.define([
         getStatusText: function (status) {
             switch (status) {
                 case "GATE_IN":
-                    return "Main Gate IN";
+                    return "IN";
                 case "SECURITY_IN":
-                    return "Security Checked";
+                    return "Security IN";
                 case "WEIGHBRIDGE_IN":
-                    return "Weighbridge Gross";
+                    return "Scale IN";
                 case "FACTORY_IN":
-                    return "In Factory Yard";
+                    return "Yard IN";
                 case "FACTORY_OUT":
-                    return "Unloading Complete";
+                    return "Yard OUT";
                 case "WEIGHBRIDGE_OUT":
-                    return "Weighbridge Tare";
+                    return "Scale OUT";
                 case "SECURITY_OUT":
-                    return "Security Cleared (Ready OUT)";
+                    return "Ready Exit";
                 case "COMPLETED":
-                    return "Exit Completed";
+                case "GATE_OUT":
+                    return "Exit";
                 case "HOLD":
                     return "On Hold";
                 case "CANCELLED":
@@ -78,8 +81,63 @@ sap.ui.define([
             }
         },
 
+        getStageText: function (stage) {
+            switch (stage) {
+                case "MAIN_GATE_IN":
+                    return "Main Gate";
+                case "SECURITY_GATE_IN":
+                    return "Security";
+                case "WEIGHBRIDGE_IN":
+                    return "Weighbridge";
+                case "FACTORY":
+                case "FACTORY_GATE":
+                    return "Factory Yard";
+                case "FACTORY_OUT":
+                    return "Yard Cleared";
+                case "WEIGHBRIDGE_OUT":
+                    return "Tare Scale";
+                case "SECURITY_GATE_OUT":
+                    return "Exit Check";
+                case "MAIN_GATE_OUT":
+                case "COMPLETED":
+                    return "Exit";
+                default:
+                    return stage || "-";
+            }
+        },
+
         getPurposeState: function (purpose) {
             return purpose === "DELIVERY" ? ValueState.Information : ValueState.Warning;
+        },
+
+        getPurposeText: function (purpose) {
+            switch (purpose) {
+                case "DELIVERY":
+                    return "Delivery";
+                case "PICKUP":
+                    return "Pickup";
+                default:
+                    return purpose || "-";
+            }
+        },
+
+        getVehicleTypeText: function (type) {
+            switch (type) {
+                case "TANKER":
+                    return "Tanker";
+                case "TRUCK":
+                    return "Truck";
+                case "TRAILER":
+                    return "Trailer";
+                case "CONTAINER":
+                    return "Container";
+                case "LCV":
+                    return "LCV";
+                case "OTHER":
+                    return "Other";
+                default:
+                    return type || "-";
+            }
         },
 
         getUserInitials: function (userId) {

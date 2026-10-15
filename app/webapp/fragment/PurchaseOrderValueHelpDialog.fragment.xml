@@ -1,67 +1,184 @@
 <core:FragmentDefinition
     xmlns="sap.m"
     xmlns:core="sap.ui.core">
-    <TableSelectDialog
+    <Dialog
         id="poValueHelpDialog"
         title="Select Purchase Order (SAP S/4HANA Cloud)"
-        noDataText="No Purchase Orders found"
-        search=".onPoValueHelpSearch"
-        liveChange=".onPoValueHelpSearch"
-        confirm=".onPoValueHelpConfirm"
-        cancel=".onPoValueHelpCancel"
-        contentWidth="900px"
-        items="{
-            path: 'poModel>/',
-            templateShareable: false
-        }">
-        <columns>
-            <Column width="22%">
-                <header>
-                    <Text text="PO Number / Type" />
-                </header>
-            </Column>
-            <Column width="18%">
-                <header>
-                    <Text text="Supplier Code" />
-                </header>
-            </Column>
-            <Column width="12%">
-                <header>
-                    <Text text="Company" />
-                </header>
-            </Column>
-            <Column width="20%">
-                <header>
-                    <Text text="Purchasing Org / Group" />
-                </header>
-            </Column>
-            <Column width="16%">
-                <header>
-                    <Text text="PO Date" />
-                </header>
-            </Column>
-            <Column width="12%">
-                <header>
-                    <Text text="Currency" />
-                </header>
-            </Column>
-        </columns>
-        <items>
-            <ColumnListItem type="Active">
-                <cells>
-                    <ObjectIdentifier
-                        title="{poModel>PurchaseOrder}"
-                        text="{= ${poModel>PurchaseOrderType} ? ('Type: ' + ${poModel>PurchaseOrderType}) : '' }" />
-                    <Text text="{poModel>Supplier}" />
-                    <Text text="{poModel>CompanyCode}" />
-                    <VBox>
-                        <Text text="{= ${poModel>PurchasingOrganization} ? ('Org: ' + ${poModel>PurchasingOrganization}) : '-' }" />
-                        <Text text="{= ${poModel>PurchasingGroup} ? ('Grp: ' + ${poModel>PurchasingGroup}) : '-' }" />
-                    </VBox>
-                    <Text text="{poModel>PurchaseOrderDate}" />
-                    <Text text="{= ${poModel>DocumentCurrency} || 'INR' }" />
-                </cells>
-            </ColumnListItem>
-        </items>
-    </TableSelectDialog>
+        icon="sap-icon://sales-order"
+        contentWidth="960px"
+        contentHeight="640px"
+        resizable="true"
+        draggable="true"
+        class="sapUiContentPadding">
+        <customHeader>
+            <Toolbar>
+                <core:Icon src="sap-icon://sales-order" class="sapUiTinyMarginBegin" />
+                <Title text="Select Purchase Order (SAP S/4HANA Cloud)" level="H2" />
+                <ToolbarSpacer />
+                <Button
+                    icon="sap-icon://decline"
+                    type="Transparent"
+                    tooltip="Close"
+                    press=".onPoValueHelpCancel" />
+            </Toolbar>
+        </customHeader>
+        <content>
+            <VBox class="sapUiTinyMarginBottom">
+                <!-- Filter Section: Supplier, PurchaseOrderDate, Search -->
+                <VBox class="dashboard-hero-card sapUiSmallMarginBottom">
+                    <HBox alignItems="Center" justifyContent="SpaceBetween" wrap="Wrap" class="sapUiTinyMarginBottom">
+                        <HBox alignItems="Center">
+                            <core:Icon src="sap-icon://filter" size="16px" color="#0070f2" class="sapUiTinyMarginEnd" />
+                            <Title text="Filter Purchase Orders" level="H4" titleStyle="H5" />
+                        </HBox>
+                        <Text id="poCountText" text="{= 'Showing ' + (${poModel>/}.length || 0) + ' Purchase Orders' }" class="text-muted" />
+                    </HBox>
+                    <HBox wrap="Wrap" alignItems="End" class="sapUiTinyMarginTop">
+                        <!-- Filter 1: Supplier (with F4 Search Help) -->
+                        <VBox class="sapUiSmallMarginEnd sapUiTinyMarginBottom">
+                            <Label text="Supplier" labelFor="poFilterSupplier" design="Bold" />
+                            <Input
+                                id="poFilterSupplier"
+                                placeholder="Supplier Code / Name (e.g. 1000011)"
+                                width="240px"
+                                showClearIcon="true"
+                                showValueHelp="true"
+                                valueHelpRequest=".onSupplierValueHelpRequest"
+                                valueHelpOnly="false"
+                                tooltip="Press F4 or click to search Supplier from SAP S/4HANA Cloud (YY1_Supplier)"
+                                showSuggestion="true"
+                                suggestionItems="{poFilterModel>/suppliers}"
+                                submit=".onPoFilterApply"
+                                liveChange=".onPoFilterApply">
+                                <suggestionItems>
+                                    <core:ListItem key="{poFilterModel>Supplier}" text="{poFilterModel>Supplier}" additionalText="{poFilterModel>SupplierName}" />
+                                </suggestionItems>
+                            </Input>
+                        </VBox>
+
+                        <!-- Filter 2: PurchaseOrderDate -->
+                        <VBox class="sapUiSmallMarginEnd sapUiTinyMarginBottom">
+                            <Label text="Purchase Order Date" labelFor="poFilterDate" design="Bold" />
+                            <DatePicker
+                                id="poFilterDate"
+                                placeholder="PO Date (yyyy-MM-dd)"
+                                width="180px"
+                                valueFormat="yyyy-MM-dd"
+                                displayFormat="yyyy-MM-dd"
+                                change=".onPoFilterApply" />
+                        </VBox>
+
+                        <!-- General Keyword / PO Number Search -->
+                        <VBox class="sapUiSmallMarginEnd sapUiTinyMarginBottom">
+                            <Label text="Search PO / Type / Company" labelFor="poFilterSearch" design="Bold" />
+                            <SearchField
+                                id="poFilterSearch"
+                                placeholder="PO #, Type, Company..."
+                                width="220px"
+                                search=".onPoFilterApply"
+                                liveChange=".onPoFilterApply" />
+                        </VBox>
+
+                        <!-- Filter Actions -->
+                        <HBox class="sapUiTinyMarginBottom">
+                            <Button
+                                id="btnPoFilterApply"
+                                text="Go"
+                                icon="sap-icon://search"
+                                type="Emphasized"
+                                press=".onPoFilterApply"
+                                class="sapUiTinyMarginEnd" />
+                            <Button
+                                id="btnPoFilterReset"
+                                text="Reset"
+                                icon="sap-icon://clear-filter"
+                                type="Transparent"
+                                press=".onPoFilterReset" />
+                        </HBox>
+                    </HBox>
+                </VBox>
+
+                <!-- Purchase Orders Table -->
+                <Table
+                    id="poValueHelpTable"
+                    mode="SingleSelectLeft"
+                    selectionChange=".onPoSelectionChange"
+                    growing="true"
+                    growingThreshold="25"
+                    growingScrollToLoad="true"
+                    noDataText="No Purchase Orders found matching the filter criteria"
+                    items="{
+                        path: 'poModel>/',
+                        templateShareable: false
+                    }">
+                    <columns>
+                        <Column width="22%">
+                            <header>
+                                <Text text="PO Number / Type" />
+                            </header>
+                        </Column>
+                        <Column width="18%">
+                            <header>
+                                <Text text="Supplier" />
+                            </header>
+                        </Column>
+                        <Column width="12%" minScreenWidth="Tablet" demandPopin="true">
+                            <header>
+                                <Text text="Company" />
+                            </header>
+                        </Column>
+                        <Column width="20%" minScreenWidth="Desktop" demandPopin="true">
+                            <header>
+                                <Text text="Purchasing Org / Group" />
+                            </header>
+                        </Column>
+                        <Column width="16%">
+                            <header>
+                                <Text text="PO Date" />
+                            </header>
+                        </Column>
+                        <Column width="12%" minScreenWidth="Tablet" demandPopin="true">
+                            <header>
+                                <Text text="Currency" />
+                            </header>
+                        </Column>
+                    </columns>
+                    <items>
+                        <ColumnListItem type="Active" press=".onPoRowSelect">
+                            <cells>
+                                <ObjectIdentifier
+                                    title="{poModel>PurchaseOrder}"
+                                    text="{= ${poModel>PurchaseOrderType} ? ('Type: ' + ${poModel>PurchaseOrderType}) : '' }" />
+                                <VBox>
+                                    <Text text="{poModel>Supplier}" design="Bold" />
+                                    <Text text="{poModel>SupplierName}" class="text-muted sapUiTinyMarginTop" visible="{= !!${poModel>SupplierName} }" />
+                                </VBox>
+                                <Text text="{poModel>CompanyCode}" />
+                                <VBox>
+                                    <Text text="{= ${poModel>PurchasingOrganization} ? ('Org: ' + ${poModel>PurchasingOrganization}) : '-' }" />
+                                    <Text text="{= ${poModel>PurchasingGroup} ? ('Grp: ' + ${poModel>PurchasingGroup}) : '-' }" />
+                                </VBox>
+                                <Text text="{poModel>PurchaseOrderDate}" />
+                                <Text text="{= ${poModel>DocumentCurrency} || 'INR' }" />
+                            </cells>
+                        </ColumnListItem>
+                    </items>
+                </Table>
+            </VBox>
+        </content>
+        <beginButton>
+            <Button
+                id="btnConfirmPoSelection"
+                text="Select"
+                icon="sap-icon://accept"
+                type="Emphasized"
+                enabled="false"
+                press=".onPoConfirmSelected" />
+        </beginButton>
+        <endButton>
+            <Button
+                text="Cancel"
+                press=".onPoValueHelpCancel" />
+        </endButton>
+    </Dialog>
 </core:FragmentDefinition>

@@ -121,8 +121,7 @@ sap.ui.define([
                     }
                 }
 
-                const activeUser = models.getActiveUser();
-                const defaultOfficer = activeUser.includes("security") ? activeUser : (activeUser === "superadmin_user" ? "SecurityChief" : "security_user");
+                const defaultOfficer = models.getUserDisplayName();
 
                 const editData = {
                     ID: sec ? sec.ID : "",

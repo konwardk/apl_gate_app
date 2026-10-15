@@ -528,3 +528,19 @@ html, body {
     padding: 12px;
 }
 
+/* Grayed out non-editable user/operator input fields across dialogs */
+.grayed-out-input,
+.grayed-out-input .sapMInputBaseInner,
+.grayed-out-input.sapMInputBaseReadonly .sapMInputBaseInner {
+    background-color: var(--sapField_ReadOnly_Background, #f4f6f8) !important;
+    color: var(--sapTextColor, #1d2d3e) !important;
+    border: 1px solid var(--sapField_BorderColor, #d1d5db) !important;
+    font-weight: 500 !important;
+    cursor: default !important;
+}
+
+.grayed-out-input.sapMFocus .sapMInputBaseInner {
+    border-color: var(--sapField_BorderColor, #d1d5db) !important;
+}
+
+

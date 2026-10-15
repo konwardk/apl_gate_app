@@ -24,7 +24,7 @@
                         height="44px"
                         class="sapUiTinyMarginBegin" />
                 </HBox>
-                <Title text="APL Gate In - Gate Out" level="H1" titleStyle="H1" class="login-main-title" />
+                <Title text="APL Gate In - Gate Exit" level="H1" titleStyle="H1" class="login-main-title" />
                 <Text text="Enterprise Plant Logistics &amp; Role-Based Gate Operations Workspace" class="login-sub-title sapUiTinyMarginTop" />
             </VBox>
 

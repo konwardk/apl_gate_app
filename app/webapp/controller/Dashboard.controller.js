@@ -23,6 +23,17 @@ sap.ui.define([
             }
         },
 
+        selectRoleDashboard: function (sTargetKey) {
+            const oModel = this.getOwnerComponent().getModel();
+            if (!oModel) return;
+            const sKey = sTargetKey || oModel.getProperty("/selectedDashboardTab") || oModel.getProperty("/assignedTab") || "OVERVIEW";
+            oModel.setProperty("/selectedDashboardTab", sKey);
+            const oTabBar = this.byId("dashboardTabBar");
+            if (oTabBar) {
+                oTabBar.setSelectedKey(sKey);
+            }
+        },
+
         onTabSelect: function (oEvt) {
             const oTab = oEvt.getParameter("item");
             const sKey = oTab ? oTab.getKey() : oEvt.getParameter("key");

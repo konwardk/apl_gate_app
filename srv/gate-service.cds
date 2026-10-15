@@ -122,6 +122,28 @@ service GateService {
                 DocumentCurrency
         };
 
+    /*
+     * ============================================================
+     * SAP S/4HANA CLOUD EXTERNAL SUPPLIERS (YY1_SUPPLIER_CDS)
+     * ============================================================
+     */
+
+    @readonly
+    entity S4Suppliers {
+        key Supplier         : String(20);
+            SupplierName     : String(100);
+            SupplierFullName : String(250);
+            BPSupplierName   : String(100);
+    };
+
+    @readonly
+    entity YY1_Supplier {
+        key Supplier         : String(20);
+            SupplierName     : String(100);
+            SupplierFullName : String(250);
+            BPSupplierName   : String(100);
+    };
+
 
     /*
      * ============================================================

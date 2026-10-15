@@ -68,7 +68,9 @@
                     <Input
                         id="dialogSecOutPersonnel"
                         value="{secModel>/outSecurityPersonnel}"
-                        placeholder="Security Officer authorizing Exit"
+                        editable="false"
+                        class="grayed-out-input"
+                        placeholder="Security Exit Officer Name"
                         required="true" />
 
                     <!-- Section 2: Prior Clearance Summary -->
@@ -82,10 +84,14 @@
                     <Label text="Driver License on Record" />
                     <Text text="{= ${secModel>/outInboundRecord/driverLicenseNo} || 'Verified at Inbound Gate' }" />
 
-                    <Label text="Current Stage / Status" />
-                    <ObjectStatus
-                        text="{= 'Stage: ' + (${secModel>/outSelectedVehicle/currentStage} || '-') + ' | Status: ' + (${secModel>/outSelectedVehicle/status} || '-') }"
-                        state="Information" />
+                    <Label text="Current Status / Stage" />
+                    <HBox alignItems="Center">
+                        <ObjectStatus
+                            text="{path: 'secModel>/outSelectedVehicle/status', formatter: '.formatter.getStatusText'}"
+                            state="{path: 'secModel>/outSelectedVehicle/status', formatter: '.formatter.getStatusState'}"
+                            class="sapUiTinyMarginEnd" />
+                        <Text text="{path: 'secModel>/outSelectedVehicle/currentStage', formatter: '.formatter.getStageText'}" />
+                    </HBox>
 
                     <Label text="Weighment Summary" />
                     <Text text="{= ${secModel>/outWeighmentSummary} || 'Outbound scale clearance verified' }" />

@@ -20,7 +20,7 @@
                 height="38px"
                 press=".onHomePressed"
                 class="sapUiTinyMarginBegin sapUiTinyMarginEnd" />
-            <Title text="APL Gate In - Gate Out" level="H2" class="sapUiTinyMarginEnd" />
+            <Title text="APL Gate In - Gate Exit" level="H2" class="sapUiTinyMarginEnd" />
             <Text text="" class="sapUiTinyMarginEnd text-muted" />
             <ToolbarSpacer />
 

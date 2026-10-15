@@ -35,12 +35,14 @@
                 text="Gate IN"
                 icon="sap-icon://log-in"
                 type="Emphasized"
+                tooltip="Register New Vehicle Entry"
                 visible="{/canCreateGateIn}"
                 press=".onOpenGateIn" />
             <Button
-                text="Gate OUT"
+                text="Gate Exit"
                 icon="sap-icon://log-out"
                 type="Success"
+                tooltip="Authorize Final Vehicle Exit"
                 visible="{/canMainGateOut}"
                 press=".onOpenGateOut" />
         </OverflowToolbar>
@@ -48,49 +50,10 @@
         <!-- Main Content -->
         <VBox class="flp-dashboard">
             <MessageStrip
-                text="Select vehicle processing category. General cargo and trucks proceed with Main Gate Entry and Exit operations."
+                text="Main Gate station: Manage vehicle entries, monitor plant progression, and record exit clearance."
                 type="Information"
                 showIcon="true"
                 class="sapUiSmallMarginBottom" />
-
-            <!-- Stream selection tiles -->
-            <!-- <HBox justifyContent="Center" class="vehicle-selection-cards">
-                <GenericTile
-                    header="TANKER"
-                    subheader="Tanker Management System"
-                    sizeBehavior="Responsive"
-                    state="Disabled"
-                    class="vehicle-select-tile sapUiMediumMargin">
-                    <tileContent>
-                        <TileContent footer="External S/4HANA System (In Development)">
-                            <content>
-                                <NumericContent
-                                    icon="sap-icon://mileage"
-                                    value="Tankers"
-                                    valueColor="Neutral" />
-                            </content>
-                        </TileContent>
-                    </tileContent>
-                </GenericTile>
-
-                <GenericTile
-                    header="OTHER VEHICLE"
-                    subheader="Main Gate Processing Stream"
-                    sizeBehavior="Responsive"
-                    press=".onOtherVehicleStreamPress"
-                    class="vehicle-select-tile sapUiMediumMargin">
-                    <tileContent>
-                        <TileContent footer="Trucks, Containers, Trailers, LCV (Active)">
-                            <content>
-                                <NumericContent
-                                    icon="sap-icon://shipping-status"
-                                    value="Active"
-                                    valueColor="Good" />
-                            </content>
-                        </TileContent>
-                    </tileContent>
-                </GenericTile>
-            </HBox> -->
 
             <!-- Active Transactions Table -->
             <Table
@@ -101,7 +64,7 @@
                 class="sapUiMediumMarginTop">
                 <headerToolbar>
                     <OverflowToolbar>
-                        <Title text="Main Gate Scale &amp; Entry Records ({= ${/transactions} ? ${/transactions}.length : 0 })" />
+                        <Title text="Gate Entries ({= ${/transactions} ? ${/transactions}.length : 0 })" />
                         <ToolbarSpacer />
                         <SegmentedButton
                             id="opsFilterSegmentedBtn"
@@ -109,16 +72,16 @@
                             selectionChange=".onFilterCategoryChange">
                             <items>
                                 <SegmentedButtonItem key="ALL" text="All ({= ${/counts/TOTAL} || 0 })" />
-                                <SegmentedButtonItem key="GATE_IN" text="Main Gate IN ({= ${/counts/GATE_IN} || 0 })" />
+                                <SegmentedButtonItem key="GATE_IN" text="IN ({= ${/counts/GATE_IN} || 0 })" />
                                 <SegmentedButtonItem key="IN_PLANT" text="In Plant ({= ${/counts/IN_PLANT} || 0 })" />
-                                <SegmentedButtonItem key="READY_OUT" text="Ready for Gate OUT ({= ${/counts/READY_OUT} || 0 })" />
-                                <SegmentedButtonItem key="COMPLETED" text="Completed ({= ${/counts/COMPLETED} || 0 })" />
+                                <SegmentedButtonItem key="READY_OUT" text="Ready Exit ({= ${/counts/READY_OUT} || 0 })" />
+                                <SegmentedButtonItem key="COMPLETED" text="Exit ({= ${/counts/COMPLETED} || 0 })" />
                             </items>
                         </SegmentedButton>
                         <SearchField
                             id="opsSearchField"
                             width="240px"
-                            placeholder="Search Gate IN #, Vehicle, Driver..."
+                            placeholder="Search Vehicle, Pass, Driver..."
                             liveChange=".onSearchLiveChange"
                             search=".onSearch" />
                         <Button
@@ -133,52 +96,49 @@
                     </OverflowToolbar>
                 </headerToolbar>
                 <columns>
-                    <Column><header><Text text="Gate IN # / Vehicle" /></header></Column>
-                    <Column><header><Text text="Driver Name" /></header></Column>
-                    <Column><header><Text text="Purpose" /></header></Column>
-                    <Column><header><Text text="Status" /></header></Column>
-                    <Column><header><Text text="Current Stage" /></header></Column>
-                    <Column><header><Text text="Gate IN Time" /></header></Column>
-                    <Column><header><Text text="Gate OUT Time" /></header></Column>
-                    <Column hAlign="End" width="220px"><header><Text text="Actions" /></header></Column>
+                    <Column width="220px"><header><Text text="Vehicle / Pass" /></header></Column>
+                    <Column minScreenWidth="Tablet" demandPopin="true"><header><Text text="Driver" /></header></Column>
+                    <Column width="160px"><header><Text text="Status / Stage" /></header></Column>
+                    <Column width="180px" minScreenWidth="Desktop" demandPopin="true"><header><Text text="Time (IN / Exit)" /></header></Column>
+                    <Column hAlign="End" width="200px"><header><Text text="Actions" /></header></Column>
                 </columns>
                 <items>
                     <ColumnListItem type="Navigation" press=".onTxRowPress">
                         <cells>
                             <ObjectIdentifier
-                                title="{gateInNumber}"
-                                text="{vehicleRegNo}" />
+                                title="{vehicleRegNo}"
+                                text="{gateInNumber} • {path: 'purpose', formatter: '.formatter.getPurposeText'}" />
                             <Text text="{= ${driverName} || '-' }" />
-                            <ObjectStatus
-                                text="{purpose}"
-                                state="{path: 'purpose', formatter: '.formatter.getPurposeState'}" />
-                            <ObjectStatus
-                                text="{status}"
-                                state="{path: 'status', formatter: '.formatter.getStatusState'}" />
-                            <Text text="{currentStage}" />
+                            <VBox>
+                                <ObjectStatus
+                                    text="{path: 'status', formatter: '.formatter.getStatusText'}"
+                                    state="{path: 'status', formatter: '.formatter.getStatusState'}" />
+                                <Text
+                                    text="{path: 'currentStage', formatter: '.formatter.getStageText'}"
+                                    class="sapUiTinyMarginTop text-muted" />
+                            </VBox>
                             <VBox>
                                 <Text text="{path: 'gateInDateTime', formatter: '.formatter.formatDateTime'}" />
-                                <Text text="{= ${gateInOperator} ? ('Op: ' + ${gateInOperator}) : '' }" class="sapUiTinyMarginTop" visible="{= !!${gateInOperator} }" />
-                            </VBox>
-                            <VBox>
-                                <Text text="{path: 'gateOutDateTime', formatter: '.formatter.formatDateTime'}" />
-                                <Text text="{= ${gateOutOperator} ? ('Op: ' + ${gateOutOperator}) : '' }" class="sapUiTinyMarginTop" visible="{= !!${gateOutOperator} }" />
+                                <Text
+                                    text="{path: 'gateOutDateTime', formatter: '.formatter.formatDateTime'}"
+                                    visible="{= !!${gateOutDateTime} }"
+                                    class="sapUiTinyMarginTop text-muted" />
                             </VBox>
                             <HBox justifyContent="End" alignItems="Center" wrap="NoWrap" class="sapUiTinyMarginBeginEnd">
-                                <!-- Gate OUT button: ONLY shown and clickable if all other operations are performed completely (status: SECURITY_OUT) -->
+                                <!-- Final Exit button: ONLY shown and clickable if all other operations are performed completely (status: SECURITY_OUT) -->
                                 <Button
-                                    text="Gate OUT"
+                                    text="Exit"
                                     icon="sap-icon://log-out"
                                     type="Success"
-                                    tooltip="Authorize and record final Main Gate OUT exit clearance"
+                                    tooltip="Authorize and record final Main Gate Exit clearance"
                                     visible="{= ${status} === 'SECURITY_OUT' }"
                                     enabled="{= ${status} === 'SECURITY_OUT' }"
                                     press=".onRowGateOutPress"
                                     class="sapUiTinyMarginEnd" />
 
-                                <!-- Gated OUT Status Badge -->
+                                <!-- Exited Status Badge -->
                                 <ObjectStatus
-                                    text="Gated OUT"
+                                    text="Exited"
                                     state="Success"
                                     icon="sap-icon://sys-enter-2"
                                     visible="{= ${status} === 'COMPLETED' }"
@@ -187,7 +147,7 @@
                                 <Button
                                     icon="sap-icon://print"
                                     type="Transparent"
-                                    tooltip="Print Gate IN Pass"
+                                    tooltip="Print Gate Pass"
                                     press=".onTxPrintPress" />
                                 <Button
                                     icon="sap-icon://edit"

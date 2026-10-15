@@ -32,7 +32,7 @@
                     titleStyle="H1"
                     class="sapUiTinyMarginBottom success-gate-number" />
                 <ObjectStatus
-                    text="Status: FACTORY_OUT (Yard Clearance Completed)"
+                    text="Status: Yard OUT (Cleared)"
                     state="Success"
                     class="sapUiTinyMarginBottom" />
                 <ObjectStatus

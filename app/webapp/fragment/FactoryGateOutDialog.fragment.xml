@@ -57,7 +57,7 @@
                             design="Bold"
                             class="sapUiTinyMarginEnd" />
                         <ObjectStatus
-                            text="{= ${facModel>/selectedVehicle/status} ? 'Stage: ' + ${facModel>/selectedVehicle/status} : '' }"
+                            text="{path: 'facModel>/selectedVehicle/status', formatter: '.formatter.getStatusText'}"
                             state="{path: 'facModel>/selectedVehicle/status', formatter: '.formatter.getStatusState'}" />
                     </HBox>
 
@@ -102,7 +102,9 @@
                     <Input
                         id="dialogFacOutOperator"
                         value="{facModel>/form/factoryGateOutOperator}"
-                        placeholder="Enter Factory Gate OUT Operator name"
+                        editable="false"
+                        class="grayed-out-input"
+                        placeholder="Factory Gate OUT Operator Name"
                         required="true" />
 
                     <Label text="Gate Pass Type" required="true" />

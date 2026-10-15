@@ -63,6 +63,15 @@ annotate GateService.PurchaseOrders with @(restrict: [
     { grant: 'READ', to: 'authenticated-user' }
 ]);
 
+// External Suppliers (SAP S/4HANA Cloud YY1_SUPPLIER_CDS)
+annotate GateService.S4Suppliers with @(restrict: [
+    { grant: 'READ', to: 'authenticated-user' }
+]);
+
+annotate GateService.YY1_Supplier with @(restrict: [
+    { grant: 'READ', to: 'authenticated-user' }
+]);
+
 // External S/4HANA Cloud CBO (Vehicle Gate Operation & Compositions)
 annotate GateService.S4VehicleGateOperations with @(restrict: [
     { grant: '*', to: 'authenticated-user' }

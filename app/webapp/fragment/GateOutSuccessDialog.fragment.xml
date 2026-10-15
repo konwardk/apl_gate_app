@@ -15,7 +15,7 @@
                     titleStyle="H1"
                     class="sapUiSmallMarginTop success-gate-number" />
                 <ObjectStatus
-                    text="Status: COMPLETED (Factory Exit Authorized)"
+                    text="Status: Exit (Authorized)"
                     state="Success"
                     class="sapUiSmallMarginTop sapUiSmallMarginBottom" />
                 <Text

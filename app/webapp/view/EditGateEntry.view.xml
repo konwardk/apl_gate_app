@@ -19,7 +19,7 @@
                 level="H2"
                 titleStyle="H3" />
             <ObjectStatus
-                text="{editModel>/status}"
+                text="{path: 'editModel>/status', formatter: '.formatter.getStatusText'}"
                 state="{path: 'editModel>/status', formatter: '.formatter.getStatusState'}"
                 class="sapUiTinyMarginBegin" />
             <ToolbarSpacer />
@@ -82,18 +82,18 @@
                         <VBox>
                             <Label text="Visit Purpose" design="Bold" />
                             <ObjectStatus
-                                text="{editModel>/purpose}"
+                                text="{path: 'editModel>/purpose', formatter: '.formatter.getPurposeText'}"
                                 state="{path: 'editModel>/purpose', formatter: '.formatter.getPurposeState'}" />
                         </VBox>
                         <VBox>
                             <Label text="Current Status" design="Bold" />
                             <ObjectStatus
-                                text="{editModel>/status}"
+                                text="{path: 'editModel>/status', formatter: '.formatter.getStatusText'}"
                                 state="{path: 'editModel>/status', formatter: '.formatter.getStatusState'}" />
                         </VBox>
                         <VBox>
                             <Label text="Current Stage" design="Bold" />
-                            <Text text="{editModel>/currentStage}" />
+                            <Text text="{path: 'editModel>/currentStage', formatter: '.formatter.getStageText'}" />
                         </VBox>
                         <VBox>
                             <Label text="Gate IN Time" design="Bold" />
@@ -196,30 +196,30 @@
                                     selectedKey="{editModel>/status}"
                                     change=".onStatusChange"
                                     width="100%">
-                                    <core:Item key="GATE_IN" text="GATE_IN (Main Gate Check-In Completed)" />
-                                    <core:Item key="SECURITY_IN" text="SECURITY_IN (Security Gate Inbound Verified)" />
-                                    <core:Item key="WEIGHBRIDGE_IN" text="WEIGHBRIDGE_IN (Inbound Weight Recorded)" />
-                                    <core:Item key="FACTORY_IN" text="FACTORY_IN (Inside Factory Yard / Unloading)" />
-                                    <core:Item key="FACTORY_OUT" text="FACTORY_OUT (Yard Operations Finished)" />
-                                    <core:Item key="WEIGHBRIDGE_OUT" text="WEIGHBRIDGE_OUT (Outbound Weight Recorded)" />
-                                    <core:Item key="SECURITY_OUT" text="SECURITY_OUT (Security Clearance Completed - Ready for Exit)" />
-                                    <core:Item key="COMPLETED" text="COMPLETED (Exited Main Gate - Closed)" />
-                                    <core:Item key="HOLD" text="HOLD (Transaction Put on Hold)" />
-                                    <core:Item key="CANCELLED" text="CANCELLED (Transaction Cancelled)" />
+                                    <core:Item key="GATE_IN" text="IN - Main Gate Check-In" />
+                                    <core:Item key="SECURITY_IN" text="Security IN - Inbound Check Cleared" />
+                                    <core:Item key="WEIGHBRIDGE_IN" text="Scale IN - Gross Scale Weighed" />
+                                    <core:Item key="FACTORY_IN" text="Yard IN - Inside Plant Yard / Unloading" />
+                                    <core:Item key="FACTORY_OUT" text="Yard OUT - Yard Unloading Cleared" />
+                                    <core:Item key="WEIGHBRIDGE_OUT" text="Scale OUT - Tare Scale Weighed" />
+                                    <core:Item key="SECURITY_OUT" text="Ready Exit - Outbound Cleared" />
+                                    <core:Item key="COMPLETED" text="Exit - Main Gate Exit Completed" />
+                                    <core:Item key="HOLD" text="On Hold - Transaction Held" />
+                                    <core:Item key="CANCELLED" text="Cancelled - Entry Voided" />
                                 </Select>
 
                                 <Label text="Current Stage" required="true" />
                                 <Select
                                     selectedKey="{editModel>/currentStage}"
                                     width="100%">
-                                    <core:Item key="MAIN_GATE_IN" text="MAIN_GATE_IN" />
-                                    <core:Item key="SECURITY_GATE_IN" text="SECURITY_GATE_IN" />
-                                    <core:Item key="WEIGHBRIDGE_IN" text="WEIGHBRIDGE_IN" />
-                                    <core:Item key="FACTORY" text="FACTORY" />
-                                    <core:Item key="WEIGHBRIDGE_OUT" text="WEIGHBRIDGE_OUT" />
-                                    <core:Item key="SECURITY_GATE_OUT" text="SECURITY_GATE_OUT" />
-                                    <core:Item key="MAIN_GATE_OUT" text="MAIN_GATE_OUT" />
-                                    <core:Item key="COMPLETED" text="COMPLETED" />
+                                    <core:Item key="MAIN_GATE_IN" text="Main Gate (MAIN_GATE_IN)" />
+                                    <core:Item key="SECURITY_GATE_IN" text="Security Check (SECURITY_GATE_IN)" />
+                                    <core:Item key="WEIGHBRIDGE_IN" text="Gross Scale (WEIGHBRIDGE_IN)" />
+                                    <core:Item key="FACTORY" text="Factory Yard (FACTORY)" />
+                                    <core:Item key="WEIGHBRIDGE_OUT" text="Tare Scale (WEIGHBRIDGE_OUT)" />
+                                    <core:Item key="SECURITY_GATE_OUT" text="Exit Check (SECURITY_GATE_OUT)" />
+                                    <core:Item key="MAIN_GATE_OUT" text="Main Gate Exit (MAIN_GATE_OUT)" />
+                                    <core:Item key="COMPLETED" text="Exit Completed (COMPLETED)" />
                                 </Select>
 
                                 <Label text="Gate IN Operator" required="true" />

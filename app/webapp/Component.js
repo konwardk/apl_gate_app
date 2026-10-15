@@ -102,6 +102,9 @@ sap.ui.define([
                     oCtrl.loadReportsData();
                 } else if (sPageId === "launchpadPage" || sPageId === "mainGateOpsPage") {
                     this.loadOverviewData();
+                    if (sPageId === "launchpadPage" && oCtrl && oCtrl.selectRoleDashboard) {
+                        oCtrl.selectRoleDashboard();
+                    }
                 }
             } else {
                 this._oNavContainer.to(sPageId, sTransition || "slide");
@@ -531,8 +534,8 @@ sap.ui.define([
             // Load data
             await this.loadOverviewData();
 
-            // Automatically navigate to the dashboard with the user's role-specific tab
-            this.navigateTo("launchpadPage", "slide");
+            // Automatically navigate to the vehicle stream selection page
+            this.navigateTo("landingPage", "slide");
 
             MessageToast.show("Welcome, " + (info.name || info.id) + "! Signed in as " + perms.primaryRoleTitle);
         },
@@ -765,9 +768,9 @@ sap.ui.define([
                     oDriver.setValueStateText("");
                 }
                 if (oOperator) {
-                    const activeUser = models.getActiveUser() || "";
-                    const defaultOp = activeUser.includes("maingate") ? activeUser : (activeUser === "superadmin_user" ? "MainGateOperator" : (activeUser || "Gate Operator"));
+                    const defaultOp = models.getUserDisplayName();
                     oOperator.setValue(defaultOp);
+                    oOperator.setEditable(false);
                     oOperator.setValueState(ValueState.None);
                     oOperator.setValueStateText("");
                 }
@@ -988,8 +991,7 @@ sap.ui.define([
 
             const targetVehicle = targetTx ? (eligible.find(v => v.gateInNumber === targetTx.gateInNumber) || targetTx) : (eligible.find(v => v.status === "SECURITY_OUT") || null);
 
-            const activeUser = models.getActiveUser();
-            const defaultOperator = activeUser.includes("maingate") ? activeUser : (activeUser === "superadmin_user" ? "MainGateOperator" : (activeUser || "maingate_user"));
+            const defaultOperator = models.getUserDisplayName();
 
             const sId = this.createId("gateOutFrag");
             const oGateOutModel = new JSONModel({
@@ -1021,6 +1023,7 @@ sap.ui.define([
                 const oOpInput = Fragment.byId(sId, "inputGateOutOperator");
                 if (oOpInput) {
                     oOpInput.setValue(defaultOperator);
+                    oOpInput.setEditable(false);
                     oOpInput.setValueState(ValueState.None);
                     oOpInput.setValueStateText("");
                 }

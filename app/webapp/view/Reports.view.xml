@@ -268,12 +268,12 @@
                                                 <Text text="{reportModel>vehicleRegNo}" design="Bold" />
                                                 <Text text="{reportModel>vehicleType}" />
                                                 <Text text="{reportModel>driverName}" />
-                                                <ObjectStatus text="{reportModel>purpose}" state="{reportModel>purposeState}" />
+                                                <ObjectStatus text="{path: 'reportModel>purpose', formatter: '.formatter.getPurposeText'}" state="{reportModel>purposeState}" />
                                                 <Text text="{reportModel>assignedRoute}" />
                                                 <Text text="{reportModel>gateInTimeDisplay}" />
                                                 <Text text="{reportModel>gateInOperator}" />
                                                 <Text text="{reportModel>gateOutTimeDisplay}" />
-                                                <ObjectStatus text="{reportModel>status}" state="{reportModel>statusState}" />
+                                                <ObjectStatus text="{path: 'reportModel>status', formatter: '.formatter.getStatusText'}" state="{reportModel>statusState}" />
                                                 <Text text="{reportModel>remarks}" />
                                             </cells>
                                         </ColumnListItem>
@@ -504,9 +504,9 @@
                                                 <Text text="{reportModel>vehicleRegNo}" design="Bold" />
                                                 <VBox>
                                                     <Text text="{reportModel>driverName}" />
-                                                    <ObjectStatus text="{reportModel>purpose}" state="{reportModel>purposeState}" class="sapUiTinyMarginTop" />
+                                                    <ObjectStatus text="{path: 'reportModel>purpose', formatter: '.formatter.getPurposeText'}" state="{reportModel>purposeState}" class="sapUiTinyMarginTop" />
                                                 </VBox>
-                                                <ObjectStatus text="{reportModel>status}" state="{reportModel>statusState}" />
+                                                <ObjectStatus text="{path: 'reportModel>status', formatter: '.formatter.getStatusText'}" state="{reportModel>statusState}" />
                                                 <Text text="{reportModel>gateInTimeDisplay}" />
                                                 <Text text="{reportModel>securityInTimeDisplay}" />
                                                 <Text text="{reportModel>grossWeightDisplay}" design="Bold" />

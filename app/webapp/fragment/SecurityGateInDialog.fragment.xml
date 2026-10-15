@@ -68,7 +68,9 @@
                     <Input
                         id="dialogSecPersonnel"
                         value="{secModel>/securityPersonnel}"
-                        placeholder="Officer Name / ID authorizing Entry"
+                        editable="false"
+                        class="grayed-out-input"
+                        placeholder="Security Officer Name"
                         required="true" />
 
                     <!-- Section 2: Driver Clearance & Inspection Checklist -->
@@ -130,11 +132,24 @@
                         visible="{secModel>/isDelivery}"
                         value="{secModel>/poNumber}"
                         placeholder="Select or enter PO Number (e.g. 4500001001)"
+                        tooltip="Press F4 or click icon to filter Purchase Orders by Supplier, PurchaseOrderDate, or PO Number"
                         showValueHelp="true"
                         valueHelpRequest=".onPoValueHelpRequest"
                         valueHelpOnly="false"
                         enabled="{= !${secModel>/withoutPO} }"
                         required="{= ${secModel>/isDelivery} &amp;&amp; !${secModel>/withoutPO} }" />
+
+                    <Label text="Supplier (S/4HANA)" visible="{secModel>/isDelivery}" />
+                    <Input
+                        id="dialogSecSupplier"
+                        visible="{secModel>/isDelivery}"
+                        value="{secModel>/supplierDisplay}"
+                        placeholder="Select Supplier (F4) or auto-filled from PO"
+                        tooltip="Press F4 to search suppliers from SAP S/4HANA Cloud (YY1_Supplier)"
+                        showValueHelp="true"
+                        valueHelpRequest=".onSupplierValueHelpRequest"
+                        valueHelpOnly="false"
+                        enabled="{= !${secModel>/withoutPO} }" />
 
                     <Label text="Verified PO Details" visible="{= ${secModel>/isDelivery} &amp;&amp; !!${secModel>/selectedPoInfo} }" />
                     <ObjectStatus

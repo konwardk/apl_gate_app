@@ -41,11 +41,11 @@
                     <Text text="{= ${gateOutModel>/selectedVehicle/driverName} || '-' }" visible="{= !!${gateOutModel>/selectedVehicle} }" />
 
                     <Label text="Visit Purpose" visible="{= !!${gateOutModel>/selectedVehicle} }" />
-                    <Text text="{gateOutModel>/selectedVehicle/purpose}" visible="{= !!${gateOutModel>/selectedVehicle} }" />
+                    <Text text="{path: 'gateOutModel>/selectedVehicle/purpose', formatter: '.formatter.getPurposeText'}" visible="{= !!${gateOutModel>/selectedVehicle} }" />
 
                     <Label text="Current Status" visible="{= !!${gateOutModel>/selectedVehicle} }" />
                     <ObjectStatus
-                        text="{gateOutModel>/selectedVehicle/status}"
+                        text="{path: 'gateOutModel>/selectedVehicle/status', formatter: '.formatter.getStatusText'}"
                         state="{path: 'gateOutModel>/selectedVehicle/status', formatter: '.formatter.getStatusState'}"
                         visible="{= !!${gateOutModel>/selectedVehicle} }" />
 
@@ -55,7 +55,9 @@
                         id="inputGateOutOperator"
                         value="{gateOutModel>/operator}"
                         valueLiveUpdate="true"
-                        placeholder="Enter Main Gate Operator Name / ID"
+                        editable="false"
+                        class="grayed-out-input"
+                        placeholder="Main Gate Operator Name"
                         maxLength="100"
                         required="true" />
                 </form:content>

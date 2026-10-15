@@ -38,16 +38,16 @@
 
                     <Label text="Visit Purpose" />
                     <ObjectStatus
-                        text="{detailModel>/purpose}"
+                        text="{path: 'detailModel>/purpose', formatter: '.formatter.getPurposeText'}"
                         state="{path: 'detailModel>/purpose', formatter: '.formatter.getPurposeState'}" />
 
                     <Label text="Current Status" />
                     <ObjectStatus
-                        text="{detailModel>/status}"
+                        text="{path: 'detailModel>/status', formatter: '.formatter.getStatusText'}"
                         state="{path: 'detailModel>/status', formatter: '.formatter.getStatusState'}" />
 
                     <Label text="Current Stage" />
-                    <Text text="{detailModel>/currentStage}" />
+                    <Text text="{path: 'detailModel>/currentStage', formatter: '.formatter.getStageText'}" />
 
                     <Label text="Gate IN Time" />
                     <Text text="{path: 'detailModel>/gateInDateTime', formatter: '.formatter.formatDateTime'}" />

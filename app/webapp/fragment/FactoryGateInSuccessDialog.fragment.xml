@@ -32,7 +32,7 @@
                     titleStyle="H1"
                     class="sapUiTinyMarginBottom success-gate-number" />
                 <ObjectStatus
-                    text="Status: FACTORY_IN (Inside Plant Yard)"
+                    text="Status: Yard IN (Inside Yard)"
                     state="Success"
                     class="sapUiSmallMarginBottom" />
 

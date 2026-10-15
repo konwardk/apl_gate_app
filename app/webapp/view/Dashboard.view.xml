@@ -103,7 +103,7 @@
                                     </GenericTile>
 
                                     <GenericTile
-                                        header="Ready for Gate OUT"
+                                        header="Ready for Gate Exit"
                                         subheader="Cleared Security OUT"
                                         press=".onKpiPress"
                                         class="kpi-tile-card">
@@ -173,7 +173,7 @@
                                                 press=".onQuickGateIn"
                                                 class="sapUiTinyMarginEnd sapUiTinyMarginBottom" />
                                             <Button
-                                                text="Gate OUT Clearance"
+                                                text="Gate Exit Clearance"
                                                 icon="sap-icon://log-out"
                                                 type="Success"
                                                 visible="{/canMainGateOut}"
@@ -207,29 +207,30 @@
                                         </OverflowToolbar>
                                     </headerToolbar>
                                     <columns>
-                                        <Column width="140px"><header><Text text="Gate Pass No" /></header></Column>
-                                        <Column width="130px"><header><Text text="Vehicle Reg No" /></header></Column>
-                                        <Column width="100px" minScreenWidth="Tablet" demandPopin="true"><header><Text text="Type" /></header></Column>
-                                        <Column minScreenWidth="Tablet" demandPopin="true"><header><Text text="Driver Name" /></header></Column>
-                                        <Column width="110px"><header><Text text="Purpose" /></header></Column>
-                                        <Column width="160px" minScreenWidth="Desktop" demandPopin="true"><header><Text text="Gate IN Time" /></header></Column>
-                                        <Column width="170px"><header><Text text="Status" /></header></Column>
-                                        <Column width="120px" hAlign="End"><header><Text text="Action" /></header></Column>
+                                        <Column width="220px"><header><Text text="Vehicle / Pass" /></header></Column>
+                                        <Column minScreenWidth="Tablet" demandPopin="true"><header><Text text="Driver" /></header></Column>
+                                        <Column width="160px"><header><Text text="Status / Stage" /></header></Column>
+                                        <Column width="170px" minScreenWidth="Desktop" demandPopin="true"><header><Text text="Gate IN Time" /></header></Column>
+                                        <Column width="110px" hAlign="End"><header><Text text="Action" /></header></Column>
                                     </columns>
                                     <items>
                                         <ColumnListItem type="Active" press=".onRowTxPress">
                                             <cells>
-                                                <ObjectIdentifier title="{gateInNumber}" />
-                                                <Text text="{vehicleRegNo}" />
-                                                <Text text="{vehicleType}" />
-                                                <Text text="{driverName}" />
-                                                <Text text="{purpose}" />
+                                                <ObjectIdentifier
+                                                    title="{vehicleRegNo}"
+                                                    text="{gateInNumber} • {path: 'purpose', formatter: '.formatter.getPurposeText'}" />
+                                                <Text text="{= ${driverName} || '-' }" />
+                                                <VBox>
+                                                    <ObjectStatus
+                                                        text="{path: 'status', formatter: '.formatter.getStatusText'}"
+                                                        state="{path: 'status', formatter: '.formatter.getStatusState'}" />
+                                                    <Text
+                                                        text="{path: 'currentStage', formatter: '.formatter.getStageText'}"
+                                                        class="sapUiTinyMarginTop text-muted" />
+                                                </VBox>
                                                 <Text text="{path: 'gateInDateTime', formatter: '.formatter.formatDateTime'}" />
-                                                <ObjectStatus
-                                                    text="{path: 'status', formatter: '.formatter.getStatusText'}"
-                                                    state="{path: 'status', formatter: '.formatter.getStatusState'}" />
                                                 <Button
-                                                    text="View Slip"
+                                                    text="Slip"
                                                     icon="sap-icon://hint"
                                                     type="Transparent"
                                                     press=".onRowTxPress" />
@@ -305,7 +306,7 @@
 
                                     <GenericTile
                                         header="Ready for Exit"
-                                        subheader="Cleared for Gate OUT"
+                                        subheader="Cleared for Gate Exit"
                                         press=".onKpiPress"
                                         class="kpi-tile-card">
                                         <tileContent>
@@ -603,7 +604,7 @@
                         text="Overview"
                         icon="sap-icon://home"
                         count="{/counts/TOTAL}"
-                        visible="{= ${/isSuper} || ${/isAdmin} || ${/canViewLiveOps} }">
+                        visible="{= ${/isSuper} || ${/isAdmin} || ${/canViewLiveOps} || ${/canViewReports} }">
                         <content>
                             <VBox class="sapUiSmallMarginTop">
                                 <!-- Live Operations Overview Section -->
@@ -650,7 +651,7 @@
                                         </GenericTile>
 
                                         <GenericTile
-                                            header="Ready for Gate OUT"
+                                            header="Ready for Gate Exit"
                                             subheader="Cleared Security"
                                             press=".onKpiPress"
                                             class="kpi-tile-card">
@@ -760,7 +761,7 @@
                                 </VBox>
 
                                 <!-- Group 2: Master Data Management -->
-                                <VBox class="flp-section" visible="{/canViewMasterData}">
+                                <VBox class="flp-section" visible="false">
                                     <Title
                                         text="Master Data Management (SAP Fiori Elements)"
                                         level="H2"
@@ -830,7 +831,7 @@
                                 </VBox>
 
                                 <!-- Group 3: Compliance & Audit -->
-                                <VBox class="flp-section" visible="{/canViewAuditTrail}">
+                                <VBox class="flp-section" visible="false">
                                     <Title
                                         text="Governance &amp; Audit Trail (SAP Fiori Elements)"
                                         level="H2"
@@ -913,7 +914,7 @@
                         text="Master Data"
                         icon="sap-icon://database"
                         count="{/counts/MASTER_DATA}"
-                        visible="{/canViewMasterData}">
+                        visible="false">
                         <content>
                             <VBox class="sapUiSmallMarginTop">
                                 <Title

@@ -34,17 +34,17 @@
                 press=".onNavWeighbridgeOps" />
             <Button
                 id="btnTopFactoryGateIn"
-                text="Factory Gate IN"
+                text="Yard IN"
                 icon="sap-icon://log-in"
                 type="Emphasized"
-                tooltip="Perform Factory Gate Check-In &amp; Unloading Arrival"
+                tooltip="Perform Factory Yard Check-In &amp; Unloading Arrival"
                 press=".onOpenFactoryGateInDialog" />
             <Button
                 id="btnTopFactoryGateOut"
-                text="Factory Gate OUT"
+                text="Yard Exit"
                 icon="sap-icon://log-out"
                 type="Success"
-                tooltip="Authorize Factory Gate OUT &amp; Yard Clearance"
+                tooltip="Authorize Factory Yard Exit &amp; Clearance"
                 press=".onOpenFactoryGateOutDialog" />
         </OverflowToolbar>
 
@@ -74,15 +74,15 @@
                             selectionChange=".onFilterCategoryChange">
                             <items>
                                 <SegmentedButtonItem key="ALL" text="All ({= ${facModel>/allCount} })" />
-                                <SegmentedButtonItem key="WAITING_IN" text="Awaiting Factory IN ({= ${facModel>/waitingInCount} })" />
+                                <SegmentedButtonItem key="WAITING_IN" text="Awaiting IN ({= ${facModel>/waitingInCount} })" />
                                 <SegmentedButtonItem key="INSIDE_YARD" text="Inside Yard ({= ${facModel>/insideYardCount} })" />
-                                <SegmentedButtonItem key="YARD_DONE" text="Yard Completed ({= ${facModel>/yardDoneCount} })" />
+                                <SegmentedButtonItem key="YARD_DONE" text="Yard Done ({= ${facModel>/yardDoneCount} })" />
                             </items>
                         </SegmentedButton>
                         <SearchField
                             id="facSearchField"
                             width="260px"
-                            placeholder="Search Gate IN #, Vehicle, PO..."
+                            placeholder="Search Vehicle, Pass, PO..."
                             liveChange=".onSearchLiveChange"
                             search=".onSearch" />
                         <Button
@@ -101,9 +101,9 @@
                     <Column><header><Text text="Driver / Transporter" /></header></Column>
                     <Column><header><Text text="Delivery Flow" /></header></Column>
                     <Column><header><Text text="PO &amp; Supplier" /></header></Column>
-                    <Column><header><Text text="Factory Gate IN" /></header></Column>
-                    <Column><header><Text text="Factory Gate OUT" /></header></Column>
-                    <Column><header><Text text="Stage / Status" /></header></Column>
+                    <Column><header><Text text="Yard IN" /></header></Column>
+                    <Column><header><Text text="Yard Exit" /></header></Column>
+                    <Column><header><Text text="Status / Stage" /></header></Column>
                     <Column hAlign="End" width="340px"><header><Text text="Actions" /></header></Column>
                 </columns>
                 <items>
@@ -119,7 +119,7 @@
                             <!-- 2. Driver & Transporter -->
                             <VBox>
                                 <Text text="{= ${facModel>driverName} || '-' }" design="Bold" />
-                                <Text text="{= ${facModel>transporter/transporterName} || ${facModel>factoryEntry/transporterName} || '-' }" class="sapUiTinyMarginTop" />
+                                <Text text="{= ${facModel>transporter/transporterName} || ${facModel>factoryEntry/transporterName} || '-' }" class="sapUiTinyMarginTop text-muted" />
                             </VBox>
 
                             <!-- 3. Delivery Flow & Inbound Weight -->
@@ -129,7 +129,7 @@
                                     state="{facModel>deliveryFlowState}" />
                                 <Text
                                     text="{= ${facModel>inboundWeightFormatted} ? 'Gross: ' + ${facModel>inboundWeightFormatted} : 'No Scale (Direct)' }"
-                                    class="sapUiTinyMarginTop" />
+                                    class="sapUiTinyMarginTop text-muted" />
                             </VBox>
 
                             <!-- 4. PO Number & Supplier -->
@@ -139,24 +139,24 @@
                                     design="Bold" />
                                 <Text
                                     text="{= ${facModel>factoryEntry/supplierName} || ${facModel>supplier/supplierName} || ${facModel>securityEntry/supplierName} || '-' }"
-                                    class="sapUiTinyMarginTop" />
+                                    class="sapUiTinyMarginTop text-muted" />
                             </VBox>
 
-                            <!-- 5. Factory Gate IN -->
+                            <!-- 5. Yard IN -->
                             <VBox>
                                 <Text
                                     text="{path: 'facModel>factoryEntry/factoryGateInDateTime', formatter: '.formatter.formatDateTime'}"
                                     design="Bold" />
                                 <Text
                                     text="{= ${facModel>factoryEntry/factoryGateInOperator} ? 'Op: ' + ${facModel>factoryEntry/factoryGateInOperator} : (${facModel>isWaitingIn} ? 'Awaiting Check-In' : '-') }"
-                                    class="sapUiTinyMarginTop" />
+                                    class="sapUiTinyMarginTop text-muted" />
                                 <Text
                                     text="{= ${facModel>factoryEntry/factoryArea} ? ${facModel>factoryEntry/factoryArea} + (${facModel>factoryEntry/unloadingPoint} ? ' (' + ${facModel>factoryEntry/unloadingPoint} + ')' : '') : '' }"
-                                    class="sapUiTinyMarginTop"
+                                    class="sapUiTinyMarginTop text-muted"
                                     visible="{= Boolean(${facModel>factoryEntry/factoryArea}) }" />
                             </VBox>
 
-                            <!-- 6. Factory Gate OUT -->
+                            <!-- 6. Yard Exit -->
                             <VBox>
                                 <Text
                                     text="{path: 'facModel>factoryEntry/factoryGateOutDateTime', formatter: '.formatter.formatDateTime'}"
@@ -164,7 +164,7 @@
                                 <Text
                                     text="{= ${facModel>factoryEntry/factoryGateOutOperator} ? 'Op: ' + ${facModel>factoryEntry/factoryGateOutOperator} : '' }"
                                     visible="{= Boolean(${facModel>factoryEntry/factoryGateOutDateTime}) }"
-                                    class="sapUiTinyMarginTop" />
+                                    class="sapUiTinyMarginTop text-muted" />
                                 <HBox alignItems="Center" class="sapUiTinyMarginTop" visible="{= Boolean(${facModel>factoryEntry/factoryGateOutDateTime}) }">
                                     <ObjectStatus
                                         text="{= ${facModel>factoryEntry/gateOutType} ? ${path: 'facModel>factoryEntry/gateOutType', formatter: '.formatter.getGateOutTypeDesc'} : ${path: 'facModel>factoryEntry/remarks', formatter: '.formatter.getGateOutTypeDesc'} }"
@@ -173,38 +173,38 @@
                                 </HBox>
                                 <Text
                                     text="{= ${facModel>factoryEntry/unloadedQuantity} ? ${facModel>factoryEntry/unloadedQuantity} + ' ' + (${facModel>factoryEntry/quantityUnit} || 'KG') : '' }"
-                                    class="sapUiTinyMarginTop"
+                                    class="sapUiTinyMarginTop text-muted"
                                     visible="{= Boolean(${facModel>factoryEntry/unloadedQuantity}) }" />
                                 <Text
                                     text="{= ${facModel>isInsideYard} ? 'Inside Yard (Unloading)' : (!${facModel>factoryEntry/factoryGateOutDateTime} ? '-' : '') }"
-                                    class="sapUiTinyMarginTop"
+                                    class="sapUiTinyMarginTop text-muted"
                                     visible="{= !Boolean(${facModel>factoryEntry/factoryGateOutDateTime}) }" />
                             </VBox>
 
-                            <!-- 7. Status -->
+                            <!-- 7. Status & Stage -->
                             <VBox>
                                 <ObjectStatus
-                                    text="{facModel>status}"
+                                    text="{path: 'facModel>status', formatter: '.formatter.getStatusText'}"
                                     state="{path: 'facModel>status', formatter: '.formatter.getStatusState'}" />
-                                <Text text="{facModel>currentStage}" class="sapUiTinyMarginTop" />
+                                <Text text="{path: 'facModel>currentStage', formatter: '.formatter.getStageText'}" class="sapUiTinyMarginTop text-muted" />
                             </VBox>
 
                             <!-- 8. Actions -->
                             <HBox justifyContent="End" class="sapUiTinyMarginBeginEnd">
                                 <Button
-                                    text="Gate IN"
+                                    text="Yard IN"
                                     icon="sap-icon://log-in"
                                     type="Emphasized"
-                                    tooltip="{= ${facModel>canRowFactoryIn} ? 'Record Factory Gate Check-In for this vehicle' : 'Factory Gate IN already completed' }"
+                                    tooltip="{= ${facModel>canRowFactoryIn} ? 'Record Yard Check-In for this vehicle' : 'Yard IN already completed' }"
                                     visible="{facModel>canRowFactoryIn}"
                                     enabled="{facModel>canRowFactoryIn}"
                                     press=".onRowFactoryInPress"
                                     class="sapUiTinyMarginEnd" />
                                 <Button
-                                    text="Gate OUT"
+                                    text="Yard Exit"
                                     icon="sap-icon://log-out"
                                     type="Success"
-                                    tooltip="{= ${facModel>canRowFactoryOut} ? 'Record Factory Gate Exit &amp; Clearance for this vehicle' : 'Vehicle must complete Factory Gate IN first' }"
+                                    tooltip="{= ${facModel>canRowFactoryOut} ? 'Record Yard Exit &amp; Clearance for this vehicle' : 'Vehicle must complete Yard IN first' }"
                                     visible="{facModel>canRowFactoryOut}"
                                     enabled="{facModel>canRowFactoryOut}"
                                     press=".onRowFactoryOutPress"

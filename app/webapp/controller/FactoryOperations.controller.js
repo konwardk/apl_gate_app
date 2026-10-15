@@ -48,7 +48,7 @@ sap.ui.define([
                     gatePassType: "STANDARD",
                     factoryGateInDateTime: new Date().toISOString(),
                     factoryGateInDateTimeStr: new Date().toISOString().substring(0, 19),
-                    factoryGateInOperator: models.getActiveUser(),
+                    factoryGateInOperator: models.getUserDisplayName(),
                     factoryGateInRemarks: "",
                     factoryGateOutDateTime: null,
                     factoryGateOutDateTimeStr: "",
@@ -229,14 +229,23 @@ sap.ui.define([
             }
 
             if (q) {
-                filtered = filtered.filter(t =>
-                    (t.gateInNumber && t.gateInNumber.toLowerCase().includes(q)) ||
-                    (t.vehicleRegNo && t.vehicleRegNo.toLowerCase().includes(q)) ||
-                    (t.driverName && t.driverName.toLowerCase().includes(q)) ||
-                    (t.securityEntry?.poNumber && t.securityEntry.poNumber.toLowerCase().includes(q)) ||
-                    (t.securityEntry?.invoiceNumber && t.securityEntry.invoiceNumber.toLowerCase().includes(q)) ||
-                    (t.factoryEntry?.factoryArea && t.factoryEntry.factoryArea.toLowerCase().includes(q))
-                );
+                filtered = filtered.filter(t => {
+                    const statusText = (formatter.getStatusText(t.status) || "").toLowerCase();
+                    const stageText = (formatter.getStageText(t.currentStage) || "").toLowerCase();
+                    const purposeText = (formatter.getPurposeText(t.purpose) || "").toLowerCase();
+                    return (t.gateInNumber && t.gateInNumber.toLowerCase().includes(q)) ||
+                        (t.vehicleRegNo && t.vehicleRegNo.toLowerCase().includes(q)) ||
+                        (t.driverName && t.driverName.toLowerCase().includes(q)) ||
+                        (t.purpose && t.purpose.toLowerCase().includes(q)) ||
+                        purposeText.includes(q) ||
+                        (t.status && t.status.toLowerCase().includes(q)) ||
+                        statusText.includes(q) ||
+                        (t.currentStage && t.currentStage.toLowerCase().includes(q)) ||
+                        stageText.includes(q) ||
+                        (t.securityEntry?.poNumber && t.securityEntry.poNumber.toLowerCase().includes(q)) ||
+                        (t.securityEntry?.invoiceNumber && t.securityEntry.invoiceNumber.toLowerCase().includes(q)) ||
+                        (t.factoryEntry?.factoryArea && t.factoryEntry.factoryArea.toLowerCase().includes(q));
+                });
             }
 
             this._oFacModel.setProperty("/displayedRecords", filtered);
@@ -469,9 +478,9 @@ sap.ui.define([
                 if (!isNaN(d.getTime())) facInTimeIso = d.toISOString();
             }
             const facInTimeStr = facInTimeIso.substring(0, 19);
-            let facInOp = (fac && fac.factoryGateInOperator) || models.getActiveUser();
+            let facInOp = (fac && fac.factoryGateInOperator) || models.getUserDisplayName();
             if (facInOp === "security_user" || (fac && fac.remarks === "Direct Factory Entry assigned at Security Gate IN")) {
-                facInOp = models.getActiveUser();
+                facInOp = models.getUserDisplayName();
             }
 
             let facOutTimeIso = null;
@@ -486,7 +495,7 @@ sap.ui.define([
                 facOutTimeIso = now.toISOString();
                 facOutTimeStr = facOutTimeIso.substring(0, 19);
             }
-            const facOutOp = (fac && fac.factoryGateOutOperator) || ((oTx.status === "FACTORY_IN" && (!fac || fac.remarks !== "Direct Factory Entry assigned at Security Gate IN")) ? models.getActiveUser() : "");
+            const facOutOp = (fac && fac.factoryGateOutOperator) || ((oTx.status === "FACTORY_IN" && (!fac || fac.remarks !== "Direct Factory Entry assigned at Security Gate IN")) ? models.getUserDisplayName() : "");
 
             // Determine Gate Out / Gate Pass Type
             let gateOutType = (fac && (fac.gateOutType || fac.gatePassType)) || "STANDARD";
@@ -971,7 +980,7 @@ sap.ui.define([
                 gateOutType: "STANDARD",
                 factoryGateInDateTime: nowIso,
                 factoryGateInDateTimeStr: nowIso.substring(0, 19),
-                factoryGateInOperator: models.getActiveUser(),
+                factoryGateInOperator: models.getUserDisplayName(),
                 factoryGateInRemarks: "",
                 factoryGateOutDateTime: null,
                 factoryGateOutDateTimeStr: "",
@@ -1101,7 +1110,7 @@ sap.ui.define([
                 this._oFacModel.setProperty("/form/factoryGateOutDateTimeStr", nowIso.substring(0, 19));
             }
             if (!this._oFacModel.getProperty("/form/factoryGateOutOperator")) {
-                this._oFacModel.setProperty("/form/factoryGateOutOperator", models.getActiveUser());
+                this._oFacModel.setProperty("/form/factoryGateOutOperator", models.getUserDisplayName());
             }
 
             const oView = this.getView();
@@ -1180,7 +1189,7 @@ sap.ui.define([
                 factoryGateInDateTime: fac ? fac.factoryGateInDateTime : null,
                 factoryGateInOperator: fac ? fac.factoryGateInOperator : "",
                 factoryGateOutDateTime: fac ? fac.factoryGateOutDateTime : new Date().toISOString(),
-                factoryGateOutOperator: fac ? (fac.factoryGateOutOperator || models.getActiveUser()) : models.getActiveUser(),
+                factoryGateOutOperator: fac ? (fac.factoryGateOutOperator || models.getUserDisplayName()) : models.getUserDisplayName(),
                 unloadingStatus: fac ? fac.unloadingStatus : "COMPLETED",
                 unloadedQuantity: fac && fac.unloadedQuantity != null ? fac.unloadedQuantity : "",
                 quantityUnit: (fac && fac.quantityUnit) || "KG",

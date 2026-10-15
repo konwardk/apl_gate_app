@@ -164,7 +164,7 @@ sap.ui.define([
                 }
                 // 3. Fallback for COMPLETED transaction
                 if (!data.gateOutOperator && data.status === 'COMPLETED') {
-                    data.gateOutOperator = data.modifiedBy || models.getActiveUser() || "MainGateOperator";
+                    data.gateOutOperator = data.modifiedBy ? models.getUserDisplayName(data.modifiedBy) : models.getUserDisplayName();
                 }
 
                 data.vehicleRegNoState = ValueState.None;
@@ -237,7 +237,7 @@ sap.ui.define([
                     this._oEditModel.setProperty("/gateOutDateTime", new Date().toISOString());
                 }
                 if (!this._oEditModel.getProperty("/gateOutOperator")) {
-                    this._oEditModel.setProperty("/gateOutOperator", models.getActiveUser() || "MainGateOperator");
+                    this._oEditModel.setProperty("/gateOutOperator", models.getUserDisplayName());
                 }
                 this._oEditModel.setProperty("/currentStage", "COMPLETED");
             }
@@ -330,7 +330,7 @@ sap.ui.define([
                     payload.gateOutDateTime = new Date().toISOString();
                 }
                 if (!payload.gateOutOperator) {
-                    payload.gateOutOperator = models.getActiveUser() || "MainGateOperator";
+                    payload.gateOutOperator = models.getUserDisplayName();
                 }
             }
 

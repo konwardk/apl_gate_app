@@ -821,6 +821,62 @@ export default cds.service.impl(async function () {
 
     /*
      * ============================================================
+     * SAP S/4HANA CLOUD EXTERNAL SUPPLIERS (YY1_SUPPLIER_CDS)
+     * ============================================================
+     */
+
+    const fetchS4SuppliersHandler = async (req) => {
+        try {
+            const srvConfig = cds.env.requires['YY1_SUPPLIER_CDS'] || {};
+            const creds = srvConfig.credentials || {};
+            const sBaseUrl = creds.url || 'https://my443544-api.s4hana.cloud.sap/sap/opu/odata/sap/YY1_SUPPLIER_CDS';
+            const sUsername = creds.username || 'BTP_S4_INTEGRATION';
+            const sPassword = creds.password || 'Assampetrochemical@123#';
+
+            const sTargetUrl = `${sBaseUrl.replace(/\/+$/, '')}/YY1_Supplier`;
+            const authHeader = 'Basic ' + Buffer.from(`${sUsername}:${sPassword}`).toString('base64');
+
+            const res = await fetch(sTargetUrl, {
+                headers: {
+                    'Authorization': authHeader,
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!res.ok) {
+                throw new Error(`S/4HANA Supplier API returned HTTP ${res.status}: ${res.statusText}`);
+            }
+
+            const data = await res.json();
+            const results = data.d?.results || [];
+
+            let suppliers = results.map(item => ({
+                Supplier: item.Supplier || '',
+                SupplierName: item.SupplierName || '',
+                SupplierFullName: item.SupplierFullName || '',
+                BPSupplierName: item.BPSupplierName || ''
+            }));
+
+            return suppliers;
+        } catch (err) {
+            console.warn('[GateService] External S/4HANA Supplier service not reachable, serving fallback data:', err.message);
+            const fallbackSuppliers = [
+                { Supplier: "1000011", SupplierName: "Aarbee Enterprises", SupplierFullName: "Company Aarbee Enterprises/711202 Kolkata", BPSupplierName: "Aarbee Enterprises" },
+                { Supplier: "1000013", SupplierName: "KSB Limited", SupplierFullName: "Company KSB Limited/700017 KOLKATA", BPSupplierName: "KSB Limited" },
+                { Supplier: "1000024", SupplierName: "CHAMUNDA INDUSTRIES", SupplierFullName: " CHAMUNDA INDUSTRIES/400004 MUMBAI", BPSupplierName: "CHAMUNDA INDUSTRIES" },
+                { Supplier: "8000001", SupplierName: "Indigi Consulting And solution", SupplierFullName: "Company Indigi Consulting And solution/781037 Guwahati", BPSupplierName: "Indigi Consulting And solution" },
+                { Supplier: "SUP002", SupplierName: "Assam Chemical Spares Ltd", SupplierFullName: "Assam Chemical Spares Ltd/786623", BPSupplierName: "Assam Chemical Spares Ltd" },
+                { Supplier: "SUPP-01", SupplierName: "Petrochem Industrial Solutions", SupplierFullName: "Petrochem Industrial Solutions/786623", BPSupplierName: "Petrochem Industrial Solutions" }
+            ];
+            return fallbackSuppliers;
+        }
+    };
+
+    this.on('READ', 'S4Suppliers', fetchS4SuppliersHandler);
+    this.on('READ', 'YY1_Supplier', fetchS4SuppliersHandler);
+
+    /*
+     * ============================================================
      * SAP S/4HANA CLOUD CBO: VEHICLE GATE OPERATION
      * (YY1_API_VEHICLEGATEOPERATION_0001)
      * ============================================================

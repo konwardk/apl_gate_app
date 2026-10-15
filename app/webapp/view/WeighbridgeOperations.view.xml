@@ -34,14 +34,14 @@
                 press=".onNavFactoryGateOps" />
             <Button
                 id="btnTopWbIn"
-                text="Weighbridge IN"
+                text="Scale IN"
                 icon="sap-icon://dimension"
                 type="Emphasized"
                 tooltip="Capture Inbound Gross/Tare Scale Weight"
                 press=".onOpenWeighbridgeInDialog" />
             <Button
                 id="btnTopWbOut"
-                text="Weighbridge OUT"
+                text="Scale OUT"
                 icon="sap-icon://log-out"
                 type="Success"
                 tooltip="Capture Outbound Tare/Gross Scale Weight"
@@ -74,16 +74,16 @@
                             selectionChange=".onFilterCategoryChange">
                             <items>
                                 <SegmentedButtonItem key="ALL" text="All ({= ${wbModel>/allCount} })" />
-                                <SegmentedButtonItem key="AWAITING_IN" text="Awaiting Inbound ({= ${wbModel>/awaitingInCount} })" />
+                                <SegmentedButtonItem key="AWAITING_IN" text="Awaiting IN ({= ${wbModel>/awaitingInCount} })" />
                                 <SegmentedButtonItem key="INSIDE_YARD" text="Inside Yard ({= ${wbModel>/insideYardCount} })" />
-                                <SegmentedButtonItem key="AWAITING_OUT" text="Awaiting Outbound ({= ${wbModel>/awaitingOutCount} })" />
+                                <SegmentedButtonItem key="AWAITING_OUT" text="Awaiting Exit ({= ${wbModel>/awaitingOutCount} })" />
                                 <SegmentedButtonItem key="COMPLETED" text="Scale Done ({= ${wbModel>/completedCount} })" />
                             </items>
                         </SegmentedButton>
                         <SearchField
                             id="wbSearchField"
                             width="260px"
-                            placeholder="Search Gate IN #, Vehicle, Driver..."
+                            placeholder="Search Vehicle, Pass, Driver..."
                             liveChange=".onSearchLiveChange"
                             search=".onSearch" />
                         <Button
@@ -104,7 +104,7 @@
                     <Column><header><Text text="Inbound Scale (1st)" /></header></Column>
                     <Column><header><Text text="Outbound Scale (2nd)" /></header></Column>
                     <Column><header><Text text="Net Cargo Weight" /></header></Column>
-                    <Column><header><Text text="Stage / Status" /></header></Column>
+                    <Column><header><Text text="Status / Stage" /></header></Column>
                     <Column hAlign="End" width="340px"><header><Text text="Actions" /></header></Column>
                 </columns>
                 <items>
@@ -120,17 +120,17 @@
                             <!-- 2. Driver & Transporter -->
                             <VBox>
                                 <Text text="{= ${wbModel>driverName} || '-' }" design="Bold" />
-                                <Text text="{= ${wbModel>transporter/transporterName} || '-' }" class="sapUiTinyMarginTop" />
+                                <Text text="{= ${wbModel>transporter/transporterName} || '-' }" class="sapUiTinyMarginTop text-muted" />
                             </VBox>
 
                             <!-- 3. Purpose & Route -->
                             <VBox>
                                 <ObjectStatus
-                                    text="{wbModel>purpose}"
+                                    text="{path: 'wbModel>purpose', formatter: '.formatter.getPurposeText'}"
                                     state="{path: 'wbModel>purpose', formatter: '.formatter.getPurposeState'}" />
                                 <Text
                                     text="{= ${wbModel>assignedRoute} ? 'Route: ' + ${wbModel>assignedRoute} : 'Direct' }"
-                                    class="sapUiTinyMarginTop" />
+                                    class="sapUiTinyMarginTop text-muted" />
                             </VBox>
 
                             <!-- 4. Inbound Scale (1st) -->
@@ -152,7 +152,7 @@
                                     visible="{= Boolean(${wbModel>inboundWeighment}) }" />
                                 <Text
                                     text="{= ${wbModel>isAwaitingInbound} ? 'Awaiting 1st Weighment' : 'Bypassed / Not Weighed' }"
-                                    class="sapUiTinyMarginTop"
+                                    class="sapUiTinyMarginTop text-muted"
                                     visible="{= !Boolean(${wbModel>inboundWeighment}) }" />
                             </VBox>
 
@@ -175,7 +175,7 @@
                                     visible="{= Boolean(${wbModel>outboundWeighment}) }" />
                                 <Text
                                     text="{= ${wbModel>isAwaitingOutbound} ? 'Awaiting 2nd Weighment' : (${wbModel>isInsideYard} ? 'Inside Factory Yard' : '-') }"
-                                    class="sapUiTinyMarginTop"
+                                    class="sapUiTinyMarginTop text-muted"
                                     visible="{= !Boolean(${wbModel>outboundWeighment}) }" />
                             </VBox>
 
@@ -190,15 +190,15 @@
                             <!-- 7. Stage & Status -->
                             <VBox>
                                 <ObjectStatus
-                                    text="{wbModel>status}"
+                                    text="{path: 'wbModel>status', formatter: '.formatter.getStatusText'}"
                                     state="{path: 'wbModel>status', formatter: '.formatter.getStatusState'}" />
-                                <Text text="{wbModel>currentStage}" class="sapUiTinyMarginTop" />
+                                <Text text="{path: 'wbModel>currentStage', formatter: '.formatter.getStageText'}" class="sapUiTinyMarginTop text-muted" />
                             </VBox>
 
                             <!-- 8. Actions -->
                             <HBox justifyContent="End" class="sapUiTinyMarginBeginEnd">
                                 <Button
-                                    text="Weigh IN"
+                                    text="Scale IN"
                                     icon="sap-icon://dimension"
                                     type="Emphasized"
                                     tooltip="Record Inbound Weighment for this vehicle"
@@ -206,7 +206,7 @@
                                     press=".onRowWeighInPress"
                                     class="sapUiTinyMarginEnd" />
                                 <Button
-                                    text="Weigh OUT"
+                                    text="Scale OUT"
                                     icon="sap-icon://log-out"
                                     type="Success"
                                     tooltip="Record Outbound Weighment for this vehicle"

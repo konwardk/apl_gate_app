@@ -19,8 +19,7 @@ sap.ui.define([
         formatter: formatter,
 
         onInit: function () {
-            const activeUser = models.getActiveUser();
-            const defaultOfficer = activeUser.includes("security") ? activeUser : (activeUser === "superadmin_user" ? "SecurityChief" : "security_user");
+            const defaultOfficer = models.getUserDisplayName();
 
             const oSecModel = new JSONModel({
                 // Table and queues
@@ -228,9 +227,9 @@ sap.ui.define([
                     const matchGateIn = (r.gateInNumber || "").toLowerCase().includes(sQuery);
                     const matchVehicle = (r.vehicleRegNo || "").toLowerCase().includes(sQuery);
                     const matchDriver = (r.driverName || (r.driver && r.driver.driverName) || "").toLowerCase().includes(sQuery);
-                    const matchPurpose = (r.purpose || "").toLowerCase().includes(sQuery);
-                    const matchStatus = (r.status || "").toLowerCase().includes(sQuery);
-                    const matchStage = (r.currentStage || "").toLowerCase().includes(sQuery);
+                    const matchPurpose = (r.purpose || "").toLowerCase().includes(sQuery) || (formatter.getPurposeText(r.purpose) || "").toLowerCase().includes(sQuery);
+                    const matchStatus = (r.status || "").toLowerCase().includes(sQuery) || (formatter.getStatusText(r.status) || "").toLowerCase().includes(sQuery);
+                    const matchStage = (r.currentStage || "").toLowerCase().includes(sQuery) || (formatter.getStageText(r.currentStage) || "").toLowerCase().includes(sQuery);
 
                     const sec = r.securityEntry;
                     const matchPo = sec && (sec.poNumber || "").toLowerCase().includes(sQuery);
@@ -290,8 +289,7 @@ sap.ui.define([
         onOpenSecurityGateInDialog: function (oPreselectedTx) {
             const sId = this.getView().createId("secGateInFrag");
             const oSecModel = this.getView().getModel("secModel");
-            const activeUser = models.getActiveUser();
-            const defaultOfficer = activeUser.includes("security") ? activeUser : (activeUser === "superadmin_user" ? "SecurityChief" : "security_user");
+            const defaultOfficer = models.getUserDisplayName();
 
             const bIsPreselected = Boolean(oPreselectedTx && oPreselectedTx.gateInNumber);
             oSecModel.setProperty("/isVehicleSelectable", !bIsPreselected);
@@ -303,6 +301,9 @@ sap.ui.define([
             oSecModel.setProperty("/securityPersonnel", defaultOfficer);
             oSecModel.setProperty("/withoutPO", false);
             oSecModel.setProperty("/poNumber", "");
+            oSecModel.setProperty("/supplierCode", "");
+            oSecModel.setProperty("/supplierName", "");
+            oSecModel.setProperty("/supplierDisplay", "");
             oSecModel.setProperty("/selectedPoInfo", "");
             oSecModel.setProperty("/soNumber", "");
             oSecModel.setProperty("/invoiceNumber", "");
@@ -357,6 +358,7 @@ sap.ui.define([
                     "dialogSecDriverLicense",
                     "dialogSecPersonnel",
                     "dialogSecPoNumber",
+                    "dialogSecSupplier",
                     "dialogSecInvoiceNumber"
                 ]);
 
@@ -657,6 +659,86 @@ sap.ui.define([
         },
 
         // ============================================================
+        // EXTERNAL DATA: Fetch S/4HANA Cloud Suppliers (YY1_Supplier)
+        // ============================================================
+        fetchS4Suppliers: async function () {
+            if (this._aAllSuppliers && this._aAllSuppliers.length > 0) {
+                return this._aAllSuppliers;
+            }
+
+            let authHeader = models.getAuthHeaderValue();
+            if (!authHeader) {
+                const active = models.getActiveUser() || "security_user";
+                const pass = models.defaultPasswords[active] || "password";
+                authHeader = "Basic " + btoa(active + ":" + pass);
+            }
+
+            let aSuppliers = [];
+            // 1. Try CAP Backend endpoint /gate/S4Suppliers
+            try {
+                const res = await fetch(`${ODATA_BASE}/S4Suppliers`, {
+                    headers: {
+                        "Authorization": authHeader,
+                        "Content-Type": "application/json"
+                    }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    aSuppliers = Array.isArray(data) ? data : (data.value || []);
+                }
+            } catch (err) {
+                console.warn("[SecurityOperations] Could not fetch suppliers via /gate/S4Suppliers, trying direct S4 API...", err);
+            }
+
+            // 2. Direct S/4HANA Cloud API fallback with credentials maintained in package.json
+            if (!aSuppliers || aSuppliers.length === 0) {
+                try {
+                    const s4Auth = "Basic " + btoa("BTP_S4_INTEGRATION:Assampetrochemical@123#");
+                    const resDirect = await fetch("https://my443544-api.s4hana.cloud.sap/sap/opu/odata/sap/YY1_SUPPLIER_CDS/YY1_Supplier", {
+                        headers: {
+                            "Authorization": s4Auth,
+                            "Accept": "application/json"
+                        }
+                    });
+                    if (resDirect.ok) {
+                        const dataDirect = await resDirect.json();
+                        const rawResults = dataDirect.d?.results || [];
+                        aSuppliers = rawResults.map(item => ({
+                            Supplier: item.Supplier,
+                            SupplierName: item.SupplierName,
+                            SupplierFullName: item.SupplierFullName,
+                            BPSupplierName: item.BPSupplierName
+                        }));
+                    }
+                } catch (err2) {
+                    console.warn("[SecurityOperations] Direct S4 API call failed, using fallback suppliers:", err2);
+                }
+            }
+
+            // 3. Fallback mock list if completely offline
+            if (!aSuppliers || aSuppliers.length === 0) {
+                aSuppliers = [
+                    { Supplier: "1000011", SupplierName: "Aarbee Enterprises", SupplierFullName: "Company Aarbee Enterprises/711202 Kolkata", BPSupplierName: "Aarbee Enterprises" },
+                    { Supplier: "1000013", SupplierName: "KSB Limited", SupplierFullName: "Company KSB Limited/700017 KOLKATA", BPSupplierName: "KSB Limited" },
+                    { Supplier: "1000024", SupplierName: "CHAMUNDA INDUSTRIES", SupplierFullName: " CHAMUNDA INDUSTRIES/400004 MUMBAI", BPSupplierName: "CHAMUNDA INDUSTRIES" },
+                    { Supplier: "8000001", SupplierName: "Indigi Consulting And solution", SupplierFullName: "Company Indigi Consulting And solution/781037 Guwahati", BPSupplierName: "Indigi Consulting And solution" },
+                    { Supplier: "SUP002", SupplierName: "Assam Chemical Spares Ltd", SupplierFullName: "Assam Chemical Spares Ltd/786623", BPSupplierName: "Assam Chemical Spares Ltd" },
+                    { Supplier: "SUPP-01", SupplierName: "Petrochem Industrial Solutions", SupplierFullName: "Petrochem Industrial Solutions/786623", BPSupplierName: "Petrochem Industrial Solutions" }
+                ];
+            }
+
+            this._aAllSuppliers = aSuppliers;
+            this._supplierMap = new Map();
+            aSuppliers.forEach(s => {
+                if (s.Supplier) {
+                    this._supplierMap.set(String(s.Supplier).trim(), s.SupplierName || s.BPSupplierName || "");
+                }
+            });
+
+            return aSuppliers;
+        },
+
+        // ============================================================
         // F4 SEARCH HELP: Purchase Orders from SAP S/4HANA Cloud
         // ============================================================
         onPoValueHelpRequest: async function () {
@@ -674,10 +756,37 @@ sap.ui.define([
             }
 
             const oDialog = await this._pPoValueHelpDialog;
+            this._oPoDialog = oDialog;
             oDialog.open();
             oDialog.setBusy(true);
 
+            // Reset dialog filter inputs
+            const oSupplierInput = Fragment.byId(sId, "poFilterSupplier");
+            const oDateInput = Fragment.byId(sId, "poFilterDate");
+            const oSearchInput = Fragment.byId(sId, "poFilterSearch");
+            const oConfirmBtn = Fragment.byId(sId, "btnConfirmPoSelection");
+            const oTable = Fragment.byId(sId, "poValueHelpTable");
+            const oCountText = Fragment.byId(sId, "poCountText");
+
+            if (oSupplierInput) oSupplierInput.setValue("");
+            if (oDateInput) oDateInput.setValue("");
+            if (oConfirmBtn) oConfirmBtn.setEnabled(false);
+            if (oTable) oTable.removeSelections(true);
+
+            // Pre-populate filters if user already specified PO number or Supplier in Gate IN form
+            const oSecModel = this.getView().getModel("secModel");
+            const sCurrentPo = (oSecModel ? oSecModel.getProperty("/poNumber") : "") || "";
+            const sCurrentSupplier = (oSecModel ? oSecModel.getProperty("/supplierCode") : "") || "";
+
+            if (oSearchInput && sCurrentPo.trim()) {
+                oSearchInput.setValue(sCurrentPo.trim());
+            }
+            if (oSupplierInput && sCurrentSupplier.trim()) {
+                oSupplierInput.setValue(sCurrentSupplier.trim());
+            }
+
             try {
+                // Concurrently fetch POs and S/4HANA Suppliers (YY1_Supplier)
                 let authHeader = models.getAuthHeaderValue();
                 if (!authHeader) {
                     const active = models.getActiveUser() || "security_user";
@@ -685,88 +794,394 @@ sap.ui.define([
                     authHeader = "Basic " + btoa(active + ":" + pass);
                 }
 
-                const res = await fetch(`${ODATA_BASE}/PurchaseOrders?$top=100&$orderby=PurchaseOrderDate desc`, {
-                    headers: {
-                        "Authorization": authHeader,
-                        "Content-Type": "application/json"
+                const [poRes, aSuppliers] = await Promise.all([
+                    fetch(`${ODATA_BASE}/PurchaseOrders?$top=300&$orderby=PurchaseOrderDate desc`, {
+                        headers: {
+                            "Authorization": authHeader,
+                            "Content-Type": "application/json"
+                        }
+                    }),
+                    this.fetchS4Suppliers()
+                ]);
+
+                if (poRes.ok) {
+                    const data = await poRes.json();
+                    const aPOs = Array.isArray(data) ? data : (data.value || []);
+
+                    // Enrich each PO with resolved SupplierName from S/4HANA YY1_Supplier
+                    aPOs.forEach(p => {
+                        const sCode = String(p.Supplier || "").trim();
+                        p.SupplierName = this._supplierMap ? (this._supplierMap.get(sCode) || "") : "";
+                    });
+
+                    this._aAllPurchaseOrders = aPOs;
+
+                    let oPoModel = oDialog.getModel("poModel");
+                    if (!oPoModel) {
+                        oPoModel = new JSONModel(aPOs);
+                        oDialog.setModel(oPoModel, "poModel");
+                    } else {
+                        oPoModel.setData(aPOs);
                     }
-                });
 
-            if (res.ok) {
-                const data = await res.json();
-                const aPOs = Array.isArray(data) ? data : (data.value || []);
-                let oPoModel = oDialog.getModel("poModel");
-                if (!oPoModel) {
-                    oPoModel = new JSONModel(aPOs);
-                    oDialog.setModel(oPoModel, "poModel");
+                    // Populate filter model with full suppliers fetched from S/4HANA YY1_Supplier
+                    let oFilterModel = oDialog.getModel("poFilterModel");
+                    if (!oFilterModel) {
+                        oFilterModel = new JSONModel({ suppliers: aSuppliers });
+                        oDialog.setModel(oFilterModel, "poFilterModel");
+                    } else {
+                        oFilterModel.setData({ suppliers: aSuppliers });
+                    }
+
+                    // Apply filter if pre-populated, otherwise show all
+                    if (sCurrentPo.trim() || sCurrentSupplier.trim()) {
+                        this.onPoFilterApply();
+                    } else {
+                        if (oTable) {
+                            const oBinding = oTable.getBinding("items");
+                            if (oBinding) oBinding.filter([]);
+                        }
+                        if (oCountText) {
+                            oCountText.setText(`Showing ${aPOs.length} Purchase Orders`);
+                        }
+                    }
                 } else {
-                    oPoModel.setData(aPOs);
+                    MessageToast.show("Failed to fetch Purchase Orders from server.");
                 }
-
-                const oBinding = oDialog.getBinding("items");
-                if (oBinding) {
-                    oBinding.filter([]);
-                }
-            } else {
-                MessageToast.show("Failed to fetch Purchase Orders from server.");
+            } catch (err) {
+                console.error("Error fetching purchase orders:", err);
+                MessageToast.show("An error occurred while retrieving purchase order data.");
+            } finally {
+                oDialog.setBusy(false);
             }
-        } catch (err) {
-            console.error("Error fetching purchase orders:", err);
-            MessageToast.show("An error occurred while retrieving data.");
-        } finally {
-            oDialog.setBusy(false); // Crucial to prevent UI from being permanently locked
-        }
-    },
-
-        onPoValueHelpSearch: function (oEvt) {
-            const sValue = (oEvt.getParameter("value") || "").trim();
-            const oBinding = oEvt.getSource().getBinding("items");
-            if (!oBinding) return;
-
-            if (!sValue) {
-                oBinding.filter([]);
-                return;
-            }
-
-            const oFilter = new Filter([
-                new Filter("PurchaseOrder", FilterOperator.Contains, sValue),
-                new Filter("PurchaseOrderType", FilterOperator.Contains, sValue),
-                new Filter("Supplier", FilterOperator.Contains, sValue),
-                new Filter("CompanyCode", FilterOperator.Contains, sValue),
-                new Filter("PurchasingOrganization", FilterOperator.Contains, sValue),
-                new Filter("PurchasingGroup", FilterOperator.Contains, sValue)
-            ], false);
-            oBinding.filter([oFilter]);
         },
 
-        onPoValueHelpConfirm: function (oEvt) {
-            const oSelectedItem = oEvt.getParameter("selectedItem");
-            if (oSelectedItem) {
-                const oContext = oSelectedItem.getBindingContext("poModel");
-                if (oContext) {
-                    const sSelectedPo = oContext.getProperty("PurchaseOrder");
-                    const sSupplier = oContext.getProperty("Supplier");
-                    const sDate = oContext.getProperty("PurchaseOrderDate");
-                    const oSecModel = this.getView().getModel("secModel");
-                    oSecModel.setProperty("/poNumber", sSelectedPo);
-                    oSecModel.setProperty("/selectedPoInfo", `Supplier: ${sSupplier || '-'} • Date: ${sDate || '-'} • Verified S/4HANA PO`);
+        onPoFilterApply: function () {
+            const sId = this.getView().createId("poVHFrag");
+            const oSupplierInput = Fragment.byId(sId, "poFilterSupplier");
+            const oDateInput = Fragment.byId(sId, "poFilterDate");
+            const oSearchInput = Fragment.byId(sId, "poFilterSearch");
+            const oTable = Fragment.byId(sId, "poValueHelpTable");
+            const oCountText = Fragment.byId(sId, "poCountText");
+            const oConfirmBtn = Fragment.byId(sId, "btnConfirmPoSelection");
 
-                    // Clear error state if set
-                    const sId = this.getView().createId("secGateInFrag");
-                    const oPoInput = Fragment.byId(sId, "dialogSecPoNumber");
-                    if (oPoInput) {
-                        oPoInput.setValueState(ValueState.None);
-                        oPoInput.setValueStateText("");
-                    }
+            if (!oTable) return;
+            const oBinding = oTable.getBinding("items");
+            if (!oBinding) return;
 
-                    const sMsg = sSupplier ? `Selected Purchase Order: ${sSelectedPo} (${sSupplier})` : `Selected Purchase Order: ${sSelectedPo}`;
-                    MessageToast.show(sMsg);
+            const aFilters = [];
+
+            // 1. Supplier filter - matches Supplier code or resolved SupplierName
+            const sSupplier = (oSupplierInput ? oSupplierInput.getValue() : "").trim();
+            if (sSupplier) {
+                aFilters.push(new Filter([
+                    new Filter("Supplier", FilterOperator.Contains, sSupplier),
+                    new Filter("SupplierName", FilterOperator.Contains, sSupplier)
+                ], false));
+            }
+
+            // 2. PurchaseOrderDate filter
+            const sDate = (oDateInput ? oDateInput.getValue() : "").trim();
+            if (sDate) {
+                aFilters.push(new Filter("PurchaseOrderDate", FilterOperator.Contains, sDate));
+            }
+
+            // 3. Keyword / PO Number Search filter
+            const sSearch = (oSearchInput ? oSearchInput.getValue() : "").trim();
+            if (sSearch) {
+                aFilters.push(new Filter([
+                    new Filter("PurchaseOrder", FilterOperator.Contains, sSearch),
+                    new Filter("PurchaseOrderType", FilterOperator.Contains, sSearch),
+                    new Filter("Supplier", FilterOperator.Contains, sSearch),
+                    new Filter("SupplierName", FilterOperator.Contains, sSearch),
+                    new Filter("CompanyCode", FilterOperator.Contains, sSearch),
+                    new Filter("PurchasingOrganization", FilterOperator.Contains, sSearch),
+                    new Filter("PurchasingGroup", FilterOperator.Contains, sSearch)
+                ], false));
+            }
+
+            if (aFilters.length > 0) {
+                oBinding.filter(new Filter(aFilters, true)); // AND combination
+            } else {
+                oBinding.filter([]);
+            }
+
+            if (oTable) {
+                oTable.removeSelections(true);
+            }
+            if (oConfirmBtn) {
+                oConfirmBtn.setEnabled(false);
+            }
+
+            setTimeout(function () {
+                const iCount = oBinding.getLength ? oBinding.getLength() : 0;
+                if (oCountText) {
+                    oCountText.setText(`Found ${iCount} Purchase Orders`);
+                }
+            }, 60);
+        },
+
+        onPoFilterReset: function () {
+            const sId = this.getView().createId("poVHFrag");
+            const oSupplierInput = Fragment.byId(sId, "poFilterSupplier");
+            const oDateInput = Fragment.byId(sId, "poFilterDate");
+            const oSearchInput = Fragment.byId(sId, "poFilterSearch");
+            const oTable = Fragment.byId(sId, "poValueHelpTable");
+            const oCountText = Fragment.byId(sId, "poCountText");
+            const oConfirmBtn = Fragment.byId(sId, "btnConfirmPoSelection");
+
+            if (oSupplierInput) oSupplierInput.setValue("");
+            if (oDateInput) oDateInput.setValue("");
+            if (oSearchInput) oSearchInput.setValue("");
+
+            if (oTable) {
+                oTable.removeSelections(true);
+                const oBinding = oTable.getBinding("items");
+                if (oBinding) {
+                    oBinding.filter([]);
+                    setTimeout(function () {
+                        const iCount = oBinding.getLength ? oBinding.getLength() : 0;
+                        if (oCountText) {
+                            oCountText.setText(`Showing ${iCount} Purchase Orders`);
+                        }
+                    }, 60);
                 }
             }
+            if (oConfirmBtn) {
+                oConfirmBtn.setEnabled(false);
+            }
+        },
+
+        onPoSelectionChange: function () {
+            const sId = this.getView().createId("poVHFrag");
+            const oConfirmBtn = Fragment.byId(sId, "btnConfirmPoSelection");
+            const oTable = Fragment.byId(sId, "poValueHelpTable");
+            const oSelectedItem = oTable ? oTable.getSelectedItem() : null;
+            if (oConfirmBtn) {
+                oConfirmBtn.setEnabled(!!oSelectedItem);
+            }
+        },
+
+        onPoRowSelect: function (oEvt) {
+            const oItem = oEvt.getSource();
+            this._selectAndApplyPo(oItem);
+        },
+
+        onPoConfirmSelected: function () {
+            const sId = this.getView().createId("poVHFrag");
+            const oTable = Fragment.byId(sId, "poValueHelpTable");
+            const oSelectedItem = oTable ? oTable.getSelectedItem() : null;
+            if (oSelectedItem) {
+                this._selectAndApplyPo(oSelectedItem);
+            }
+        },
+
+        _selectAndApplyPo: function (oItem) {
+            if (!oItem) return;
+            const oContext = oItem.getBindingContext("poModel");
+            if (oContext) {
+                const sSelectedPo = oContext.getProperty("PurchaseOrder");
+                const sSupplier = oContext.getProperty("Supplier");
+                let sSupplierName = oContext.getProperty("SupplierName") || "";
+                if (!sSupplierName && this._supplierMap && sSupplier) {
+                    sSupplierName = this._supplierMap.get(String(sSupplier).trim()) || "";
+                }
+                const sDate = oContext.getProperty("PurchaseOrderDate");
+                const sDisplaySupplier = sSupplier ? (sSupplierName ? `${sSupplier} - ${sSupplierName}` : sSupplier) : "";
+
+                const oSecModel = this.getView().getModel("secModel");
+                oSecModel.setProperty("/poNumber", sSelectedPo);
+                oSecModel.setProperty("/supplierCode", sSupplier);
+                oSecModel.setProperty("/supplierName", sSupplierName);
+                oSecModel.setProperty("/supplierDisplay", sDisplaySupplier);
+                oSecModel.setProperty("/selectedPoInfo", `Supplier: ${sSupplier || '-'} ${sSupplierName ? '(' + sSupplierName + ')' : ''} • Date: ${sDate || '-'} • Verified S/4HANA PO`);
+
+                // Clear error states if set
+                const sGateInFragId = this.getView().createId("secGateInFrag");
+                const oPoInput = Fragment.byId(sGateInFragId, "dialogSecPoNumber");
+                if (oPoInput) {
+                    oPoInput.setValueState(ValueState.None);
+                    oPoInput.setValueStateText("");
+                }
+                const oSupplierField = Fragment.byId(sGateInFragId, "dialogSecSupplier");
+                if (oSupplierField) {
+                    oSupplierField.setValueState(ValueState.None);
+                    oSupplierField.setValueStateText("");
+                }
+
+                const sMsg = sDisplaySupplier ? `Selected Purchase Order: ${sSelectedPo} (${sDisplaySupplier})` : `Selected Purchase Order: ${sSelectedPo}`;
+                MessageToast.show(sMsg);
+            }
+
+            if (this._oPoDialog) {
+                this._oPoDialog.close();
+            }
+        },
+
+        onPoValueHelpSearch: function () {
+            this.onPoFilterApply();
+        },
+
+        onPoValueHelpConfirm: function () {
+            this.onPoConfirmSelected();
         },
 
         onPoValueHelpCancel: function () {
-            // Dialog closes automatically
+            if (this._oPoDialog) {
+                this._oPoDialog.close();
+            }
+        },
+
+        // ============================================================
+        // F4 SEARCH HELP: Suppliers from SAP S/4HANA Cloud (YY1_Supplier)
+        // ============================================================
+        onSupplierValueHelpRequest: async function () {
+            const sId = this.getView().createId("supplierVHFrag");
+
+            if (!this._pSupplierValueHelpDialog) {
+                this._pSupplierValueHelpDialog = Fragment.load({
+                    id: sId,
+                    name: "factory.gate.fragment.SupplierValueHelpDialog",
+                    controller: this
+                }).then(function (oDialog) {
+                    this.getView().addDependent(oDialog);
+                    return oDialog;
+                }.bind(this));
+            }
+
+            const oDialog = await this._pSupplierValueHelpDialog;
+            this._oSupplierDialog = oDialog;
+            oDialog.open();
+            oDialog.setBusy(true);
+
+            const oSearchField = Fragment.byId(sId, "supplierSearchField");
+            const oConfirmBtn = Fragment.byId(sId, "btnConfirmSupplierSelection");
+            const oTable = Fragment.byId(sId, "supplierValueHelpTable");
+            const oCountText = Fragment.byId(sId, "supplierCountText");
+
+            if (oSearchField) oSearchField.setValue("");
+            if (oConfirmBtn) oConfirmBtn.setEnabled(false);
+            if (oTable) oTable.removeSelections(true);
+
+            try {
+                const aSuppliers = await this.fetchS4Suppliers();
+                let oSupplierModel = oDialog.getModel("supplierModel");
+                if (!oSupplierModel) {
+                    oSupplierModel = new JSONModel(aSuppliers);
+                    oDialog.setModel(oSupplierModel, "supplierModel");
+                } else {
+                    oSupplierModel.setData(aSuppliers);
+                }
+
+                if (oTable) {
+                    const oBinding = oTable.getBinding("items");
+                    if (oBinding) oBinding.filter([]);
+                }
+                if (oCountText) {
+                    oCountText.setText(`Showing ${aSuppliers.length} Suppliers`);
+                }
+            } catch (err) {
+                console.error("Error loading suppliers in value help:", err);
+                MessageToast.show("An error occurred while loading suppliers from SAP S/4HANA Cloud.");
+            } finally {
+                oDialog.setBusy(false);
+            }
+        },
+
+        onSupplierSearch: function (oEvt) {
+            const sId = this.getView().createId("supplierVHFrag");
+            const oTable = Fragment.byId(sId, "supplierValueHelpTable");
+            const oCountText = Fragment.byId(sId, "supplierCountText");
+            const oConfirmBtn = Fragment.byId(sId, "btnConfirmSupplierSelection");
+
+            if (!oTable) return;
+            const oBinding = oTable.getBinding("items");
+            if (!oBinding) return;
+
+            const sQuery = (oEvt.getParameter("query") || oEvt.getParameter("newValue") || "").trim();
+            if (sQuery) {
+                const oFilter = new Filter([
+                    new Filter("Supplier", FilterOperator.Contains, sQuery),
+                    new Filter("SupplierName", FilterOperator.Contains, sQuery),
+                    new Filter("SupplierFullName", FilterOperator.Contains, sQuery),
+                    new Filter("BPSupplierName", FilterOperator.Contains, sQuery)
+                ], false);
+                oBinding.filter(oFilter);
+            } else {
+                oBinding.filter([]);
+            }
+
+            if (oTable) oTable.removeSelections(true);
+            if (oConfirmBtn) oConfirmBtn.setEnabled(false);
+
+            setTimeout(function () {
+                const iCount = oBinding.getLength ? oBinding.getLength() : 0;
+                if (oCountText) {
+                    oCountText.setText(`Found ${iCount} Suppliers`);
+                }
+            }, 50);
+        },
+
+        onSupplierSelectionChange: function () {
+            const sId = this.getView().createId("supplierVHFrag");
+            const oConfirmBtn = Fragment.byId(sId, "btnConfirmSupplierSelection");
+            const oTable = Fragment.byId(sId, "supplierValueHelpTable");
+            const oSelectedItem = oTable ? oTable.getSelectedItem() : null;
+            if (oConfirmBtn) {
+                oConfirmBtn.setEnabled(!!oSelectedItem);
+            }
+        },
+
+        onSupplierRowSelect: function (oEvt) {
+            const oItem = oEvt.getSource();
+            this._selectAndApplySupplier(oItem);
+        },
+
+        onSupplierConfirmSelected: function () {
+            const sId = this.getView().createId("supplierVHFrag");
+            const oTable = Fragment.byId(sId, "supplierValueHelpTable");
+            const oSelectedItem = oTable ? oTable.getSelectedItem() : null;
+            if (oSelectedItem) {
+                this._selectAndApplySupplier(oSelectedItem);
+            }
+        },
+
+        _selectAndApplySupplier: function (oItem) {
+            if (!oItem) return;
+            const oContext = oItem.getBindingContext("supplierModel");
+            if (!oContext) return;
+
+            const sSupplier = oContext.getProperty("Supplier");
+            const sSupplierName = oContext.getProperty("SupplierName") || "";
+            const sDisplay = sSupplier ? (sSupplierName ? `${sSupplier} - ${sSupplierName}` : sSupplier) : "";
+
+            // 1. If PO Value Help Dialog is open, set the Supplier filter input and trigger filter
+            const sPoId = this.getView().createId("poVHFrag");
+            const oPoSupplierInput = Fragment.byId(sPoId, "poFilterSupplier");
+            if (oPoSupplierInput) {
+                oPoSupplierInput.setValue(sSupplier);
+                this.onPoFilterApply();
+            }
+
+            // 2. Also update SecurityGateInDialog model so Supplier is saved and displayed
+            const oSecModel = this.getView().getModel("secModel");
+            if (oSecModel) {
+                oSecModel.setProperty("/supplierCode", sSupplier);
+                oSecModel.setProperty("/supplierName", sSupplierName);
+                oSecModel.setProperty("/supplierDisplay", sDisplay);
+            }
+
+            MessageToast.show(`Selected Supplier: ${sDisplay}`);
+
+            if (this._oSupplierDialog) {
+                this._oSupplierDialog.close();
+            }
+        },
+
+        onSupplierValueHelpCancel: function () {
+            if (this._oSupplierDialog) {
+                this._oSupplierDialog.close();
+            }
         },
 
         // ============================================================
@@ -775,8 +1190,7 @@ sap.ui.define([
         onOpenSecurityGateOutDialog: function (oPreselectedTx) {
             const sId = this.getView().createId("secGateOutFrag");
             const oSecModel = this.getView().getModel("secModel");
-            const activeUser = models.getActiveUser();
-            const defaultOfficer = activeUser.includes("security") ? activeUser : (activeUser === "superadmin_user" ? "SecurityChief" : "security_user");
+            const defaultOfficer = models.getUserDisplayName();
 
             const bIsPreselected = Boolean(oPreselectedTx && oPreselectedTx.gateInNumber);
             oSecModel.setProperty("/isOutVehicleSelectable", !bIsPreselected);
