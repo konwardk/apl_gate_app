@@ -1,0 +1,4 @@
+ID;transporterCode;transporterName;gstin;pan;contactPerson;phoneNo;email;address;active
+c829e710-1a11-4e89-9a28-111111111111;TR001;Apex Logistics Ltd;27AAACA1234A1Z5;AAACA1234A;Rajesh Kumar;+91 9820011223;info@apexlogistics.com;Plot 45, MIDC Industrial Area, Mumbai;true
+c829e710-1a11-4e89-9a28-222222222222;TR002;BlueDart Freight Corp;29AABCB5678B1Z2;AABCB5678B;Suresh Patel;+91 9876543210;dispatch@bluedartfreight.com;102 Express Highway, Bengaluru;true
+c829e710-1a11-4e89-9a28-333333333333;TR003;Vanguard Transport Services;07AACCV9988C1Z9;AACCV9988C;Amit Sharma;+91 9911223344;operations@vanguardtr.com;Sector 18, Transport Nagar, Delhi;true

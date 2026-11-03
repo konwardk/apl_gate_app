@@ -1,0 +1,1288 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+  <edmx:Reference Uri="https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Capabilities.V1.xml">
+    <edmx:Include Alias="Capabilities" Namespace="Org.OData.Capabilities.V1"/>
+  </edmx:Reference>
+  <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/Common.xml">
+    <edmx:Include Alias="Common" Namespace="com.sap.vocabularies.Common.v1"/>
+  </edmx:Reference>
+  <edmx:Reference Uri="https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Core.V1.xml">
+    <edmx:Include Alias="Core" Namespace="Org.OData.Core.V1"/>
+  </edmx:Reference>
+  <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/PDF.xml">
+    <edmx:Include Alias="PDF" Namespace="com.sap.vocabularies.PDF.v1"/>
+  </edmx:Reference>
+  <edmx:DataServices>
+    <Schema Namespace="YY1_API_VEHICLEGATEOPERATION_0001" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="Core.Links">
+        <Collection>
+          <Record>
+            <PropertyValue Property="rel" String="author"/>
+            <PropertyValue Property="href" String="https://cap.cloud.sap"/>
+          </Record>
+        </Collection>
+      </Annotation>
+      <EntityContainer Name="EntityContainer">
+        <EntitySet Name="DeliveryDetails" EntityType="YY1_API_VEHICLEGATEOPERATION_0001.DeliveryDetails">
+          <NavigationPropertyBinding Path="_VehicleGateOperation" Target="VehicleGateOperation"/>
+        </EntitySet>
+        <EntitySet Name="FactoryGateEntries" EntityType="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries">
+          <NavigationPropertyBinding Path="_VehicleGateOperation" Target="VehicleGateOperation"/>
+        </EntitySet>
+        <EntitySet Name="PickupDetail" EntityType="YY1_API_VEHICLEGATEOPERATION_0001.PickupDetail">
+          <NavigationPropertyBinding Path="_VehicleGateOperation" Target="VehicleGateOperation"/>
+        </EntitySet>
+        <EntitySet Name="SecurityGateEntries" EntityType="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries">
+          <NavigationPropertyBinding Path="_VehicleGateOperation" Target="VehicleGateOperation"/>
+        </EntitySet>
+        <EntitySet Name="VehicleGateOperation" EntityType="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation">
+          <NavigationPropertyBinding Path="_DeliveryDetails" Target="DeliveryDetails"/>
+          <NavigationPropertyBinding Path="_FactoryGateEntries" Target="FactoryGateEntries"/>
+          <NavigationPropertyBinding Path="_PickupDetail" Target="PickupDetail"/>
+          <NavigationPropertyBinding Path="_SecurityGateEntries" Target="SecurityGateEntries"/>
+          <NavigationPropertyBinding Path="_WeighbridgeTransactions" Target="WeighbridgeTransactions"/>
+        </EntitySet>
+        <EntitySet Name="WeighbridgeTransactions" EntityType="YY1_API_VEHICLEGATEOPERATION_0001.WeighbridgeTransactions">
+          <NavigationPropertyBinding Path="_VehicleGateOperation" Target="VehicleGateOperation"/>
+        </EntitySet>
+      </EntityContainer>
+      <EntityType Name="DeliveryDetails">
+        <Key>
+          <PropertyRef Name="MainGateEntryId"/>
+          <PropertyRef Name="DeliveryId"/>
+        </Key>
+        <Property Name="MainGateEntryId" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="DeliveryId" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="SAPUUID" Type="Edm.Guid"/>
+        <Property Name="SAPParentUUID" Type="Edm.Guid"/>
+        <Property Name="SAPRootUUID" Type="Edm.Guid"/>
+        <Property Name="gateTransaction" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="PurchaseOrderNo" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="SalesOrderNo" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="InvoiceNo" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="DeliveryNo" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="supplierCode" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="supplierName" Type="Edm.String" MaxLength="150" Nullable="false"/>
+        <Property Name="documentVerificationStatus" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="deliveryRemarks" Type="Edm.String" MaxLength="250" Nullable="false"/>
+        <Property Name="SAP__Messages" Type="Collection(YY1_API_VEHICLEGATEOPERATION_0001.SAP__Message)" Nullable="false"/>
+        <NavigationProperty Name="_VehicleGateOperation" Type="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation" Partner="_DeliveryDetails">
+          <ReferentialConstraint Property="MainGateEntryId" ReferencedProperty="MainGateEntryId"/>
+        </NavigationProperty>
+      </EntityType>
+      <EntityType Name="FactoryGateEntries">
+        <Key>
+          <PropertyRef Name="MainGateEntryId"/>
+          <PropertyRef Name="FactoryEntryId"/>
+        </Key>
+        <Property Name="MainGateEntryId" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="FactoryEntryId" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="SAPUUID" Type="Edm.Guid"/>
+        <Property Name="SAPParentUUID" Type="Edm.Guid"/>
+        <Property Name="SAPRootUUID" Type="Edm.Guid"/>
+        <Property Name="GateInNoF" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="factoryGateInDateTime" Type="Edm.DateTimeOffset" Precision="7"/>
+        <Property Name="factoryGateInOperator" Type="Edm.String" MaxLength="150" Nullable="false"/>
+        <Property Name="factoryGateInRemarks" Type="Edm.String" MaxLength="250" Nullable="false"/>
+        <Property Name="factoryGateOutDateTime" Type="Edm.DateTimeOffset" Precision="7"/>
+        <Property Name="factoryGateOutOperator" Type="Edm.String" MaxLength="150" Nullable="false"/>
+        <Property Name="factoryGateOutRemarks" Type="Edm.String" MaxLength="250" Nullable="false"/>
+        <Property Name="FactoryGateOutType" Type="Edm.String" MaxLength="5" Nullable="false"/>
+        <Property Name="FactoryPONumber" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="FactoryInvoiceNumber" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="FactoryInvoiceDate" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="supplierNameInFactory" Type="Edm.String" MaxLength="250" Nullable="false"/>
+        <Property Name="transporterName" Type="Edm.String" MaxLength="250" Nullable="false"/>
+        <Property Name="deliveryNoteNo" Type="Edm.String" MaxLength="50" Nullable="false"/>
+        <Property Name="factoryArea" Type="Edm.String" MaxLength="150" Nullable="false"/>
+        <Property Name="unloadingPoint" Type="Edm.String" MaxLength="100" Nullable="false"/>
+        <Property Name="materialDescription" Type="Edm.String" MaxLength="250" Nullable="false"/>
+        <Property Name="unloadingStatus" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="unloadedQuantity" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="quantityUnit" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="goodsInspected" Type="Edm.Boolean" Nullable="false"/>
+        <Property Name="sealVerified" Type="Edm.Boolean" Nullable="false"/>
+        <Property Name="FactoryOutRemarks" Type="Edm.String" MaxLength="250" Nullable="false"/>
+        <Property Name="SAP__Messages" Type="Collection(YY1_API_VEHICLEGATEOPERATION_0001.SAP__Message)" Nullable="false"/>
+        <NavigationProperty Name="_VehicleGateOperation" Type="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation" Partner="_FactoryGateEntries">
+          <ReferentialConstraint Property="MainGateEntryId" ReferencedProperty="MainGateEntryId"/>
+        </NavigationProperty>
+      </EntityType>
+      <EntityType Name="PickupDetail">
+        <Key>
+          <PropertyRef Name="MainGateEntryId"/>
+          <PropertyRef Name="PickupId"/>
+        </Key>
+        <Property Name="MainGateEntryId" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="PickupId" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="SAPUUID" Type="Edm.Guid"/>
+        <Property Name="SAPParentUUID" Type="Edm.Guid"/>
+        <Property Name="SAPRootUUID" Type="Edm.Guid"/>
+        <Property Name="pickupGatePassType" Type="Edm.String" MaxLength="5" Nullable="false"/>
+        <Property Name="PickupGatePassDocumentNo" Type="Edm.String" MaxLength="50" Nullable="false"/>
+        <Property Name="PickupGatePassDocumentDate" Type="Edm.Date"/>
+        <Property Name="PickupPurpose" Type="Edm.String" MaxLength="250" Nullable="false"/>
+        <Property Name="authorizedBy" Type="Edm.String" MaxLength="150" Nullable="false"/>
+        <Property Name="PickUpGatePassVerified" Type="Edm.Boolean" Nullable="false"/>
+        <Property Name="PickupRemarks" Type="Edm.String" MaxLength="250" Nullable="false"/>
+        <Property Name="SAP__Messages" Type="Collection(YY1_API_VEHICLEGATEOPERATION_0001.SAP__Message)" Nullable="false"/>
+        <NavigationProperty Name="_VehicleGateOperation" Type="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation" Partner="_PickupDetail">
+          <ReferentialConstraint Property="MainGateEntryId" ReferencedProperty="MainGateEntryId"/>
+        </NavigationProperty>
+      </EntityType>
+      <EntityType Name="SecurityGateEntries">
+        <Key>
+          <PropertyRef Name="MainGateEntryId"/>
+          <PropertyRef Name="SecuritygateId"/>
+        </Key>
+        <Property Name="MainGateEntryId" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="SecuritygateId" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="SAPUUID" Type="Edm.Guid"/>
+        <Property Name="SAPParentUUID" Type="Edm.Guid"/>
+        <Property Name="SAPRootUUID" Type="Edm.Guid"/>
+        <Property Name="gateInNumber" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="driverLicenseNo" Type="Edm.String" MaxLength="50" Nullable="false"/>
+        <Property Name="driverPhoneNo" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="helperName" Type="Edm.String" MaxLength="50" Nullable="false"/>
+        <Property Name="vehicleReportingDateTime" Type="Edm.DateTimeOffset" Precision="7"/>
+        <Property Name="securityInDateTime" Type="Edm.DateTimeOffset" Precision="7"/>
+        <Property Name="securityPersonnel" Type="Edm.String" MaxLength="150" Nullable="false"/>
+        <Property Name="driverVerified" Type="Edm.Boolean" Nullable="false"/>
+        <Property Name="vehicleVerified" Type="Edm.Boolean" Nullable="false"/>
+        <Property Name="documentsVerified" Type="Edm.Boolean" Nullable="false"/>
+        <Property Name="poNumber" Type="Edm.String" MaxLength="50" Nullable="false"/>
+        <Property Name="soNumber" Type="Edm.String" MaxLength="50" Nullable="false"/>
+        <Property Name="invoiceNumber" Type="Edm.String" MaxLength="50" Nullable="false"/>
+        <Property Name="invoiceDate" Type="Edm.Date"/>
+        <Property Name="withoutPO" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="rgpDocumentNo" Type="Edm.String" MaxLength="50" Nullable="false"/>
+        <Property Name="nrgpDocumentNo" Type="Edm.String" MaxLength="50" Nullable="false"/>
+        <Property Name="gatePassType" Type="Edm.String" MaxLength="5" Nullable="false"/>
+        <Property Name="SecurityAssignedRoute" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="securityInRemarks" Type="Edm.String" MaxLength="250" Nullable="false"/>
+        <Property Name="securityOutPersonnel" Type="Edm.String" MaxLength="150" Nullable="false"/>
+        <Property Name="securityOutDateTime" Type="Edm.DateTimeOffset" Precision="7"/>
+        <Property Name="exitDriverVerified" Type="Edm.Boolean" Nullable="false"/>
+        <Property Name="exitVehicleVerified" Type="Edm.Boolean" Nullable="false"/>
+        <Property Name="exitDocumentsVerified" Type="Edm.Boolean" Nullable="false"/>
+        <Property Name="gatePassVerified" Type="Edm.Boolean" Nullable="false"/>
+        <Property Name="deliveryDetailsVerified" Type="Edm.Boolean" Nullable="false"/>
+        <Property Name="emptyInspectionVerified" Type="Edm.Boolean" Nullable="false"/>
+        <Property Name="materialInspected" Type="Edm.Boolean" Nullable="false"/>
+        <Property Name="exitGatePassType" Type="Edm.String" MaxLength="5" Nullable="false"/>
+        <Property Name="exitGatePassDocumentNo" Type="Edm.String" MaxLength="50" Nullable="false"/>
+        <Property Name="securityOutRemarks" Type="Edm.String" MaxLength="250" Nullable="false"/>
+        <Property Name="SAP__Messages" Type="Collection(YY1_API_VEHICLEGATEOPERATION_0001.SAP__Message)" Nullable="false"/>
+        <NavigationProperty Name="_VehicleGateOperation" Type="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation" Partner="_SecurityGateEntries">
+          <ReferentialConstraint Property="MainGateEntryId" ReferencedProperty="MainGateEntryId"/>
+        </NavigationProperty>
+      </EntityType>
+      <EntityType Name="VehicleGateOperation">
+        <Key>
+          <PropertyRef Name="MainGateEntryId"/>
+        </Key>
+        <Property Name="MainGateEntryId" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="SAPUUID" Type="Edm.Guid"/>
+        <Property Name="VehicleType" Type="Edm.String" MaxLength="10" Nullable="false"/>
+        <Property Name="VehicleRegNumber" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="DriverName" Type="Edm.String" MaxLength="100" Nullable="false"/>
+        <Property Name="VisitPurpose" Type="Edm.String" MaxLength="2" Nullable="false"/>
+        <Property Name="VehicleStatus" Type="Edm.String" MaxLength="15" Nullable="false"/>
+        <Property Name="GateInOperator" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="GateInTime" Type="Edm.DateTimeOffset" Precision="7"/>
+        <Property Name="GateOutOperator" Type="Edm.DateTimeOffset" Precision="7"/>
+        <Property Name="GateOutTime" Type="Edm.DateTimeOffset" Precision="7"/>
+        <Property Name="MainGateRemarks" Type="Edm.String" MaxLength="250" Nullable="false"/>
+        <Property Name="assignedRoute" Type="Edm.String" MaxLength="100" Nullable="false"/>
+        <Property Name="CurrentStage" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="SAPLastChangedBy" Type="Edm.String" MaxLength="12" Nullable="false"/>
+        <Property Name="SAPLastChangedOn" Type="Edm.DateTimeOffset" Precision="7"/>
+        <Property Name="SAPCreatedBy" Type="Edm.String" MaxLength="12" Nullable="false"/>
+        <Property Name="SAPCreatedOn" Type="Edm.DateTimeOffset" Precision="7"/>
+        <Property Name="SAPDescription" Type="Edm.String" MaxLength="80" Nullable="false"/>
+        <Property Name="SAP__Messages" Type="Collection(YY1_API_VEHICLEGATEOPERATION_0001.SAP__Message)" Nullable="false"/>
+        <NavigationProperty Name="_DeliveryDetails" Type="Collection(YY1_API_VEHICLEGATEOPERATION_0001.DeliveryDetails)" Partner="_VehicleGateOperation">
+          <OnDelete Action="Cascade"/>
+        </NavigationProperty>
+        <NavigationProperty Name="_FactoryGateEntries" Type="Collection(YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries)" Partner="_VehicleGateOperation">
+          <OnDelete Action="Cascade"/>
+        </NavigationProperty>
+        <NavigationProperty Name="_PickupDetail" Type="Collection(YY1_API_VEHICLEGATEOPERATION_0001.PickupDetail)" Partner="_VehicleGateOperation">
+          <OnDelete Action="Cascade"/>
+        </NavigationProperty>
+        <NavigationProperty Name="_SecurityGateEntries" Type="Collection(YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries)" Partner="_VehicleGateOperation">
+          <OnDelete Action="Cascade"/>
+        </NavigationProperty>
+        <NavigationProperty Name="_WeighbridgeTransactions" Type="Collection(YY1_API_VEHICLEGATEOPERATION_0001.WeighbridgeTransactions)" Partner="_VehicleGateOperation">
+          <OnDelete Action="Cascade"/>
+        </NavigationProperty>
+      </EntityType>
+      <EntityType Name="WeighbridgeTransactions">
+        <Key>
+          <PropertyRef Name="MainGateEntryId"/>
+          <PropertyRef Name="WeighbridgeId"/>
+        </Key>
+        <Property Name="MainGateEntryId" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="WeighbridgeId" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="SAPUUID" Type="Edm.Guid"/>
+        <Property Name="SAPParentUUID" Type="Edm.Guid"/>
+        <Property Name="SAPRootUUID" Type="Edm.Guid"/>
+        <Property Name="weighbridgeNumber" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="weighmentType" Type="Edm.String" MaxLength="10" Nullable="false"/>
+        <Property Name="weight" Type="Edm.Decimal" Precision="10" Scale="2" Nullable="false"/>
+        <Property Name="weightUnit" Type="Edm.String" MaxLength="3" Nullable="false"/>
+        <Property Name="weighbridgeDateTime" Type="Edm.DateTimeOffset" Precision="7"/>
+        <Property Name="WeightOperator" Type="Edm.String" MaxLength="150" Nullable="false"/>
+        <Property Name="weighRemark" Type="Edm.String" MaxLength="250" Nullable="false"/>
+        <Property Name="SAP__Messages" Type="Collection(YY1_API_VEHICLEGATEOPERATION_0001.SAP__Message)" Nullable="false"/>
+        <NavigationProperty Name="_VehicleGateOperation" Type="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation" Partner="_WeighbridgeTransactions">
+          <ReferentialConstraint Property="MainGateEntryId" ReferencedProperty="MainGateEntryId"/>
+        </NavigationProperty>
+      </EntityType>
+      <ComplexType Name="SAP__Message">
+        <Property Name="code" Type="Edm.String" Nullable="false"/>
+        <Property Name="message" Type="Edm.String" Nullable="false"/>
+        <Property Name="target" Type="Edm.String"/>
+        <Property Name="additionalTargets" Type="Collection(Edm.String)" Nullable="false"/>
+        <Property Name="transition" Type="Edm.Boolean" Nullable="false"/>
+        <Property Name="numericSeverity" Type="Edm.Byte" Nullable="false"/>
+        <Property Name="longtextUrl" Type="Edm.String"/>
+      </ComplexType>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.EntityContainer">
+        <Annotation Term="Common.ApplyMultiUnitBehaviorForSortingAndFiltering" Bool="true"/>
+        <Annotation Term="Capabilities.FilterFunctions">
+          <Collection>
+            <String>eq</String>
+            <String>ne</String>
+            <String>gt</String>
+            <String>ge</String>
+            <String>lt</String>
+            <String>le</String>
+            <String>and</String>
+            <String>or</String>
+            <String>contains</String>
+            <String>startswith</String>
+            <String>endswith</String>
+            <String>any</String>
+            <String>all</String>
+          </Collection>
+        </Annotation>
+        <Annotation Term="Capabilities.SupportedFormats">
+          <Collection>
+            <String>application/json</String>
+            <String>application/pdf</String>
+          </Collection>
+        </Annotation>
+        <Annotation Term="Capabilities.BatchSupport">
+          <Record Type="Capabilities.BatchSupportType">
+            <PropertyValue Property="SupportedFormats">
+              <Collection>
+                <String>application/json</String>
+                <String>multipart/mixed</String>
+              </Collection>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.KeyAsSegmentSupported" Bool="true"/>
+        <Annotation Term="Capabilities.AsynchronousRequestsSupported" Bool="true"/>
+        <Annotation Term="PDF.Features">
+          <Record Type="PDF.FeaturesType">
+            <PropertyValue Property="DocumentDescriptionReference" String="../../../../default/iwbep/common/0001/$metadata"/>
+            <PropertyValue Property="DocumentDescriptionCollection" String="MyDocumentDescriptions"/>
+            <PropertyValue Property="ArchiveFormat" Bool="true"/>
+            <PropertyValue Property="Border" Bool="true"/>
+            <PropertyValue Property="CoverPage" Bool="true"/>
+            <PropertyValue Property="FitToPage" Bool="true"/>
+            <PropertyValue Property="FontName" Bool="true"/>
+            <PropertyValue Property="FontSize" Bool="true"/>
+            <PropertyValue Property="HeaderFooter" Bool="true"/>
+            <PropertyValue Property="IANATimezoneFormat" Bool="true"/>
+            <PropertyValue Property="Margin" Bool="true"/>
+            <PropertyValue Property="Padding" Bool="true"/>
+            <PropertyValue Property="ResultSizeDefault" Int="20000"/>
+            <PropertyValue Property="ResultSizeMaximum" Int="20000"/>
+            <PropertyValue Property="Signature" Bool="true"/>
+            <PropertyValue Property="TextDirectionLayout" Bool="true"/>
+            <PropertyValue Property="Treeview" Bool="true"/>
+            <PropertyValue Property="UploadToFileShare" Bool="true"/>
+          </Record>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.DeliveryDetails">
+        <Annotation Term="Common.Label" String="CBO YY1_R_VEHICLEGATEOPERATIONTP / DeliveryDetails"/>
+        <Annotation Term="Common.Messages" Path="SAP__Messages"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.EntityContainer/DeliveryDetails">
+        <Annotation Term="Capabilities.NavigationRestrictions">
+          <Record Type="Capabilities.NavigationRestrictionsType">
+            <PropertyValue Property="RestrictedProperties">
+              <Collection>
+                <Record Type="Capabilities.NavigationPropertyRestriction">
+                  <PropertyValue Property="NavigationProperty" NavigationPropertyPath="_VehicleGateOperation"/>
+                  <PropertyValue Property="InsertRestrictions">
+                    <Record Type="Capabilities.InsertRestrictionsType">
+                      <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                  </PropertyValue>
+                  <PropertyValue Property="DeepUpdateSupport">
+                    <Record Type="Capabilities.DeepUpdateSupportType">
+                      <PropertyValue Property="Supported" Bool="false"/>
+                    </Record>
+                  </PropertyValue>
+                </Record>
+              </Collection>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.SearchRestrictions">
+          <Record Type="Capabilities.SearchRestrictionsType">
+            <PropertyValue Property="Searchable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.InsertRestrictions">
+          <Record Type="Capabilities.InsertRestrictionsType">
+            <PropertyValue Property="RequiredProperties">
+              <Collection>
+                <PropertyPath>DeliveryId</PropertyPath>
+              </Collection>
+            </PropertyValue>
+            <PropertyValue Property="Insertable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.UpdateRestrictions">
+          <Record Type="Capabilities.UpdateRestrictionsType">
+            <PropertyValue Property="DeltaUpdateSupported" Bool="true"/>
+            <PropertyValue Property="NonUpdatableNavigationProperties">
+              <Collection>
+                <NavigationPropertyPath>_VehicleGateOperation</NavigationPropertyPath>
+              </Collection>
+            </PropertyValue>
+            <PropertyValue Property="QueryOptions">
+              <Record Type="Capabilities.ModificationQueryOptionsType">
+                <PropertyValue Property="SelectSupported" Bool="true"/>
+              </Record>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.DeepUpdateSupport">
+          <Record Type="Capabilities.DeepUpdateSupportType">
+            <PropertyValue Property="ContentIDSupported" Bool="true"/>
+          </Record>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.DeliveryDetails/MainGateEntryId">
+        <Annotation Term="Common.Label" String="MainGateEntryId"/>
+        <Annotation Term="Common.QuickInfo" String="MainGateEntryId"/>
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.DeliveryDetails/DeliveryId">
+        <Annotation Term="Common.Label" String="DeliveryId"/>
+        <Annotation Term="Common.QuickInfo" String="DeliveryId"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.DeliveryDetails/SAPUUID">
+        <Annotation Term="Core.Computed" Bool="true"/>
+        <Annotation Term="Common.Label" String="UUID"/>
+        <Annotation Term="Common.QuickInfo" String="16 Byte UUID in 16 Bytes (Raw Format)"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.DeliveryDetails/SAPParentUUID">
+        <Annotation Term="Core.Computed" Bool="true"/>
+        <Annotation Term="Common.Label" String="UUID"/>
+        <Annotation Term="Common.QuickInfo" String="16 Byte UUID in 16 Bytes (Raw Format)"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.DeliveryDetails/SAPRootUUID">
+        <Annotation Term="Core.Computed" Bool="true"/>
+        <Annotation Term="Common.Label" String="UUID"/>
+        <Annotation Term="Common.QuickInfo" String="16 Byte UUID in 16 Bytes (Raw Format)"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.DeliveryDetails/gateTransaction">
+        <Annotation Term="Common.Label" String="gateTransaction"/>
+        <Annotation Term="Common.QuickInfo" String="gateTransaction"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.DeliveryDetails/PurchaseOrderNo">
+        <Annotation Term="Common.Label" String="PurchaseOrderNo"/>
+        <Annotation Term="Common.QuickInfo" String="PurchaseOrderNo"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.DeliveryDetails/SalesOrderNo">
+        <Annotation Term="Common.Label" String="SalesOrderNo"/>
+        <Annotation Term="Common.QuickInfo" String="SalesOrderNo"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.DeliveryDetails/InvoiceNo">
+        <Annotation Term="Common.Label" String="InvoiceNo"/>
+        <Annotation Term="Common.QuickInfo" String="InvoiceNo"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.DeliveryDetails/DeliveryNo">
+        <Annotation Term="Common.Label" String="DeliveryNo"/>
+        <Annotation Term="Common.QuickInfo" String="DeliveryNo"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.DeliveryDetails/supplierCode">
+        <Annotation Term="Common.Label" String="supplierCode"/>
+        <Annotation Term="Common.QuickInfo" String="supplierCode"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.DeliveryDetails/supplierName">
+        <Annotation Term="Common.Label" String="supplierName"/>
+        <Annotation Term="Common.QuickInfo" String="supplierName"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.DeliveryDetails/documentVerificationStatus">
+        <Annotation Term="Common.Label" String="documentVerificationStatus"/>
+        <Annotation Term="Common.QuickInfo" String="documentVerificationStatus"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.DeliveryDetails/deliveryRemarks">
+        <Annotation Term="Common.Label" String="deliveryRemarks"/>
+        <Annotation Term="Common.QuickInfo" String="deliveryRemarks"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries">
+        <Annotation Term="Common.Label" String="CBO YY1_R_VEHICLEGATEOPERATIONTP / FactoryGateEntries"/>
+        <Annotation Term="Common.Messages" Path="SAP__Messages"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.EntityContainer/FactoryGateEntries">
+        <Annotation Term="Capabilities.NavigationRestrictions">
+          <Record Type="Capabilities.NavigationRestrictionsType">
+            <PropertyValue Property="RestrictedProperties">
+              <Collection>
+                <Record Type="Capabilities.NavigationPropertyRestriction">
+                  <PropertyValue Property="NavigationProperty" NavigationPropertyPath="_VehicleGateOperation"/>
+                  <PropertyValue Property="InsertRestrictions">
+                    <Record Type="Capabilities.InsertRestrictionsType">
+                      <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                  </PropertyValue>
+                  <PropertyValue Property="DeepUpdateSupport">
+                    <Record Type="Capabilities.DeepUpdateSupportType">
+                      <PropertyValue Property="Supported" Bool="false"/>
+                    </Record>
+                  </PropertyValue>
+                </Record>
+              </Collection>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.SearchRestrictions">
+          <Record Type="Capabilities.SearchRestrictionsType">
+            <PropertyValue Property="Searchable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.InsertRestrictions">
+          <Record Type="Capabilities.InsertRestrictionsType">
+            <PropertyValue Property="RequiredProperties">
+              <Collection>
+                <PropertyPath>FactoryEntryId</PropertyPath>
+              </Collection>
+            </PropertyValue>
+            <PropertyValue Property="Insertable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.UpdateRestrictions">
+          <Record Type="Capabilities.UpdateRestrictionsType">
+            <PropertyValue Property="DeltaUpdateSupported" Bool="true"/>
+            <PropertyValue Property="NonUpdatableNavigationProperties">
+              <Collection>
+                <NavigationPropertyPath>_VehicleGateOperation</NavigationPropertyPath>
+              </Collection>
+            </PropertyValue>
+            <PropertyValue Property="QueryOptions">
+              <Record Type="Capabilities.ModificationQueryOptionsType">
+                <PropertyValue Property="SelectSupported" Bool="true"/>
+              </Record>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.DeepUpdateSupport">
+          <Record Type="Capabilities.DeepUpdateSupportType">
+            <PropertyValue Property="ContentIDSupported" Bool="true"/>
+          </Record>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/MainGateEntryId">
+        <Annotation Term="Common.Label" String="MainGateEntryId"/>
+        <Annotation Term="Common.QuickInfo" String="MainGateEntryId"/>
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/FactoryEntryId">
+        <Annotation Term="Common.Label" String="FactoryEntryId"/>
+        <Annotation Term="Common.QuickInfo" String="FactoryEntryId"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/SAPUUID">
+        <Annotation Term="Core.Computed" Bool="true"/>
+        <Annotation Term="Common.Label" String="UUID"/>
+        <Annotation Term="Common.QuickInfo" String="16 Byte UUID in 16 Bytes (Raw Format)"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/SAPParentUUID">
+        <Annotation Term="Core.Computed" Bool="true"/>
+        <Annotation Term="Common.Label" String="UUID"/>
+        <Annotation Term="Common.QuickInfo" String="16 Byte UUID in 16 Bytes (Raw Format)"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/SAPRootUUID">
+        <Annotation Term="Core.Computed" Bool="true"/>
+        <Annotation Term="Common.Label" String="UUID"/>
+        <Annotation Term="Common.QuickInfo" String="16 Byte UUID in 16 Bytes (Raw Format)"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/GateInNoF">
+        <Annotation Term="Common.Label" String="GateInNoF"/>
+        <Annotation Term="Common.QuickInfo" String="GateInNoF"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/factoryGateInDateTime">
+        <Annotation Term="Common.Label" String="factoryGateInDateTime"/>
+        <Annotation Term="Common.QuickInfo" String="factoryGateInDateTime"/>
+        <Annotation Term="Common.Heading" String="Long Form of Time Stamp"/>
+        <Annotation Term="Common.DocumentationRef" String="urn:sap-com:documentation:key?=type=DE&amp;id=TZNTSTMPL"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/factoryGateInOperator">
+        <Annotation Term="Common.Label" String="factoryGateInOperator"/>
+        <Annotation Term="Common.QuickInfo" String="factoryGateInOperator"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/factoryGateInRemarks">
+        <Annotation Term="Common.Label" String="factoryGateInRemarks"/>
+        <Annotation Term="Common.QuickInfo" String="factoryGateInRemarks"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/factoryGateOutDateTime">
+        <Annotation Term="Common.Label" String="factoryGateOutDateTime"/>
+        <Annotation Term="Common.QuickInfo" String="factoryGateOutDateTime"/>
+        <Annotation Term="Common.Heading" String="Long Form of Time Stamp"/>
+        <Annotation Term="Common.DocumentationRef" String="urn:sap-com:documentation:key?=type=DE&amp;id=TZNTSTMPL"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/factoryGateOutOperator">
+        <Annotation Term="Common.Label" String="factoryGateOutOperator"/>
+        <Annotation Term="Common.QuickInfo" String="factoryGateOutOperator"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/factoryGateOutRemarks">
+        <Annotation Term="Common.Label" String="factoryGateOutRemarks"/>
+        <Annotation Term="Common.QuickInfo" String="factoryGateOutRemarks"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/FactoryGateOutType">
+        <Annotation Term="Common.Label" String="FactoryGateOutType"/>
+        <Annotation Term="Common.QuickInfo" String="FactoryGateOutType"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/FactoryPONumber">
+        <Annotation Term="Common.Label" String="FactoryPONumber"/>
+        <Annotation Term="Common.QuickInfo" String="FactoryPONumber"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/FactoryInvoiceNumber">
+        <Annotation Term="Common.Label" String="FactoryInvoiceNumber"/>
+        <Annotation Term="Common.QuickInfo" String="FactoryInvoiceNumber"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/FactoryInvoiceDate">
+        <Annotation Term="Common.Label" String="FactoryInvoiceDate"/>
+        <Annotation Term="Common.QuickInfo" String="FactoryInvoiceDate"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/supplierNameInFactory">
+        <Annotation Term="Common.Label" String="supplierNameInFactory"/>
+        <Annotation Term="Common.QuickInfo" String="supplierNameInFactory"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/transporterName">
+        <Annotation Term="Common.Label" String="transporterName"/>
+        <Annotation Term="Common.QuickInfo" String="transporterName"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/deliveryNoteNo">
+        <Annotation Term="Common.Label" String="deliveryNoteNo"/>
+        <Annotation Term="Common.QuickInfo" String="deliveryNoteNo"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/factoryArea">
+        <Annotation Term="Common.Label" String="factoryArea"/>
+        <Annotation Term="Common.QuickInfo" String="factoryArea"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/unloadingPoint">
+        <Annotation Term="Common.Label" String="unloadingPoint"/>
+        <Annotation Term="Common.QuickInfo" String="unloadingPoint"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/materialDescription">
+        <Annotation Term="Common.Label" String="materialDescription"/>
+        <Annotation Term="Common.QuickInfo" String="materialDescription"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/unloadingStatus">
+        <Annotation Term="Common.Label" String="unloadingStatus"/>
+        <Annotation Term="Common.QuickInfo" String="unloadingStatus"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/unloadedQuantity">
+        <Annotation Term="Common.Label" String="unloadedQuantity"/>
+        <Annotation Term="Common.QuickInfo" String="unloadedQuantity"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/quantityUnit">
+        <Annotation Term="Common.Label" String="quantityUnit"/>
+        <Annotation Term="Common.QuickInfo" String="quantityUnit"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/goodsInspected">
+        <Annotation Term="Common.Label" String="goodsInspected"/>
+        <Annotation Term="Common.QuickInfo" String="goodsInspected"/>
+        <Annotation Term="Common.Heading" String="Truth Value"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/sealVerified">
+        <Annotation Term="Common.Label" String="sealVerified"/>
+        <Annotation Term="Common.QuickInfo" String="sealVerified"/>
+        <Annotation Term="Common.Heading" String="Truth Value"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.FactoryGateEntries/FactoryOutRemarks">
+        <Annotation Term="Common.Label" String="FactoryOutRemarks"/>
+        <Annotation Term="Common.QuickInfo" String="FactoryOutRemarks"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.PickupDetail">
+        <Annotation Term="Common.Label" String="CBO YY1_R_VEHICLEGATEOPERATIONTP / PickupDetail"/>
+        <Annotation Term="Common.Messages" Path="SAP__Messages"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.EntityContainer/PickupDetail">
+        <Annotation Term="Capabilities.NavigationRestrictions">
+          <Record Type="Capabilities.NavigationRestrictionsType">
+            <PropertyValue Property="RestrictedProperties">
+              <Collection>
+                <Record Type="Capabilities.NavigationPropertyRestriction">
+                  <PropertyValue Property="NavigationProperty" NavigationPropertyPath="_VehicleGateOperation"/>
+                  <PropertyValue Property="InsertRestrictions">
+                    <Record Type="Capabilities.InsertRestrictionsType">
+                      <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                  </PropertyValue>
+                  <PropertyValue Property="DeepUpdateSupport">
+                    <Record Type="Capabilities.DeepUpdateSupportType">
+                      <PropertyValue Property="Supported" Bool="false"/>
+                    </Record>
+                  </PropertyValue>
+                </Record>
+              </Collection>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.SearchRestrictions">
+          <Record Type="Capabilities.SearchRestrictionsType">
+            <PropertyValue Property="Searchable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.InsertRestrictions">
+          <Record Type="Capabilities.InsertRestrictionsType">
+            <PropertyValue Property="RequiredProperties">
+              <Collection>
+                <PropertyPath>PickupId</PropertyPath>
+              </Collection>
+            </PropertyValue>
+            <PropertyValue Property="Insertable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.UpdateRestrictions">
+          <Record Type="Capabilities.UpdateRestrictionsType">
+            <PropertyValue Property="DeltaUpdateSupported" Bool="true"/>
+            <PropertyValue Property="NonUpdatableNavigationProperties">
+              <Collection>
+                <NavigationPropertyPath>_VehicleGateOperation</NavigationPropertyPath>
+              </Collection>
+            </PropertyValue>
+            <PropertyValue Property="QueryOptions">
+              <Record Type="Capabilities.ModificationQueryOptionsType">
+                <PropertyValue Property="SelectSupported" Bool="true"/>
+              </Record>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.DeepUpdateSupport">
+          <Record Type="Capabilities.DeepUpdateSupportType">
+            <PropertyValue Property="ContentIDSupported" Bool="true"/>
+          </Record>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.PickupDetail/MainGateEntryId">
+        <Annotation Term="Common.Label" String="MainGateEntryId"/>
+        <Annotation Term="Common.QuickInfo" String="MainGateEntryId"/>
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.PickupDetail/PickupId">
+        <Annotation Term="Common.Label" String="PickupId"/>
+        <Annotation Term="Common.QuickInfo" String="PickupId"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.PickupDetail/SAPUUID">
+        <Annotation Term="Core.Computed" Bool="true"/>
+        <Annotation Term="Common.Label" String="UUID"/>
+        <Annotation Term="Common.QuickInfo" String="16 Byte UUID in 16 Bytes (Raw Format)"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.PickupDetail/SAPParentUUID">
+        <Annotation Term="Core.Computed" Bool="true"/>
+        <Annotation Term="Common.Label" String="UUID"/>
+        <Annotation Term="Common.QuickInfo" String="16 Byte UUID in 16 Bytes (Raw Format)"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.PickupDetail/SAPRootUUID">
+        <Annotation Term="Core.Computed" Bool="true"/>
+        <Annotation Term="Common.Label" String="UUID"/>
+        <Annotation Term="Common.QuickInfo" String="16 Byte UUID in 16 Bytes (Raw Format)"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.PickupDetail/pickupGatePassType">
+        <Annotation Term="Common.Label" String="pickupGatePassType"/>
+        <Annotation Term="Common.QuickInfo" String="pickupGatePassType"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.PickupDetail/PickupGatePassDocumentNo">
+        <Annotation Term="Common.Label" String="PickupGatePassDocumentNo"/>
+        <Annotation Term="Common.QuickInfo" String="PickupGatePassDocumentNo"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.PickupDetail/PickupGatePassDocumentDate">
+        <Annotation Term="Common.Label" String="PickupGatePassDocumentDate"/>
+        <Annotation Term="Common.QuickInfo" String="PickupGatePassDocumentDate"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.PickupDetail/PickupPurpose">
+        <Annotation Term="Common.Label" String="PickupPurpose"/>
+        <Annotation Term="Common.QuickInfo" String="PickupPurpose"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.PickupDetail/authorizedBy">
+        <Annotation Term="Common.Label" String="authorizedBy"/>
+        <Annotation Term="Common.QuickInfo" String="authorizedBy"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.PickupDetail/PickUpGatePassVerified">
+        <Annotation Term="Common.Label" String="PickUpGatePassVerified"/>
+        <Annotation Term="Common.QuickInfo" String="PickUpGatePassVerified"/>
+        <Annotation Term="Common.Heading" String="Truth Value"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.PickupDetail/PickupRemarks">
+        <Annotation Term="Common.Label" String="PickupRemarks"/>
+        <Annotation Term="Common.QuickInfo" String="PickupRemarks"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries">
+        <Annotation Term="Common.Label" String="CBO YY1_R_VEHICLEGATEOPERATIONTP / SecurityGateEntries"/>
+        <Annotation Term="Common.Messages" Path="SAP__Messages"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.EntityContainer/SecurityGateEntries">
+        <Annotation Term="Capabilities.NavigationRestrictions">
+          <Record Type="Capabilities.NavigationRestrictionsType">
+            <PropertyValue Property="RestrictedProperties">
+              <Collection>
+                <Record Type="Capabilities.NavigationPropertyRestriction">
+                  <PropertyValue Property="NavigationProperty" NavigationPropertyPath="_VehicleGateOperation"/>
+                  <PropertyValue Property="InsertRestrictions">
+                    <Record Type="Capabilities.InsertRestrictionsType">
+                      <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                  </PropertyValue>
+                  <PropertyValue Property="DeepUpdateSupport">
+                    <Record Type="Capabilities.DeepUpdateSupportType">
+                      <PropertyValue Property="Supported" Bool="false"/>
+                    </Record>
+                  </PropertyValue>
+                </Record>
+              </Collection>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.SearchRestrictions">
+          <Record Type="Capabilities.SearchRestrictionsType">
+            <PropertyValue Property="Searchable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.InsertRestrictions">
+          <Record Type="Capabilities.InsertRestrictionsType">
+            <PropertyValue Property="RequiredProperties">
+              <Collection>
+                <PropertyPath>SecuritygateId</PropertyPath>
+              </Collection>
+            </PropertyValue>
+            <PropertyValue Property="Insertable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.UpdateRestrictions">
+          <Record Type="Capabilities.UpdateRestrictionsType">
+            <PropertyValue Property="DeltaUpdateSupported" Bool="true"/>
+            <PropertyValue Property="NonUpdatableNavigationProperties">
+              <Collection>
+                <NavigationPropertyPath>_VehicleGateOperation</NavigationPropertyPath>
+              </Collection>
+            </PropertyValue>
+            <PropertyValue Property="QueryOptions">
+              <Record Type="Capabilities.ModificationQueryOptionsType">
+                <PropertyValue Property="SelectSupported" Bool="true"/>
+              </Record>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.DeepUpdateSupport">
+          <Record Type="Capabilities.DeepUpdateSupportType">
+            <PropertyValue Property="ContentIDSupported" Bool="true"/>
+          </Record>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/MainGateEntryId">
+        <Annotation Term="Common.Label" String="MainGateEntryId"/>
+        <Annotation Term="Common.QuickInfo" String="MainGateEntryId"/>
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/SecuritygateId">
+        <Annotation Term="Common.Label" String="SecuritygateId"/>
+        <Annotation Term="Common.QuickInfo" String="SecuritygateId"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/SAPUUID">
+        <Annotation Term="Core.Computed" Bool="true"/>
+        <Annotation Term="Common.Label" String="UUID"/>
+        <Annotation Term="Common.QuickInfo" String="16 Byte UUID in 16 Bytes (Raw Format)"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/SAPParentUUID">
+        <Annotation Term="Core.Computed" Bool="true"/>
+        <Annotation Term="Common.Label" String="UUID"/>
+        <Annotation Term="Common.QuickInfo" String="16 Byte UUID in 16 Bytes (Raw Format)"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/SAPRootUUID">
+        <Annotation Term="Core.Computed" Bool="true"/>
+        <Annotation Term="Common.Label" String="UUID"/>
+        <Annotation Term="Common.QuickInfo" String="16 Byte UUID in 16 Bytes (Raw Format)"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/gateInNumber">
+        <Annotation Term="Common.Label" String="gateInNumber"/>
+        <Annotation Term="Common.QuickInfo" String="gateInNumber"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/driverLicenseNo">
+        <Annotation Term="Common.Label" String="driverLicenseNo"/>
+        <Annotation Term="Common.QuickInfo" String="driverLicenseNo"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/driverPhoneNo">
+        <Annotation Term="Common.Label" String="driverPhoneNo"/>
+        <Annotation Term="Common.QuickInfo" String="driverPhoneNo"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/helperName">
+        <Annotation Term="Common.Label" String="helperName"/>
+        <Annotation Term="Common.QuickInfo" String="helperName"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/vehicleReportingDateTime">
+        <Annotation Term="Common.Label" String="vehicleReportingDateTime"/>
+        <Annotation Term="Common.QuickInfo" String="vehicleReportingDateTime"/>
+        <Annotation Term="Common.Heading" String="Long Form of Time Stamp"/>
+        <Annotation Term="Common.DocumentationRef" String="urn:sap-com:documentation:key?=type=DE&amp;id=TZNTSTMPL"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/securityInDateTime">
+        <Annotation Term="Common.Label" String="securityInDateTime"/>
+        <Annotation Term="Common.QuickInfo" String="securityInDateTime"/>
+        <Annotation Term="Common.Heading" String="Long Form of Time Stamp"/>
+        <Annotation Term="Common.DocumentationRef" String="urn:sap-com:documentation:key?=type=DE&amp;id=TZNTSTMPL"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/securityPersonnel">
+        <Annotation Term="Common.Label" String="securityPersonnel"/>
+        <Annotation Term="Common.QuickInfo" String="securityPersonnel"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/driverVerified">
+        <Annotation Term="Common.Label" String="driverVerified"/>
+        <Annotation Term="Common.QuickInfo" String="driverVerified"/>
+        <Annotation Term="Common.Heading" String="Truth Value"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/vehicleVerified">
+        <Annotation Term="Common.Label" String="vehicleVerified"/>
+        <Annotation Term="Common.QuickInfo" String="vehicleVerified"/>
+        <Annotation Term="Common.Heading" String="Truth Value"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/documentsVerified">
+        <Annotation Term="Common.Label" String="documentsVerified"/>
+        <Annotation Term="Common.QuickInfo" String="documentsVerified"/>
+        <Annotation Term="Common.Heading" String="Truth Value"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/poNumber">
+        <Annotation Term="Common.Label" String="poNumber"/>
+        <Annotation Term="Common.QuickInfo" String="poNumber"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/soNumber">
+        <Annotation Term="Common.Label" String="soNumber"/>
+        <Annotation Term="Common.QuickInfo" String="soNumber"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/invoiceNumber">
+        <Annotation Term="Common.Label" String="invoiceNumber"/>
+        <Annotation Term="Common.QuickInfo" String="invoiceNumber"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/invoiceDate">
+        <Annotation Term="Common.Label" String="invoiceDate"/>
+        <Annotation Term="Common.QuickInfo" String="invoiceDate"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/withoutPO">
+        <Annotation Term="Common.Label" String="withoutPO"/>
+        <Annotation Term="Common.QuickInfo" String="withoutPO"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/rgpDocumentNo">
+        <Annotation Term="Common.Label" String="rgpDocumentNo"/>
+        <Annotation Term="Common.QuickInfo" String="rgpDocumentNo"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/nrgpDocumentNo">
+        <Annotation Term="Common.Label" String="nrgpDocumentNo"/>
+        <Annotation Term="Common.QuickInfo" String="nrgpDocumentNo"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/gatePassType">
+        <Annotation Term="Common.Label" String="gatePassType"/>
+        <Annotation Term="Common.QuickInfo" String="gatePassType"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/SecurityAssignedRoute">
+        <Annotation Term="Common.Label" String="SecurityAssignedRoute"/>
+        <Annotation Term="Common.QuickInfo" String="SecurityAssignedRoute"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/securityInRemarks">
+        <Annotation Term="Common.Label" String="securityInRemarks"/>
+        <Annotation Term="Common.QuickInfo" String="securityInRemarks"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/securityOutPersonnel">
+        <Annotation Term="Common.Label" String="securityOutPersonnel"/>
+        <Annotation Term="Common.QuickInfo" String="securityOutPersonnel"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/securityOutDateTime">
+        <Annotation Term="Common.Label" String="securityOutDateTime"/>
+        <Annotation Term="Common.QuickInfo" String="securityOutDateTime"/>
+        <Annotation Term="Common.Heading" String="Long Form of Time Stamp"/>
+        <Annotation Term="Common.DocumentationRef" String="urn:sap-com:documentation:key?=type=DE&amp;id=TZNTSTMPL"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/exitDriverVerified">
+        <Annotation Term="Common.Label" String="exitDriverVerified"/>
+        <Annotation Term="Common.QuickInfo" String="exitDriverVerified"/>
+        <Annotation Term="Common.Heading" String="Truth Value"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/exitVehicleVerified">
+        <Annotation Term="Common.Label" String="exitVehicleVerified"/>
+        <Annotation Term="Common.QuickInfo" String="exitVehicleVerified"/>
+        <Annotation Term="Common.Heading" String="Truth Value"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/exitDocumentsVerified">
+        <Annotation Term="Common.Label" String="exitDocumentsVerified"/>
+        <Annotation Term="Common.QuickInfo" String="exitDocumentsVerified"/>
+        <Annotation Term="Common.Heading" String="Truth Value"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/gatePassVerified">
+        <Annotation Term="Common.Label" String="gatePassVerified"/>
+        <Annotation Term="Common.QuickInfo" String="gatePassVerified"/>
+        <Annotation Term="Common.Heading" String="Truth Value"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/deliveryDetailsVerified">
+        <Annotation Term="Common.Label" String="deliveryDetailsVerified"/>
+        <Annotation Term="Common.QuickInfo" String="deliveryDetailsVerified"/>
+        <Annotation Term="Common.Heading" String="Truth Value"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/emptyInspectionVerified">
+        <Annotation Term="Common.Label" String="emptyInspectionVerified"/>
+        <Annotation Term="Common.QuickInfo" String="emptyInspectionVerified"/>
+        <Annotation Term="Common.Heading" String="Truth Value"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/materialInspected">
+        <Annotation Term="Common.Label" String="materialInspected"/>
+        <Annotation Term="Common.QuickInfo" String="materialInspected"/>
+        <Annotation Term="Common.Heading" String="Truth Value"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/exitGatePassType">
+        <Annotation Term="Common.Label" String="exitGatePassType"/>
+        <Annotation Term="Common.QuickInfo" String="exitGatePassType"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/exitGatePassDocumentNo">
+        <Annotation Term="Common.Label" String="exitGatePassDocumentNo"/>
+        <Annotation Term="Common.QuickInfo" String="exitGatePassDocumentNo"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.SecurityGateEntries/securityOutRemarks">
+        <Annotation Term="Common.Label" String="securityOutRemarks"/>
+        <Annotation Term="Common.QuickInfo" String="securityOutRemarks"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation">
+        <Annotation Term="Common.ChangedBy" Path="SAPLastChangedBy"/>
+        <Annotation Term="Common.ChangedAt" Path="SAPLastChangedOn"/>
+        <Annotation Term="Common.CreatedBy" Path="SAPCreatedBy"/>
+        <Annotation Term="Common.CreatedAt" Path="SAPCreatedOn"/>
+        <Annotation Term="Common.Label" String="CBO YY1_R_VEHICLEGATEOPERATIONTP / VehicleGateOperation"/>
+        <Annotation Term="Common.Messages" Path="SAP__Messages"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.EntityContainer/VehicleGateOperation">
+        <Annotation Term="Capabilities.NavigationRestrictions">
+          <Record Type="Capabilities.NavigationRestrictionsType">
+            <PropertyValue Property="RestrictedProperties">
+              <Collection>
+                <Record Type="Capabilities.NavigationPropertyRestriction">
+                  <PropertyValue Property="NavigationProperty" NavigationPropertyPath="_DeliveryDetails"/>
+                  <PropertyValue Property="InsertRestrictions">
+                    <Record Type="Capabilities.InsertRestrictionsType">
+                      <PropertyValue Property="Insertable" Bool="true"/>
+                    </Record>
+                  </PropertyValue>
+                </Record>
+                <Record Type="Capabilities.NavigationPropertyRestriction">
+                  <PropertyValue Property="NavigationProperty" NavigationPropertyPath="_FactoryGateEntries"/>
+                  <PropertyValue Property="InsertRestrictions">
+                    <Record Type="Capabilities.InsertRestrictionsType">
+                      <PropertyValue Property="Insertable" Bool="true"/>
+                    </Record>
+                  </PropertyValue>
+                </Record>
+                <Record Type="Capabilities.NavigationPropertyRestriction">
+                  <PropertyValue Property="NavigationProperty" NavigationPropertyPath="_PickupDetail"/>
+                  <PropertyValue Property="InsertRestrictions">
+                    <Record Type="Capabilities.InsertRestrictionsType">
+                      <PropertyValue Property="Insertable" Bool="true"/>
+                    </Record>
+                  </PropertyValue>
+                </Record>
+                <Record Type="Capabilities.NavigationPropertyRestriction">
+                  <PropertyValue Property="NavigationProperty" NavigationPropertyPath="_SecurityGateEntries"/>
+                  <PropertyValue Property="InsertRestrictions">
+                    <Record Type="Capabilities.InsertRestrictionsType">
+                      <PropertyValue Property="Insertable" Bool="true"/>
+                    </Record>
+                  </PropertyValue>
+                </Record>
+                <Record Type="Capabilities.NavigationPropertyRestriction">
+                  <PropertyValue Property="NavigationProperty" NavigationPropertyPath="_WeighbridgeTransactions"/>
+                  <PropertyValue Property="InsertRestrictions">
+                    <Record Type="Capabilities.InsertRestrictionsType">
+                      <PropertyValue Property="Insertable" Bool="true"/>
+                    </Record>
+                  </PropertyValue>
+                </Record>
+              </Collection>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.SearchRestrictions">
+          <Record Type="Capabilities.SearchRestrictionsType">
+            <PropertyValue Property="Searchable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.InsertRestrictions">
+          <Record Type="Capabilities.InsertRestrictionsType">
+            <PropertyValue Property="RequiredProperties">
+              <Collection>
+                <PropertyPath>MainGateEntryId</PropertyPath>
+              </Collection>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.UpdateRestrictions">
+          <Record Type="Capabilities.UpdateRestrictionsType">
+            <PropertyValue Property="DeltaUpdateSupported" Bool="true"/>
+            <PropertyValue Property="NonUpdatableNavigationProperties">
+              <Collection>
+                <NavigationPropertyPath>_DeliveryDetails</NavigationPropertyPath>
+                <NavigationPropertyPath>_FactoryGateEntries</NavigationPropertyPath>
+                <NavigationPropertyPath>_PickupDetail</NavigationPropertyPath>
+                <NavigationPropertyPath>_SecurityGateEntries</NavigationPropertyPath>
+                <NavigationPropertyPath>_WeighbridgeTransactions</NavigationPropertyPath>
+              </Collection>
+            </PropertyValue>
+            <PropertyValue Property="QueryOptions">
+              <Record Type="Capabilities.ModificationQueryOptionsType">
+                <PropertyValue Property="SelectSupported" Bool="true"/>
+              </Record>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.DeepUpdateSupport">
+          <Record Type="Capabilities.DeepUpdateSupportType">
+            <PropertyValue Property="ContentIDSupported" Bool="true"/>
+          </Record>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation/MainGateEntryId">
+        <Annotation Term="Common.Label" String="MainGateEntryId"/>
+        <Annotation Term="Common.QuickInfo" String="MainGateEntryId"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation/SAPUUID">
+        <Annotation Term="Core.Computed" Bool="true"/>
+        <Annotation Term="Common.Label" String="UUID"/>
+        <Annotation Term="Common.QuickInfo" String="16 Byte UUID in 16 Bytes (Raw Format)"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation/VehicleType">
+        <Annotation Term="Common.Label" String="VehicleType"/>
+        <Annotation Term="Common.QuickInfo" String="VehicleType"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation/VehicleRegNumber">
+        <Annotation Term="Common.Label" String="VehicleRegNumber"/>
+        <Annotation Term="Common.QuickInfo" String="VehicleRegNumber"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation/DriverName">
+        <Annotation Term="Common.Label" String="DriverName"/>
+        <Annotation Term="Common.QuickInfo" String="DriverName"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation/VisitPurpose">
+        <Annotation Term="Common.Label" String="VisitPurpose"/>
+        <Annotation Term="Common.QuickInfo" String="VisitPurpose"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation/VehicleStatus">
+        <Annotation Term="Common.Label" String="VehicleStatus"/>
+        <Annotation Term="Common.QuickInfo" String="VehicleStatus"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation/GateInOperator">
+        <Annotation Term="Common.Label" String="GateInOperator"/>
+        <Annotation Term="Common.QuickInfo" String="GateInOperator"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation/GateInTime">
+        <Annotation Term="Common.Label" String="GateInTime"/>
+        <Annotation Term="Common.QuickInfo" String="GateInTime"/>
+        <Annotation Term="Common.Heading" String="Long Form of Time Stamp"/>
+        <Annotation Term="Common.DocumentationRef" String="urn:sap-com:documentation:key?=type=DE&amp;id=TZNTSTMPL"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation/GateOutOperator">
+        <Annotation Term="Common.Label" String="GateOutOperator"/>
+        <Annotation Term="Common.QuickInfo" String="GateOutOperator"/>
+        <Annotation Term="Common.Heading" String="Long Form of Time Stamp"/>
+        <Annotation Term="Common.DocumentationRef" String="urn:sap-com:documentation:key?=type=DE&amp;id=TZNTSTMPL"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation/GateOutTime">
+        <Annotation Term="Common.Label" String="GateOutTime"/>
+        <Annotation Term="Common.QuickInfo" String="GateOutTime"/>
+        <Annotation Term="Common.Heading" String="Long Form of Time Stamp"/>
+        <Annotation Term="Common.DocumentationRef" String="urn:sap-com:documentation:key?=type=DE&amp;id=TZNTSTMPL"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation/MainGateRemarks">
+        <Annotation Term="Common.Label" String="MainGateRemarks"/>
+        <Annotation Term="Common.QuickInfo" String="MainGateRemarks"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation/assignedRoute">
+        <Annotation Term="Common.Label" String="assignedRoute"/>
+        <Annotation Term="Common.QuickInfo" String="assignedRoute"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation/CurrentStage">
+        <Annotation Term="Common.Label" String="CurrentStage"/>
+        <Annotation Term="Common.QuickInfo" String="CurrentStage"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation/SAPLastChangedBy">
+        <Annotation Term="Common.Label" String="Last Changed By"/>
+        <Annotation Term="Common.QuickInfo" String="Last Changed By"/>
+        <Annotation Term="Common.IsUpperCase" Bool="true"/>
+        <Annotation Term="Common.Heading" String="Changed By"/>
+        <Annotation Term="Common.DocumentationRef" String="urn:sap-com:documentation:key?=type=DE&amp;id=ABP_LASTCHANGE_USER"/>
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation/SAPLastChangedOn">
+        <Annotation Term="Common.Label" String="Last Changed On"/>
+        <Annotation Term="Common.QuickInfo" String="Last Changed On"/>
+        <Annotation Term="Common.Heading" String="Changed On"/>
+        <Annotation Term="Common.DocumentationRef" String="urn:sap-com:documentation:key?=type=DE&amp;id=ABP_LASTCHANGE_TSTMPL"/>
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation/SAPCreatedBy">
+        <Annotation Term="Common.Label" String="Created By"/>
+        <Annotation Term="Common.QuickInfo" String="Created By"/>
+        <Annotation Term="Common.IsUpperCase" Bool="true"/>
+        <Annotation Term="Common.Heading" String="Created By"/>
+        <Annotation Term="Common.DocumentationRef" String="urn:sap-com:documentation:key?=type=DE&amp;id=ABP_CREATION_USER"/>
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation/SAPCreatedOn">
+        <Annotation Term="Common.Label" String="Created On"/>
+        <Annotation Term="Common.QuickInfo" String="Created On"/>
+        <Annotation Term="Common.Heading" String="Created On"/>
+        <Annotation Term="Common.DocumentationRef" String="urn:sap-com:documentation:key?=type=DE&amp;id=ABP_CREATION_TSTMPL"/>
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation/SAPDescription">
+        <Annotation Term="Common.Label" String="Description"/>
+        <Annotation Term="Common.QuickInfo" String="Description"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation/_DeliveryDetails">
+        <Annotation Term="Common.Composition" Bool="true"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation/_FactoryGateEntries">
+        <Annotation Term="Common.Composition" Bool="true"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation/_PickupDetail">
+        <Annotation Term="Common.Composition" Bool="true"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation/_SecurityGateEntries">
+        <Annotation Term="Common.Composition" Bool="true"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.VehicleGateOperation/_WeighbridgeTransactions">
+        <Annotation Term="Common.Composition" Bool="true"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.WeighbridgeTransactions">
+        <Annotation Term="Common.Label" String="CBO YY1_R_VEHICLEGATEOPERATIONTP / WeighbridgeTransactions"/>
+        <Annotation Term="Common.Messages" Path="SAP__Messages"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.EntityContainer/WeighbridgeTransactions">
+        <Annotation Term="Capabilities.NavigationRestrictions">
+          <Record Type="Capabilities.NavigationRestrictionsType">
+            <PropertyValue Property="RestrictedProperties">
+              <Collection>
+                <Record Type="Capabilities.NavigationPropertyRestriction">
+                  <PropertyValue Property="NavigationProperty" NavigationPropertyPath="_VehicleGateOperation"/>
+                  <PropertyValue Property="InsertRestrictions">
+                    <Record Type="Capabilities.InsertRestrictionsType">
+                      <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                  </PropertyValue>
+                  <PropertyValue Property="DeepUpdateSupport">
+                    <Record Type="Capabilities.DeepUpdateSupportType">
+                      <PropertyValue Property="Supported" Bool="false"/>
+                    </Record>
+                  </PropertyValue>
+                </Record>
+              </Collection>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.SearchRestrictions">
+          <Record Type="Capabilities.SearchRestrictionsType">
+            <PropertyValue Property="Searchable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.InsertRestrictions">
+          <Record Type="Capabilities.InsertRestrictionsType">
+            <PropertyValue Property="RequiredProperties">
+              <Collection>
+                <PropertyPath>WeighbridgeId</PropertyPath>
+              </Collection>
+            </PropertyValue>
+            <PropertyValue Property="Insertable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.UpdateRestrictions">
+          <Record Type="Capabilities.UpdateRestrictionsType">
+            <PropertyValue Property="DeltaUpdateSupported" Bool="true"/>
+            <PropertyValue Property="NonUpdatableNavigationProperties">
+              <Collection>
+                <NavigationPropertyPath>_VehicleGateOperation</NavigationPropertyPath>
+              </Collection>
+            </PropertyValue>
+            <PropertyValue Property="QueryOptions">
+              <Record Type="Capabilities.ModificationQueryOptionsType">
+                <PropertyValue Property="SelectSupported" Bool="true"/>
+              </Record>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.DeepUpdateSupport">
+          <Record Type="Capabilities.DeepUpdateSupportType">
+            <PropertyValue Property="ContentIDSupported" Bool="true"/>
+          </Record>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.WeighbridgeTransactions/MainGateEntryId">
+        <Annotation Term="Common.Label" String="MainGateEntryId"/>
+        <Annotation Term="Common.QuickInfo" String="MainGateEntryId"/>
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.WeighbridgeTransactions/WeighbridgeId">
+        <Annotation Term="Common.Label" String="WeighbridgeId"/>
+        <Annotation Term="Common.QuickInfo" String="WeighbridgeId"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.WeighbridgeTransactions/SAPUUID">
+        <Annotation Term="Core.Computed" Bool="true"/>
+        <Annotation Term="Common.Label" String="UUID"/>
+        <Annotation Term="Common.QuickInfo" String="16 Byte UUID in 16 Bytes (Raw Format)"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.WeighbridgeTransactions/SAPParentUUID">
+        <Annotation Term="Core.Computed" Bool="true"/>
+        <Annotation Term="Common.Label" String="UUID"/>
+        <Annotation Term="Common.QuickInfo" String="16 Byte UUID in 16 Bytes (Raw Format)"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.WeighbridgeTransactions/SAPRootUUID">
+        <Annotation Term="Core.Computed" Bool="true"/>
+        <Annotation Term="Common.Label" String="UUID"/>
+        <Annotation Term="Common.QuickInfo" String="16 Byte UUID in 16 Bytes (Raw Format)"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.WeighbridgeTransactions/weighbridgeNumber">
+        <Annotation Term="Common.Label" String="weighbridgeNumber"/>
+        <Annotation Term="Common.QuickInfo" String="weighbridgeNumber"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.WeighbridgeTransactions/weighmentType">
+        <Annotation Term="Common.Label" String="weighmentType"/>
+        <Annotation Term="Common.QuickInfo" String="weighmentType"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.WeighbridgeTransactions/weight">
+        <Annotation Term="Common.Label" String="weight"/>
+        <Annotation Term="Common.QuickInfo" String="weight"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.WeighbridgeTransactions/weightUnit">
+        <Annotation Term="Common.Label" String="weightUnit"/>
+        <Annotation Term="Common.QuickInfo" String="weightUnit"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.WeighbridgeTransactions/weighbridgeDateTime">
+        <Annotation Term="Common.Label" String="weighbridgeDateTime"/>
+        <Annotation Term="Common.QuickInfo" String="weighbridgeDateTime"/>
+        <Annotation Term="Common.Heading" String="Long Form of Time Stamp"/>
+        <Annotation Term="Common.DocumentationRef" String="urn:sap-com:documentation:key?=type=DE&amp;id=TZNTSTMPL"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.WeighbridgeTransactions/WeightOperator">
+        <Annotation Term="Common.Label" String="WeightOperator"/>
+        <Annotation Term="Common.QuickInfo" String="WeightOperator"/>
+      </Annotations>
+      <Annotations Target="YY1_API_VEHICLEGATEOPERATION_0001.WeighbridgeTransactions/weighRemark">
+        <Annotation Term="Common.Label" String="weighRemark"/>
+        <Annotation Term="Common.QuickInfo" String="weighRemark"/>
+      </Annotations>
+    </Schema>
+  </edmx:DataServices>
+</edmx:Edmx>

@@ -1,0 +1,4 @@
+ID;driverCode;driverName;drivingLicenseNo;licenseType;licenseExpiryDate;phoneNo;alternatePhoneNo;address;transporter_ID;active
+f152b043-4d44-7b12-cd51-111111111111;DRV001;Ramesh Yadav;MH04-2018-009988;Heavy Goods;2029-05-15;+91 9711223344;+91 9711223355;Village Palghar, Maharashtra;c829e710-1a11-4e89-9a28-111111111111;true
+f152b043-4d44-7b12-cd51-222222222222;DRV002;Suresh Gowda;KA01-2019-005544;Hazardous Goods;2028-11-20;+91 9844556677;+91 9844556688;Hosur Road, Bengaluru;c829e710-1a11-4e89-9a28-222222222222;true
+f152b043-4d44-7b12-cd51-333333333333;DRV003;Vijay Singh;DL01-2020-003322;Heavy Commercial;2030-01-10;+91 9955667788;+91 9955667799;Ghaziabad, Uttar Pradesh;c829e710-1a11-4e89-9a28-333333333333;true

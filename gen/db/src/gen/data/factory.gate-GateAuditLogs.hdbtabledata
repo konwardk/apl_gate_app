@@ -1,0 +1,45 @@
+{
+  "format_version": 1,
+  "imports": [
+    {
+      "target_table": "FACTORY_GATE_GATEAUDITLOGS",
+      "source_data": {
+        "data_type": "CSV",
+        "file_name": "factory.gate-GateAuditLogs.csv",
+        "has_header": true,
+        "type_config": {
+          "delimiter": ";"
+        }
+      },
+      "import_settings": {
+        "import_columns": [
+          "ID",
+          "GATETRANSACTION_ID",
+          "ACTION",
+          "OLDSTATUS",
+          "NEWSTATUS",
+          "OLDSTAGE",
+          "NEWSTAGE",
+          "ACTIONDATETIME",
+          "USERID",
+          "USERNAME",
+          "REMARKS"
+        ],
+        "include_filter": []
+      },
+      "column_mappings": {
+        "ID": "ID",
+        "GATETRANSACTION_ID": "gateTransaction_ID",
+        "ACTION": "action",
+        "OLDSTATUS": "oldStatus",
+        "NEWSTATUS": "newStatus",
+        "OLDSTAGE": "oldStage",
+        "NEWSTAGE": "newStage",
+        "ACTIONDATETIME": "actionDateTime",
+        "USERID": "userId",
+        "USERNAME": "userName",
+        "REMARKS": "remarks"
+      }
+    }
+  ]
+}

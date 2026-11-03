@@ -1,0 +1,82 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:core="sap.ui.core">
+    <Dialog
+        id="gateInDialog"
+        title="Create Gate IN (Entry Registration)"
+        contentWidth="480px">
+        <content>
+            <form:SimpleForm
+                editable="true"
+                layout="ResponsiveGridLayout"
+                labelSpanXL="4"
+                labelSpanL="4"
+                labelSpanM="4"
+                labelSpanS="12">
+                <form:content>
+                    <Label text="Vehicle Registration No" required="true" />
+                    <Input
+                        id="inputVehicleRegNo"
+                        placeholder="e.g. AS-02-1234 or AS-02-AB-1234"
+                        liveChange=".onVehicleRegLiveChange"
+                        change=".onVehicleRegChange"
+                        required="true" />
+
+                    <Label text="Vehicle Type" required="true" />
+                    <Select
+                        id="selectVehicleType"
+                        selectedKey="TRUCK"
+                        width="100%">
+                        <core:Item key="TRUCK" text="TRUCK - Standard Truck / Lorry" />
+                        <core:Item key="TANKER" text="TANKER - Liquid Cargo Tanker" />
+                        <core:Item key="TRAILER" text="TRAILER - Multi-axle Heavy Trailer" />
+                        <core:Item key="CONTAINER" text="CONTAINER - ISO Freight Container" />
+                        <core:Item key="LCV" text="LCV - Light Commercial Vehicle" />
+                        <core:Item key="OTHER" text="OTHER - Miscellaneous / Special Vehicle" />
+                    </Select>
+
+                    <Label text="Driver Name" required="true" />
+                    <Input
+                        id="inputDriverName"
+                        placeholder="e.g. Rajesh Kumar"
+                        required="true" />
+
+                    <Label text="Gate Operator" required="true" />
+                    <Input
+                        id="inputGateOperator"
+                        editable="false"
+                        class="grayed-out-input"
+                        placeholder="Gate Operator Name"
+                        required="true" />
+
+                    <Label text="Purpose of Visit" required="true" />
+                    <HBox alignItems="Center">
+                        <CheckBox
+                            id="cbDelivery"
+                            text="DELIVERY"
+                            selected="true"
+                            select=".onDeliveryCheck"
+                            class="sapUiMediumMarginEnd" />
+                        <CheckBox
+                            id="cbPickup"
+                            text="PICKUP"
+                            selected="false"
+                            select=".onPickupCheck" />
+                    </HBox>
+                </form:content>
+            </form:SimpleForm>
+        </content>
+        <beginButton>
+            <Button
+                text="Register Gate IN"
+                type="Emphasized"
+                press=".onGateInConfirm" />
+        </beginButton>
+        <endButton>
+            <Button
+                text="Cancel"
+                press=".onGateInCancel" />
+        </endButton>
+    </Dialog>
+</core:FragmentDefinition>

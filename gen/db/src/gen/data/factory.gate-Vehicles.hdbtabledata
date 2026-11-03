@@ -1,0 +1,59 @@
+{
+  "format_version": 1,
+  "imports": [
+    {
+      "target_table": "FACTORY_GATE_VEHICLES",
+      "source_data": {
+        "data_type": "CSV",
+        "file_name": "factory.gate-Vehicles.csv",
+        "has_header": true,
+        "type_config": {
+          "delimiter": ";"
+        }
+      },
+      "import_settings": {
+        "import_columns": [
+          "ID",
+          "VEHICLEREGNO",
+          "VEHICLETYPE",
+          "VEHICLECATEGORY",
+          "MAKE",
+          "MODEL",
+          "CAPACITY",
+          "CAPACITYUNIT",
+          "TRANSPORTER_ID",
+          "INSURANCENO",
+          "INSURANCEEXPIRY",
+          "FITNESSCERTIFICATENO",
+          "FITNESSEXPIRY",
+          "POLLUTIONCERTIFICATENO",
+          "POLLUTIONEXPIRY",
+          "PERMITNO",
+          "PERMITEXPIRY",
+          "ACTIVE"
+        ],
+        "include_filter": []
+      },
+      "column_mappings": {
+        "ID": "ID",
+        "VEHICLEREGNO": "vehicleRegNo",
+        "VEHICLETYPE": "vehicleType",
+        "VEHICLECATEGORY": "vehicleCategory",
+        "MAKE": "make",
+        "MODEL": "model",
+        "CAPACITY": "capacity",
+        "CAPACITYUNIT": "capacityUnit",
+        "TRANSPORTER_ID": "transporter_ID",
+        "INSURANCENO": "insuranceNo",
+        "INSURANCEEXPIRY": "insuranceExpiry",
+        "FITNESSCERTIFICATENO": "fitnessCertificateNo",
+        "FITNESSEXPIRY": "fitnessExpiry",
+        "POLLUTIONCERTIFICATENO": "pollutionCertificateNo",
+        "POLLUTIONEXPIRY": "pollutionExpiry",
+        "PERMITNO": "permitNo",
+        "PERMITEXPIRY": "permitExpiry",
+        "ACTIVE": "active"
+      }
+    }
+  ]
+}

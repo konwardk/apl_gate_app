@@ -1,0 +1,18 @@
+COLUMN TABLE GateService_GateAuditLogs_drafts (
+  ID NVARCHAR(36) NOT NULL,
+  gateTransaction_ID NVARCHAR(36) NULL,
+  action NVARCHAR(50) NULL,
+  oldStatus NVARCHAR(5000) NULL,
+  newStatus NVARCHAR(5000) NULL,
+  oldStage NVARCHAR(5000) NULL,
+  newStage NVARCHAR(5000) NULL,
+  actionDateTime TIMESTAMP NULL,
+  userId NVARCHAR(100) NULL,
+  userName NVARCHAR(100) NULL,
+  remarks NVARCHAR(500) NULL,
+  IsActiveEntity BOOLEAN,
+  HasActiveEntity BOOLEAN,
+  HasDraftEntity BOOLEAN,
+  DraftAdministrativeData_DraftUUID NVARCHAR(36) NOT NULL,
+  PRIMARY KEY(ID)
+)

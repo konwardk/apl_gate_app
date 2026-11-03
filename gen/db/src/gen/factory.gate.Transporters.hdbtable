@@ -1,0 +1,17 @@
+COLUMN TABLE factory_gate_Transporters (
+  ID NVARCHAR(36) NOT NULL,
+  createdAt TIMESTAMP,
+  createdBy NVARCHAR(255),
+  modifiedAt TIMESTAMP,
+  modifiedBy NVARCHAR(255),
+  transporterCode NVARCHAR(20),
+  transporterName NVARCHAR(100),
+  gstin NVARCHAR(20),
+  pan NVARCHAR(20),
+  contactPerson NVARCHAR(100),
+  phoneNo NVARCHAR(20),
+  email NVARCHAR(100),
+  address NVARCHAR(250),
+  active BOOLEAN DEFAULT TRUE,
+  PRIMARY KEY(ID)
+)

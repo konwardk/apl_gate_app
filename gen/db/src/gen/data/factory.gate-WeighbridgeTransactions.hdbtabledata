@@ -1,0 +1,41 @@
+{
+  "format_version": 1,
+  "imports": [
+    {
+      "target_table": "FACTORY_GATE_WEIGHBRIDGETRANSACTIONS",
+      "source_data": {
+        "data_type": "CSV",
+        "file_name": "factory.gate-WeighbridgeTransactions.csv",
+        "has_header": true,
+        "type_config": {
+          "delimiter": ";"
+        }
+      },
+      "import_settings": {
+        "import_columns": [
+          "ID",
+          "GATETRANSACTION_ID",
+          "WEIGHBRIDGENUMBER",
+          "WEIGHMENTTYPE",
+          "WEIGHT",
+          "WEIGHTUNIT",
+          "WEIGHBRIDGEDATETIME",
+          "OPERATOR",
+          "REMARKS"
+        ],
+        "include_filter": []
+      },
+      "column_mappings": {
+        "ID": "ID",
+        "GATETRANSACTION_ID": "gateTransaction_ID",
+        "WEIGHBRIDGENUMBER": "weighbridgeNumber",
+        "WEIGHMENTTYPE": "weighmentType",
+        "WEIGHT": "weight",
+        "WEIGHTUNIT": "weightUnit",
+        "WEIGHBRIDGEDATETIME": "weighbridgeDateTime",
+        "OPERATOR": "operator",
+        "REMARKS": "remarks"
+      }
+    }
+  ]
+}

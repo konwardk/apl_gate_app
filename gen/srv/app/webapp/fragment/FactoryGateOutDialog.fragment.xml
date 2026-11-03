@@ -1,0 +1,198 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:core="sap.ui.core">
+    <Dialog
+        id="factoryGateOutDialog"
+        title="Factory Gate OUT - Yard Exit Clearance"
+        icon="sap-icon://log-out"
+        contentWidth="680px"
+        contentHeight="auto"
+        verticalScrolling="true"
+        resizable="true"
+        draggable="true"
+        class="sapUiContentPadding">
+        <content>
+            <form:SimpleForm
+                id="factoryGateOutDialogForm"
+                editable="true"
+                layout="ResponsiveGridLayout"
+                labelSpanXL="4"
+                labelSpanL="4"
+                labelSpanM="4"
+                labelSpanS="12"
+                columnsXL="1"
+                columnsL="1"
+                columnsM="1">
+                <form:content>
+                    <!-- Section 1: Outbound Vehicle Identification -->
+                    <core:Title text="1. Vehicle &amp; Inbound Clearance Record" />
+
+                    <Label text="Select Vehicle" required="{= ${facModel>/isOutVehicleSelectable} !== false }" />
+                    <ComboBox
+                        id="dialogFacOutGateInComboBox"
+                        width="100%"
+                        placeholder="Select vehicle awaiting Factory Gate OUT..."
+                        selectedKey="{facModel>/selectedGateInNumber}"
+                        change=".onGateInSelectChange"
+                        filterSecondaryValues="true"
+                        showSecondaryValues="true"
+                        editable="{= ${facModel>/isOutVehicleSelectable} !== false }"
+                        enabled="{= ${facModel>/isOutVehicleSelectable} !== false }"
+                        noDataText="No vehicles currently inside yard awaiting Factory Gate OUT"
+                        items="{
+                            path: 'facModel>/insideYardVehicles',
+                            templateShareable: false
+                        }">
+                        <core:ListItem
+                            key="{facModel>gateInNumber}"
+                            text="{facModel>gateInNumber}"
+                            additionalText="{facModel>vehicleRegNo} ({facModel>status}) - In: {path: 'facModel>factoryEntry/factoryGateInDateTime', formatter: '.formatter.formatDateTime'}" />
+                    </ComboBox>
+
+                    <Label text="Vehicle Reg No" />
+                    <HBox alignItems="Center">
+                        <Label
+                            text="{= ${facModel>/selectedVehicle/vehicleRegNo} || 'Select a vehicle above' }"
+                            design="Bold"
+                            class="sapUiTinyMarginEnd" />
+                        <ObjectStatus
+                            text="{path: 'facModel>/selectedVehicle/status', formatter: '.formatter.getStatusText'}"
+                            state="{path: 'facModel>/selectedVehicle/status', formatter: '.formatter.getStatusState'}" />
+                    </HBox>
+
+                    <Label text="Driver &amp; Transporter" />
+                    <VBox>
+                        <Text text="{= ${facModel>/selectedVehicle/driverName} ? ${facModel>/selectedVehicle/driverName} + ' (' + (${facModel>/selectedVehicle/vehicleType} || 'TRUCK') + ')' : '-' }" design="Bold" />
+                        <Text text="{= ${facModel>/form/transporterName} || ${facModel>/selectedVehicle/transporter/transporterName} || '-' }" class="sapUiTinyMarginTop" />
+                    </VBox>
+
+                    <Label text="Consignment PO" />
+                    <Text text="{= ${facModel>/form/poNumber} ? 'PO: ' + ${facModel>/form/poNumber} + (${facModel>/form/supplierName} ? ' (' + ${facModel>/form/supplierName} + ')' : '') : 'No PO Assigned' }" />
+
+                    <Label text="Factory Gate IN Record" />
+                    <HBox alignItems="Center">
+                        <Text
+                            text="{path: 'facModel>/form/factoryGateInDateTime', formatter: '.formatter.formatDateTime'}"
+                            design="Bold"
+                            class="sapUiTinyMarginEnd" />
+                        <Text text="{= ${facModel>/form/factoryGateInOperator} ? '(Operator: ' + ${facModel>/form/factoryGateInOperator} + ')' : '' }" />
+                    </HBox>
+
+                    <Label text="Factory Yard Area / Bay" />
+                    <Text text="{= ${facModel>/form/factoryArea} || '-' }{= ${facModel>/form/unloadingPoint} ? ' (' + ${facModel>/form/unloadingPoint} + ')' : '' }" />
+
+                    <Label text="Inbound Remarks" visible="{= Boolean(${facModel>/form/factoryGateInRemarks}) }" />
+                    <Text text="{facModel>/form/factoryGateInRemarks}" visible="{= Boolean(${facModel>/form/factoryGateInRemarks}) }" />
+
+                    <!-- Section 2: Gate OUT Recording -->
+                    <core:Title text="2. Factory Gate Exit &amp; Clearance Recording" />
+
+                    <Label text="Factory Gate OUT Time" required="true" />
+                    <DateTimePicker
+                        id="dialogFacOutTimePicker"
+                        value="{facModel>/form/factoryGateOutDateTimeStr}"
+                        valueFormat="yyyy-MM-dd'T'HH:mm:ss"
+                        displayFormat="dd/MM/yyyy, HH:mm:ss"
+                        change=".onGateOutDateTimeChange"
+                        placeholder="Select Factory Gate OUT Date &amp; Time"
+                        width="100%" />
+
+                    <Label text="Factory Gate OUT Operator" required="true" />
+                    <Input
+                        id="dialogFacOutOperator"
+                        value="{facModel>/form/factoryGateOutOperator}"
+                        editable="false"
+                        class="grayed-out-input"
+                        placeholder="Factory Gate OUT Operator Name"
+                        required="true" />
+
+                    <Label text="Gate Pass Type" required="true" />
+                    <ComboBox
+                        id="dialogFacComboGateOutType"
+                        selectedKey="{facModel>/form/gateOutType}"
+                        placeholder="Select Gate Pass Type (STANDARD, RGP, NRGP, etc.)"
+                        width="100%">
+                        <items>
+                            <core:Item key="STANDARD" text="STANDARD - Delivery / Consignment Completed" />
+                            <core:Item key="RGP" text="RGP - Returnable Gate Pass (Returnable Packaging/Cylinders)" />
+                            <core:Item key="NRGP" text="NRGP - Non-Returnable Gate Pass (Dispatched Scrap/Finished Goods)" />
+                            <core:Item key="DELIVERY_NOTE" text="DELIVERY_NOTE - Delivery Note / Consignment Completed" />
+                            <core:Item key="MATERIAL_RETURN" text="MATERIAL_RETURN - Material Return / Quality Rejection" />
+                            <core:Item key="EMPTY_VEHICLE" text="EMPTY_VEHICLE - Empty Vehicle Yard Clearance" />
+                            <core:Item key="OTHER" text="OTHER - Standard Outbound Gate Pass" />
+                        </items>
+                    </ComboBox>
+
+                    <Label text="Unloading Status" />
+                    <ComboBox
+                        id="dialogFacOutUnloadingStatus"
+                        selectedKey="{facModel>/form/unloadingStatus}"
+                        width="100%">
+                        <items>
+                            <core:Item key="COMPLETED" text="COMPLETED - Full cargo unloaded successfully" />
+                            <core:Item key="PARTIAL" text="PARTIAL - Partial unloading done" />
+                            <core:Item key="REJECTED" text="REJECTED - Cargo rejected at inspection" />
+                            <core:Item key="IN_PROGRESS" text="IN_PROGRESS - Unloading in progress" />
+                        </items>
+                    </ComboBox>
+
+                    <Label text="Unloaded Quantity &amp; Unit" />
+                    <HBox width="100%" alignItems="Center">
+                        <Input
+                            id="dialogFacOutUnloadedQty"
+                            value="{facModel>/form/unloadedQuantity}"
+                            placeholder="e.g. 22000"
+                            type="Number"
+                            width="60%"
+                            class="sapUiTinyMarginEnd" />
+                        <ComboBox
+                            id="dialogFacOutQtyUnit"
+                            selectedKey="{facModel>/form/quantityUnit}"
+                            width="40%">
+                            <items>
+                                <core:Item key="KG" text="KG - Kilograms" />
+                                <core:Item key="MT" text="MT - Metric Tonnes" />
+                                <core:Item key="LTR" text="LTR - Litres" />
+                                <core:Item key="NOS" text="NOS - Numbers / Units" />
+                                <core:Item key="BAGS" text="BAGS - Bags" />
+                            </items>
+                        </ComboBox>
+                    </HBox>
+
+                    <Label text="Physical Verification" />
+                    <VBox>
+                        <CheckBox
+                            id="dialogFacOutGoodsInspected"
+                            text="Goods / Cargo Inspected &amp; Verified"
+                            selected="{facModel>/form/goodsInspected}" />
+                        <CheckBox
+                            id="dialogFacOutSealVerified"
+                            text="Vehicle / Tanker Seal Verified"
+                            selected="{facModel>/form/sealVerified}" />
+                    </VBox>
+
+                    <Label text="Factory Gate OUT Remarks" />
+                    <TextArea
+                        id="dialogFacOutRemarks"
+                        value="{facModel>/form/factoryGateOutRemarks}"
+                        rows="3"
+                        maxLength="500"
+                        placeholder="Enter remarks on gate exit / unloading observations..." />
+                </form:content>
+            </form:SimpleForm>
+        </content>
+        <buttons>
+            <Button
+                id="btnConfirmFactoryGateOut"
+                text="Confirm Factory Gate OUT"
+                icon="sap-icon://log-out"
+                type="Success"
+                press=".onConfirmFactoryGateOut" />
+            <Button
+                text="Cancel"
+                type="Transparent"
+                press=".onCancelFactoryGateOut" />
+        </buttons>
+    </Dialog>
+</core:FragmentDefinition>

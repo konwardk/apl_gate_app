@@ -1,0 +1,16 @@
+VIEW GateService_Transporters AS SELECT
+  Transporters_0.ID,
+  Transporters_0.createdAt,
+  Transporters_0.createdBy,
+  Transporters_0.modifiedAt,
+  Transporters_0.modifiedBy,
+  Transporters_0.transporterCode,
+  Transporters_0.transporterName,
+  Transporters_0.gstin,
+  Transporters_0.pan,
+  Transporters_0.contactPerson,
+  Transporters_0.phoneNo,
+  Transporters_0.email,
+  Transporters_0.address,
+  Transporters_0.active
+FROM factory_gate_Transporters AS Transporters_0

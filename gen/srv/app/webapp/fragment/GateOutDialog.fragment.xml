@@ -1,0 +1,80 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:core="sap.ui.core">
+    <Dialog
+        id="gateOutDialog"
+        title="{= ${gateOutModel>/isRowAction} ? ('Main Gate Exit - ' + ${gateOutModel>/selectedVehicle/gateInNumber} + ' (' + ${gateOutModel>/selectedVehicle/vehicleRegNo} + ')') : 'Main Gate Exit - Authorize Gate OUT' }"
+        contentWidth="520px">
+        <content>
+            <form:SimpleForm
+                editable="true"
+                layout="ResponsiveGridLayout"
+                labelSpanXL="4"
+                labelSpanL="4"
+                labelSpanM="4"
+                labelSpanS="12">
+                <form:content>
+                    <Label text="Select Vehicle Pass" required="true" />
+                    <ComboBox
+                        id="selectGateInPass"
+                        width="100%"
+                        placeholder="Type to search or select Gate IN #, Vehicle Reg..."
+                        change=".onGateOutPassChange"
+                        filterSecondaryValues="true"
+                        showSecondaryValues="true"
+                        editable="{= !${gateOutModel>/isRowAction} }"
+                        items="{
+                            path: 'gateOutModel>/eligibleVehicles',
+                            templateShareable: false
+                        }">
+                        <core:ListItem
+                            key="{gateOutModel>gateInNumber}"
+                            text="{gateOutModel>gateInNumber}"
+                            additionalText="{gateOutModel>vehicleRegNo} ({gateOutModel>purpose}) - {gateOutModel>status}" />
+                    </ComboBox>
+
+                    <Label text="Vehicle Reg No" visible="{= !!${gateOutModel>/selectedVehicle} }" />
+                    <Text text="{gateOutModel>/selectedVehicle/vehicleRegNo}" visible="{= !!${gateOutModel>/selectedVehicle} }" />
+
+                    <Label text="Driver Name" visible="{= !!${gateOutModel>/selectedVehicle} }" />
+                    <Text text="{= ${gateOutModel>/selectedVehicle/driverName} || '-' }" visible="{= !!${gateOutModel>/selectedVehicle} }" />
+
+                    <Label text="Visit Purpose" visible="{= !!${gateOutModel>/selectedVehicle} }" />
+                    <Text text="{path: 'gateOutModel>/selectedVehicle/purpose', formatter: '.formatter.getPurposeText'}" visible="{= !!${gateOutModel>/selectedVehicle} }" />
+
+                    <Label text="Current Status" visible="{= !!${gateOutModel>/selectedVehicle} }" />
+                    <ObjectStatus
+                        text="{path: 'gateOutModel>/selectedVehicle/status', formatter: '.formatter.getStatusText'}"
+                        state="{path: 'gateOutModel>/selectedVehicle/status', formatter: '.formatter.getStatusState'}"
+                        visible="{= !!${gateOutModel>/selectedVehicle} }" />
+
+                    <!-- Main Gate Operator -->
+                    <Label text="Main Gate Operator" required="true" />
+                    <Input
+                        id="inputGateOutOperator"
+                        value="{gateOutModel>/operator}"
+                        valueLiveUpdate="true"
+                        editable="false"
+                        class="grayed-out-input"
+                        placeholder="Main Gate Operator Name"
+                        maxLength="100"
+                        required="true" />
+                </form:content>
+            </form:SimpleForm>
+        </content>
+        <beginButton>
+            <Button
+                id="btnAuthorizeGateOut"
+                text="Authorize Gate OUT"
+                type="Success"
+                icon="sap-icon://log-out"
+                press=".onGateOutConfirm" />
+        </beginButton>
+        <endButton>
+            <Button
+                text="Cancel"
+                press=".onGateOutCancel" />
+        </endButton>
+    </Dialog>
+</core:FragmentDefinition>

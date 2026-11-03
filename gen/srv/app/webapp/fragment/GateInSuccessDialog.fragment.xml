@@ -1,0 +1,74 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:core="sap.ui.core">
+    <Dialog
+        id="gateInSuccessDialog"
+        title="Gate IN Created Successfully"
+        type="Message"
+        state="Success"
+        contentWidth="480px">
+        <content>
+            <VBox alignItems="Center">
+                <Image
+                    src="/images/APL_Logo.jpg"
+                    height="42px"
+                    class="sapUiSmallMarginTop sapUiTinyMarginBottom" />
+                <Title
+                    text="Assam Petro-Chemicals Ltd"
+                    level="H4"
+                    titleStyle="H5" />
+                <Text
+                    text="Address: Namprup, Dist: Dibrugarh(ASSAM), PO: Parbatpur-786623."
+                    class="sapUiTinyMarginBottom text-muted" />
+                <Text text="Generated Gate IN Pass Identifier:" class="sapUiSmallMarginTop" />
+                <Title
+                    text="{gateInSuccess>/gateInNumber}"
+                    level="H1"
+                    titleStyle="H1"
+                    class="sapUiSmallMarginTop success-gate-number" />
+                <ObjectStatus
+                    text="Status: IN (Main Gate Entered)"
+                    state="Success"
+                    class="sapUiSmallMarginTop sapUiSmallMarginBottom" />
+                <form:SimpleForm
+                    layout="ResponsiveGridLayout"
+                    labelSpanXL="5"
+                    labelSpanL="5"
+                    labelSpanM="5"
+                    labelSpanS="12">
+                    <form:content>
+                        <Label text="Gate IN #" />
+                        <Text text="{gateInSuccess>/gateInNumber}" />
+                        <Label text="Vehicle Reg No" />
+                        <Text text="{gateInSuccess>/vehicleRegNo}" />
+                        <Label text="Vehicle Type" />
+                        <Text text="{path: 'gateInSuccess>/vehicleType', formatter: '.formatter.getVehicleTypeText'}" />
+                        <Label text="Driver Name" />
+                        <Text text="{gateInSuccess>/driverName}" />
+                        <Label text="Gate Operator" />
+                        <Text text="{gateInSuccess>/gateInOperator}" />
+                        <Label text="Purpose" />
+                        <Text text="{path: 'gateInSuccess>/purpose', formatter: '.formatter.getPurposeText'}" />
+                        <Label text="Timestamp" />
+                        <Text text="{path: 'gateInSuccess>/gateInDateTime', formatter: '.formatter.formatDateTime'}" />
+                    </form:content>
+                </form:SimpleForm>
+            </VBox>
+        </content>
+        <beginButton>
+            <Button
+                id="btnPrintGateInSuccess"
+                text="Print Pass"
+                icon="sap-icon://print"
+                type="Emphasized"
+                tooltip="Print Official Gate IN Entry Pass"
+                press=".onPrintGateInSuccessPass" />
+        </beginButton>
+        <endButton>
+            <Button
+                text="Close"
+                press=".onGateInSuccessDone" />
+        </endButton>
+    </Dialog>
+</core:FragmentDefinition>

@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+  <edmx:Reference Uri="https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Capabilities.V1.xml">
+    <edmx:Include Alias="Capabilities" Namespace="Org.OData.Capabilities.V1"/>
+  </edmx:Reference>
+  <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/Common.xml">
+    <edmx:Include Alias="Common" Namespace="com.sap.vocabularies.Common.v1"/>
+  </edmx:Reference>
+  <edmx:Reference Uri="https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Core.V1.xml">
+    <edmx:Include Alias="Core" Namespace="Org.OData.Core.V1"/>
+  </edmx:Reference>
+  <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/PDF.xml">
+    <edmx:Include Alias="PDF" Namespace="com.sap.vocabularies.PDF.v1"/>
+  </edmx:Reference>
+  <edmx:DataServices>
+    <Schema Namespace="YY1_API_CUSTOMUSER_0001" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="Core.Links">
+        <Collection>
+          <Record>
+            <PropertyValue Property="rel" String="author"/>
+            <PropertyValue Property="href" String="https://cap.cloud.sap"/>
+          </Record>
+        </Collection>
+      </Annotation>
+      <EntityContainer Name="EntityContainer">
+        <EntitySet Name="CustomUser" EntityType="YY1_API_CUSTOMUSER_0001.CustomUser"/>
+      </EntityContainer>
+      <EntityType Name="CustomUser">
+        <Key>
+          <PropertyRef Name="UserId"/>
+        </Key>
+        <Property Name="UserId" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="SAPUUID" Type="Edm.Guid"/>
+        <Property Name="username" Type="Edm.String" MaxLength="50" Nullable="false"/>
+        <Property Name="password" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="name" Type="Edm.String" MaxLength="50" Nullable="false"/>
+        <Property Name="employeeId" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="designation" Type="Edm.String" MaxLength="50" Nullable="false"/>
+        <Property Name="department" Type="Edm.String" MaxLength="50" Nullable="false"/>
+        <Property Name="email" Type="Edm.String" MaxLength="100" Nullable="false"/>
+        <Property Name="phoneNo" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="serviceStatus" Type="Edm.String" MaxLength="12" Nullable="false"/>
+        <Property Name="status" Type="Edm.String" MaxLength="8" Nullable="false"/>
+        <Property Name="active" Type="Edm.Boolean" Nullable="false"/>
+        <Property Name="assignedRoles" Type="Edm.String" MaxLength="250" Nullable="false"/>
+        <Property Name="remarks" Type="Edm.String" MaxLength="250" Nullable="false"/>
+        <Property Name="roleCode" Type="Edm.String" MaxLength="20" Nullable="false"/>
+        <Property Name="roleName" Type="Edm.String" MaxLength="100" Nullable="false"/>
+        <Property Name="assignedDate" Type="Edm.Date"/>
+        <Property Name="assignedBy" Type="Edm.String" MaxLength="100" Nullable="false"/>
+        <Property Name="SAPLastChangedBy" Type="Edm.String" MaxLength="12" Nullable="false"/>
+        <Property Name="SAPLastChangedOn" Type="Edm.DateTimeOffset" Precision="7"/>
+        <Property Name="SAPCreatedBy" Type="Edm.String" MaxLength="12" Nullable="false"/>
+        <Property Name="SAPCreatedOn" Type="Edm.DateTimeOffset" Precision="7"/>
+        <Property Name="SAPDescription" Type="Edm.String" MaxLength="80" Nullable="false"/>
+        <Property Name="SAP__Messages" Type="Collection(YY1_API_CUSTOMUSER_0001.SAP__Message)" Nullable="false"/>
+      </EntityType>
+      <ComplexType Name="SAP__Message">
+        <Property Name="code" Type="Edm.String" Nullable="false"/>
+        <Property Name="message" Type="Edm.String" Nullable="false"/>
+        <Property Name="target" Type="Edm.String"/>
+        <Property Name="additionalTargets" Type="Collection(Edm.String)" Nullable="false"/>
+        <Property Name="transition" Type="Edm.Boolean" Nullable="false"/>
+        <Property Name="numericSeverity" Type="Edm.Byte" Nullable="false"/>
+        <Property Name="longtextUrl" Type="Edm.String"/>
+      </ComplexType>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.EntityContainer">
+        <Annotation Term="Common.ApplyMultiUnitBehaviorForSortingAndFiltering" Bool="true"/>
+        <Annotation Term="Capabilities.FilterFunctions">
+          <Collection>
+            <String>eq</String>
+            <String>ne</String>
+            <String>gt</String>
+            <String>ge</String>
+            <String>lt</String>
+            <String>le</String>
+            <String>and</String>
+            <String>or</String>
+            <String>contains</String>
+            <String>startswith</String>
+            <String>endswith</String>
+            <String>any</String>
+            <String>all</String>
+          </Collection>
+        </Annotation>
+        <Annotation Term="Capabilities.SupportedFormats">
+          <Collection>
+            <String>application/json</String>
+            <String>application/pdf</String>
+          </Collection>
+        </Annotation>
+        <Annotation Term="Capabilities.BatchSupport">
+          <Record Type="Capabilities.BatchSupportType">
+            <PropertyValue Property="SupportedFormats">
+              <Collection>
+                <String>application/json</String>
+                <String>multipart/mixed</String>
+              </Collection>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.KeyAsSegmentSupported" Bool="true"/>
+        <Annotation Term="Capabilities.AsynchronousRequestsSupported" Bool="true"/>
+        <Annotation Term="PDF.Features">
+          <Record Type="PDF.FeaturesType">
+            <PropertyValue Property="DocumentDescriptionReference" String="../../../../default/iwbep/common/0001/$metadata"/>
+            <PropertyValue Property="DocumentDescriptionCollection" String="MyDocumentDescriptions"/>
+            <PropertyValue Property="ArchiveFormat" Bool="true"/>
+            <PropertyValue Property="Border" Bool="true"/>
+            <PropertyValue Property="CoverPage" Bool="true"/>
+            <PropertyValue Property="FitToPage" Bool="true"/>
+            <PropertyValue Property="FontName" Bool="true"/>
+            <PropertyValue Property="FontSize" Bool="true"/>
+            <PropertyValue Property="HeaderFooter" Bool="true"/>
+            <PropertyValue Property="IANATimezoneFormat" Bool="true"/>
+            <PropertyValue Property="Margin" Bool="true"/>
+            <PropertyValue Property="Padding" Bool="true"/>
+            <PropertyValue Property="ResultSizeDefault" Int="20000"/>
+            <PropertyValue Property="ResultSizeMaximum" Int="20000"/>
+            <PropertyValue Property="Signature" Bool="true"/>
+            <PropertyValue Property="TextDirectionLayout" Bool="true"/>
+            <PropertyValue Property="Treeview" Bool="true"/>
+            <PropertyValue Property="UploadToFileShare" Bool="true"/>
+          </Record>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser">
+        <Annotation Term="Common.ChangedBy" Path="SAPLastChangedBy"/>
+        <Annotation Term="Common.ChangedAt" Path="SAPLastChangedOn"/>
+        <Annotation Term="Common.CreatedBy" Path="SAPCreatedBy"/>
+        <Annotation Term="Common.CreatedAt" Path="SAPCreatedOn"/>
+        <Annotation Term="Common.Label" String="CBO YY1_R_CUSTOMUSERTP / CustomUser"/>
+        <Annotation Term="Common.Messages" Path="SAP__Messages"/>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.EntityContainer/CustomUser">
+        <Annotation Term="Capabilities.SearchRestrictions">
+          <Record Type="Capabilities.SearchRestrictionsType">
+            <PropertyValue Property="Searchable" Bool="false"/>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.InsertRestrictions">
+          <Record Type="Capabilities.InsertRestrictionsType">
+            <PropertyValue Property="RequiredProperties">
+              <Collection>
+                <PropertyPath>UserId</PropertyPath>
+              </Collection>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.UpdateRestrictions">
+          <Record Type="Capabilities.UpdateRestrictionsType">
+            <PropertyValue Property="DeltaUpdateSupported" Bool="true"/>
+            <PropertyValue Property="QueryOptions">
+              <Record Type="Capabilities.ModificationQueryOptionsType">
+                <PropertyValue Property="SelectSupported" Bool="true"/>
+              </Record>
+            </PropertyValue>
+          </Record>
+        </Annotation>
+        <Annotation Term="Capabilities.DeepUpdateSupport">
+          <Record Type="Capabilities.DeepUpdateSupportType">
+            <PropertyValue Property="ContentIDSupported" Bool="true"/>
+          </Record>
+        </Annotation>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser/UserId">
+        <Annotation Term="Common.Label" String="UserId"/>
+        <Annotation Term="Common.QuickInfo" String="UserId"/>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser/SAPUUID">
+        <Annotation Term="Core.Computed" Bool="true"/>
+        <Annotation Term="Common.Label" String="UUID"/>
+        <Annotation Term="Common.QuickInfo" String="16 Byte UUID in 16 Bytes (Raw Format)"/>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser/username">
+        <Annotation Term="Common.Label" String="username"/>
+        <Annotation Term="Common.QuickInfo" String="username"/>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser/password">
+        <Annotation Term="Common.Label" String="password"/>
+        <Annotation Term="Common.QuickInfo" String="password"/>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser/name">
+        <Annotation Term="Common.Label" String="name"/>
+        <Annotation Term="Common.QuickInfo" String="name"/>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser/employeeId">
+        <Annotation Term="Common.Label" String="employeeId"/>
+        <Annotation Term="Common.QuickInfo" String="employeeId"/>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser/designation">
+        <Annotation Term="Common.Label" String="designation"/>
+        <Annotation Term="Common.QuickInfo" String="designation"/>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser/department">
+        <Annotation Term="Common.Label" String="department"/>
+        <Annotation Term="Common.QuickInfo" String="department"/>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser/email">
+        <Annotation Term="Common.Label" String="email"/>
+        <Annotation Term="Common.QuickInfo" String="email"/>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser/phoneNo">
+        <Annotation Term="Common.Label" String="phoneNo"/>
+        <Annotation Term="Common.QuickInfo" String="phoneNo"/>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser/serviceStatus">
+        <Annotation Term="Common.Label" String="serviceStatus"/>
+        <Annotation Term="Common.QuickInfo" String="serviceStatus"/>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser/status">
+        <Annotation Term="Common.Label" String="status"/>
+        <Annotation Term="Common.QuickInfo" String="status"/>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser/active">
+        <Annotation Term="Common.Label" String="active"/>
+        <Annotation Term="Common.QuickInfo" String="active"/>
+        <Annotation Term="Common.Heading" String="Truth Value"/>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser/assignedRoles">
+        <Annotation Term="Common.Label" String="assignedRoles"/>
+        <Annotation Term="Common.QuickInfo" String="assignedRoles"/>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser/remarks">
+        <Annotation Term="Common.Label" String="remarks"/>
+        <Annotation Term="Common.QuickInfo" String="remarks"/>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser/roleCode">
+        <Annotation Term="Common.Label" String="roleCode"/>
+        <Annotation Term="Common.QuickInfo" String="roleCode"/>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser/roleName">
+        <Annotation Term="Common.Label" String="roleName"/>
+        <Annotation Term="Common.QuickInfo" String="roleName"/>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser/assignedDate">
+        <Annotation Term="Common.Label" String="assignedDate"/>
+        <Annotation Term="Common.QuickInfo" String="assignedDate"/>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser/assignedBy">
+        <Annotation Term="Common.Label" String="assignedBy"/>
+        <Annotation Term="Common.QuickInfo" String="assignedBy"/>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser/SAPLastChangedBy">
+        <Annotation Term="Common.Label" String="Last Changed By"/>
+        <Annotation Term="Common.QuickInfo" String="Last Changed By"/>
+        <Annotation Term="Common.IsUpperCase" Bool="true"/>
+        <Annotation Term="Common.Heading" String="Changed By"/>
+        <Annotation Term="Common.DocumentationRef" String="urn:sap-com:documentation:key?=type=DE&amp;id=ABP_LASTCHANGE_USER"/>
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser/SAPLastChangedOn">
+        <Annotation Term="Common.Label" String="Last Changed On"/>
+        <Annotation Term="Common.QuickInfo" String="Last Changed On"/>
+        <Annotation Term="Common.Heading" String="Changed On"/>
+        <Annotation Term="Common.DocumentationRef" String="urn:sap-com:documentation:key?=type=DE&amp;id=ABP_LASTCHANGE_TSTMPL"/>
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser/SAPCreatedBy">
+        <Annotation Term="Common.Label" String="Created By"/>
+        <Annotation Term="Common.QuickInfo" String="Created By"/>
+        <Annotation Term="Common.IsUpperCase" Bool="true"/>
+        <Annotation Term="Common.Heading" String="Created By"/>
+        <Annotation Term="Common.DocumentationRef" String="urn:sap-com:documentation:key?=type=DE&amp;id=ABP_CREATION_USER"/>
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser/SAPCreatedOn">
+        <Annotation Term="Common.Label" String="Created On"/>
+        <Annotation Term="Common.QuickInfo" String="Created On"/>
+        <Annotation Term="Common.Heading" String="Created On"/>
+        <Annotation Term="Common.DocumentationRef" String="urn:sap-com:documentation:key?=type=DE&amp;id=ABP_CREATION_TSTMPL"/>
+        <Annotation Term="Core.Computed" Bool="true"/>
+      </Annotations>
+      <Annotations Target="YY1_API_CUSTOMUSER_0001.CustomUser/SAPDescription">
+        <Annotation Term="Common.Label" String="Description"/>
+        <Annotation Term="Common.QuickInfo" String="Description"/>
+      </Annotations>
+    </Schema>
+  </edmx:DataServices>
+</edmx:Edmx>

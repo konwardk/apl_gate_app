@@ -1,0 +1,57 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:f="sap.f"
+    xmlns:core="sap.ui.core">
+    <Popover
+        title="User Account &amp; RBAC Profile"
+        placement="Bottom"
+        contentWidth="360px">
+        <VBox alignItems="Center" class="sapUiSmallMargin">
+            <f:Avatar
+                initials="{/userInitials}"
+                backgroundColor="{/userAvatarColor}"
+                displaySize="L"
+                class="sapUiSmallMarginTop sapUiTinyMarginBottom" />
+            <Title text="{/userName}" level="H3" />
+            <Text text="{/userDesignation}" class="text-muted sapUiTinyMarginBottom" />
+            <Text text="{= ${/userDepartment} ? 'Department: ' + ${/userDepartment} : '' }" class="text-hint sapUiTinyMarginBottom" visible="{= !!${/userDepartment} }" />
+
+            <VBox width="100%" class="sapUiSmallMarginTop sapUiSmallMarginBottom profile-info-box">
+                <HBox justifyContent="SpaceBetween" class="sapUiTinyMarginBottom">
+                    <Text text="Username:" design="Bold" />
+                    <Text text="{/activeUser}" />
+                </HBox>
+                <HBox justifyContent="SpaceBetween" class="sapUiTinyMarginBottom" visible="{= !!${/userEmployeeId} }">
+                    <Text text="Employee ID:" design="Bold" />
+                    <Text text="{/userEmployeeId}" />
+                </HBox>
+                <HBox justifyContent="SpaceBetween" class="sapUiTinyMarginBottom">
+                    <Text text="Primary Role:" design="Bold" />
+                    <Text text="{/userPrimaryRoleTitle}" />
+                </HBox>
+                <HBox justifyContent="SpaceBetween" class="sapUiTinyMarginBottom">
+                    <Text text="Assigned Workspace:" design="Bold" />
+                    <Text text="{/assignedScreenTitle}" />
+                </HBox>
+                <HBox justifyContent="SpaceBetween" class="sapUiTinyMarginBottom">
+                    <Text text="All Assigned Roles:" design="Bold" />
+                    <Text text="{/userRolesText}" wrapping="true" />
+                </HBox>
+            </VBox>
+
+            <HBox justifyContent="Center" class="sapUiSmallMarginTop">
+                <Button
+                    text="Switch Account"
+                    icon="sap-icon://user-switch"
+                    type="Emphasized"
+                    press=".onSwitchUserPress"
+                    class="sapUiTinyMarginEnd" />
+                <Button
+                    text="Sign Out"
+                    icon="sap-icon://log-out"
+                    type="Reject"
+                    press=".onSignOutPress" />
+            </HBox>
+        </VBox>
+    </Popover>
+</core:FragmentDefinition>

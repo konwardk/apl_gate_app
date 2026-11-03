@@ -1,0 +1,8 @@
+VIEW GateService_UserRoles AS SELECT
+  UserRoles_0.ID,
+  UserRoles_0.user_ID,
+  UserRoles_0.roleCode,
+  UserRoles_0.roleName,
+  UserRoles_0.assignedDate,
+  UserRoles_0.assignedBy
+FROM factory_gate_UserRoles AS UserRoles_0

@@ -1,0 +1,1708 @@
+sap.ui.define([
+    "sap/ui/core/mvc/Controller",
+    "sap/ui/model/json/JSONModel",
+    "sap/ui/core/Fragment",
+    "sap/m/MessageToast",
+    "sap/m/MessageBox",
+    "sap/ui/core/library",
+    "sap/ui/model/Filter",
+    "sap/ui/model/FilterOperator",
+    "factory/gate/model/formatter",
+    "factory/gate/model/models"
+], function (Controller, JSONModel, Fragment, MessageToast, MessageBox, coreLibrary, Filter, FilterOperator, formatter, models) {
+    "use strict";
+
+    const ValueState = coreLibrary.ValueState;
+    const ODATA_BASE = "/gate";
+
+    return Controller.extend("factory.gate.controller.SecurityOperations", {
+        formatter: formatter,
+
+        onInit: function () {
+            const defaultOfficer = models.getUserDisplayName();
+
+            const oSecModel = new JSONModel({
+                // Table and queues
+                records: [],
+                displayedRecords: [],
+                selectedFilter: "ALL",
+                searchQuery: "",
+                allRecordsCount: 0,
+                waitingInCount: 0,
+                inPlantCount: 0,
+                waitingOutCount: 0,
+                clearedCount: 0,
+
+                waitingVehicles: [],
+                waitingOutVehicles: [],
+
+                // Gate IN properties
+                isVehicleSelectable: true,
+                selectedGateInNumber: "",
+                selectedVehicle: null,
+                driverLicenseNo: "",
+                driverPhoneNo: "",
+                helperName: "",
+                securityPersonnel: defaultOfficer,
+                driverVerified: false,
+                vehicleVerified: false,
+                documentsVerified: false,
+                withoutPO: false,
+                poNumber: "",
+                selectedPoInfo: "",
+                soNumber: "",
+                invoiceNumber: "",
+                invoiceDate: null,
+                isDelivery: true,
+                isPickup: false,
+                rgpDocumentNo: "",
+                nrgpDocumentNo: "",
+                gatePassType: "",
+                gatePassVerified: false,
+                emptyInspectionVerified: false,
+                remarks: "",
+
+                // Gate OUT properties
+                isOutVehicleSelectable: true,
+                outSelectedGateInNumber: "",
+                outSelectedVehicle: null,
+                outSecurityPersonnel: defaultOfficer,
+                outDriverVerified: true,
+                outVehicleVerified: true,
+                outEmptyInspectionVerified: true,
+                outMaterialInspected: true,
+                outDocumentsVerified: true,
+                outGatePassVerified: false,
+                outDeliveryDetailsVerified: false,
+                outGatePassType: "RGP",
+                outGatePassDocumentNo: "",
+                outRemarks: "",
+                outInboundRecord: null,
+                outWeighmentSummary: ""
+            });
+            this.getView().setModel(oSecModel, "secModel");
+
+            // Only load data if user is authenticated (prevents 401 toast on startup)
+            if (models.getAuthHeaderValue()) {
+                this.loadSecurityData();
+            }
+        },
+
+        _enrichSecurityRecord: function (tx) {
+            const secEntry = tx.securityEntry || {};
+            const hasSecurityIn = Boolean(secEntry.securityInDateTime) || (tx.status !== "GATE_IN" && tx.status !== "CANCELLED");
+            const hasSecurityOut = Boolean(secEntry.securityOutDateTime) || ["SECURITY_OUT", "COMPLETED"].includes(tx.status);
+
+            // 1. Can do Security Gate IN
+            // Only when status is GATE_IN, Gate IN has not been performed yet, and transaction is active
+            const canSecurityGateIn = (tx.status === "GATE_IN" && !hasSecurityIn && tx.status !== "CANCELLED");
+
+            // 2. Assigned route and section
+            const sAssignedRoute = (tx.assignedRoute || secEntry.assignedRoute || "").toUpperCase().trim();
+            const hasAnyWeighment = Boolean(tx.weighments && tx.weighments.length > 0);
+
+            // Can assign or re-assign route at SECURITY_IN before weighments start:
+            const canSendToWeighbridge = (tx.status === "SECURITY_IN" && sAssignedRoute !== "WEIGHBRIDGE" && !hasAnyWeighment);
+            const canSendToFactory = (tx.status === "SECURITY_IN" && sAssignedRoute !== "FACTORY" && !hasAnyWeighment);
+            const canAssignRoute = canSendToWeighbridge || canSendToFactory;
+
+            // Assigned to Weighbridge:
+            // Route is WEIGHBRIDGE (or currently in WEIGHBRIDGE_IN), and has not completed weighbridge exit (WEIGHBRIDGE_OUT) or final clearance
+            const isAtWeighbridge = (sAssignedRoute === "WEIGHBRIDGE" || tx.status === "WEIGHBRIDGE_IN") &&
+                !["WEIGHBRIDGE_OUT", "SECURITY_OUT", "COMPLETED", "CANCELLED", "GATE_IN"].includes(tx.status);
+
+            // Assigned to Factory Gate:
+            // Route is FACTORY (or currently in FACTORY_IN / stage FACTORY), and has not completed factory exit (FACTORY_OUT) or final clearance
+            const isAtFactory = (sAssignedRoute === "FACTORY" || tx.status === "FACTORY_IN") &&
+                !["FACTORY_OUT", "SECURITY_OUT", "COMPLETED", "CANCELLED", "GATE_IN"].includes(tx.status);
+
+            // 3. Can do Security Gate OUT:
+            // Only once next operation is completed in Weighbridge (WEIGHBRIDGE_OUT) or Factory (FACTORY_OUT)
+            const canSecurityGateOut = (tx.status === "WEIGHBRIDGE_OUT" || tx.status === "FACTORY_OUT") &&
+                !hasSecurityOut &&
+                tx.status !== "CANCELLED";
+
+            // 4. Cleared
+            const isCleared = hasSecurityOut || ["SECURITY_OUT", "COMPLETED"].includes(tx.status);
+
+            return {
+                ...tx,
+                hasSecurityIn: hasSecurityIn,
+                hasSecurityOut: hasSecurityOut,
+                canSecurityGateIn: canSecurityGateIn,
+                canAssignRoute: canAssignRoute,
+                canSendToWeighbridge: canSendToWeighbridge,
+                canSendToFactory: canSendToFactory,
+                isAtWeighbridge: isAtWeighbridge,
+                isAtFactory: isAtFactory,
+                canSecurityGateOut: canSecurityGateOut,
+                isCleared: isCleared,
+                assignedRouteClean: sAssignedRoute
+            };
+        },
+
+        loadSecurityData: async function () {
+            const authHeader = models.getAuthHeaderValue();
+            if (!authHeader) {
+                // Not authenticated yet; skip loading to prevent 401 error toast on startup
+                return;
+            }
+
+            const oSecModel = this.getView().getModel("secModel");
+            const oTable = this.byId("secTxTable");
+            if (oTable) oTable.setBusy(true);
+
+            const headers = {
+                "Authorization": authHeader,
+                "Content-Type": "application/json"
+            };
+
+            try {
+                // Fetch all GateTransactions expanding unified securityEntry, factoryEntry, driver, and weighments
+                const res = await fetch(`${ODATA_BASE}/GateTransactions?$expand=securityEntry,factoryEntry,driver,weighments&$orderby=createdAt desc&$top=100`, { headers });
+                if (!res.ok) {
+                    if (res.status === 401 || res.status === 403) {
+                        console.warn(`[SecurityOperations] Unauthorized to load security records (HTTP ${res.status}).`);
+                        return;
+                    }
+                    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                }
+
+                const data = await res.json();
+                const rawRecords = data.value || [];
+                const aRecords = rawRecords.map(tx => this._enrichSecurityRecord(tx));
+                oSecModel.setProperty("/records", aRecords);
+
+                // Derive waiting queues
+                const aWaitingIn = aRecords.filter(r => r.canSecurityGateIn);
+                // Eligible for Security Gate OUT: Scale outbound or Factory outbound completed
+                const aWaitingOut = aRecords.filter(r => r.canSecurityGateOut);
+
+                oSecModel.setProperty("/waitingVehicles", aWaitingIn);
+                oSecModel.setProperty("/waitingOutVehicles", aWaitingOut);
+
+                // Compute counts
+                const inPlantCount = aRecords.filter(r => r.isAtWeighbridge || r.isAtFactory || ["SECURITY_IN", "WEIGHBRIDGE_IN", "FACTORY_IN"].includes(r.status)).length;
+                const clearedCount = aRecords.filter(r => r.isCleared).length;
+
+                oSecModel.setProperty("/allRecordsCount", aRecords.length);
+                oSecModel.setProperty("/waitingInCount", aWaitingIn.length);
+                oSecModel.setProperty("/inPlantCount", inPlantCount);
+                oSecModel.setProperty("/waitingOutCount", aWaitingOut.length);
+                oSecModel.setProperty("/clearedCount", clearedCount);
+
+                this._applyFilters();
+            } catch (err) {
+                console.error("Error loading security operations data:", err);
+                if (models.getAuthHeaderValue()) {
+                    MessageToast.show("Failed to load security records: " + err.message);
+                }
+            } finally {
+                if (oTable) oTable.setBusy(false);
+            }
+        },
+
+        _applyFilters: function () {
+            const oSecModel = this.getView().getModel("secModel");
+            const aRecords = oSecModel.getProperty("/records") || [];
+            const sFilter = oSecModel.getProperty("/selectedFilter") || "ALL";
+            const sQuery = (oSecModel.getProperty("/searchQuery") || "").trim().toLowerCase();
+
+            let aFiltered = aRecords.slice();
+
+            // 1. Filter Category
+            if (sFilter === "WAITING_IN") {
+                aFiltered = aFiltered.filter(r => r.canSecurityGateIn);
+            } else if (sFilter === "IN_PLANT") {
+                aFiltered = aFiltered.filter(r => r.isAtWeighbridge || r.isAtFactory || ["SECURITY_IN", "WEIGHBRIDGE_IN", "FACTORY_IN"].includes(r.status));
+            } else if (sFilter === "WAITING_OUT") {
+                aFiltered = aFiltered.filter(r => r.canSecurityGateOut);
+            } else if (sFilter === "CLEARED") {
+                aFiltered = aFiltered.filter(r => r.isCleared);
+            }
+
+            // 2. Search Query Filter
+            if (sQuery) {
+                aFiltered = aFiltered.filter(r => {
+                    const matchGateIn = (r.gateInNumber || "").toLowerCase().includes(sQuery);
+                    const matchVehicle = (r.vehicleRegNo || "").toLowerCase().includes(sQuery);
+                    const matchDriver = (r.driverName || (r.driver && r.driver.driverName) || "").toLowerCase().includes(sQuery);
+                    const matchPurpose = (r.purpose || "").toLowerCase().includes(sQuery) || (formatter.getPurposeText(r.purpose) || "").toLowerCase().includes(sQuery);
+                    const matchStatus = (r.status || "").toLowerCase().includes(sQuery) || (formatter.getStatusText(r.status) || "").toLowerCase().includes(sQuery);
+                    const matchStage = (r.currentStage || "").toLowerCase().includes(sQuery) || (formatter.getStageText(r.currentStage) || "").toLowerCase().includes(sQuery);
+
+                    const sec = r.securityEntry;
+                    const matchPo = sec && (sec.poNumber || "").toLowerCase().includes(sQuery);
+                    const matchInv = sec && (sec.invoiceNumber || "").toLowerCase().includes(sQuery);
+                    const matchRgp = sec && (sec.rgpDocumentNo || "").toLowerCase().includes(sQuery);
+                    const matchNrgp = sec && (sec.nrgpDocumentNo || "").toLowerCase().includes(sQuery);
+                    const matchExitPass = sec && (sec.exitGatePassDocumentNo || "").toLowerCase().includes(sQuery);
+                    const matchInOfficer = sec && (sec.securityPersonnel || "").toLowerCase().includes(sQuery);
+                    const matchOutOfficer = sec && (sec.securityOutPersonnel || "").toLowerCase().includes(sQuery);
+
+                    return matchGateIn || matchVehicle || matchDriver || matchPurpose || matchStatus || matchStage ||
+                        matchPo || matchInv || matchRgp || matchNrgp || matchExitPass || matchInOfficer || matchOutOfficer;
+                });
+            }
+
+            oSecModel.setProperty("/displayedRecords", aFiltered);
+        },
+
+        onFilterCategoryChange: function (oEvt) {
+            const oItem = oEvt.getParameter("item");
+            const sKey = oItem ? oItem.getKey() : oEvt.getSource().getSelectedKey();
+            this.getView().getModel("secModel").setProperty("/selectedFilter", sKey);
+            this._applyFilters();
+        },
+
+        onSearchLiveChange: function (oEvt) {
+            const sQuery = oEvt.getParameter("newValue") || "";
+            this.getView().getModel("secModel").setProperty("/searchQuery", sQuery);
+            this._applyFilters();
+        },
+
+        onSearch: function (oEvt) {
+            const sQuery = oEvt.getParameter("query") || "";
+            this.getView().getModel("secModel").setProperty("/searchQuery", sQuery);
+            this._applyFilters();
+        },
+
+        onResetSearch: function () {
+            const oSearchField = this.byId("secSearchField");
+            if (oSearchField) oSearchField.setValue("");
+            const oSecModel = this.getView().getModel("secModel");
+            oSecModel.setProperty("/searchQuery", "");
+            oSecModel.setProperty("/selectedFilter", "ALL");
+            const oSegBtn = this.byId("secFilterSegmentedBtn");
+            if (oSegBtn) oSegBtn.setSelectedKey("ALL");
+            this._applyFilters();
+        },
+
+        onRefreshQueue: function () {
+            this.loadSecurityData();
+            MessageToast.show("Security Gate records refreshed");
+        },
+
+        // ============================================================
+        // DIALOG: Security Gate IN
+        // ============================================================
+        onOpenSecurityGateInDialog: function (oPreselectedTx) {
+            const sId = this.getView().createId("secGateInFrag");
+            const oSecModel = this.getView().getModel("secModel");
+            const defaultOfficer = models.getUserDisplayName();
+
+            const bIsPreselected = Boolean(oPreselectedTx && oPreselectedTx.gateInNumber);
+            oSecModel.setProperty("/isVehicleSelectable", !bIsPreselected);
+
+            // Reset Gate IN fields
+            oSecModel.setProperty("/driverLicenseNo", "");
+            oSecModel.setProperty("/driverPhoneNo", "");
+            oSecModel.setProperty("/helperName", "");
+            oSecModel.setProperty("/securityPersonnel", defaultOfficer);
+            oSecModel.setProperty("/withoutPO", false);
+            oSecModel.setProperty("/poNumber", "");
+            oSecModel.setProperty("/supplierCode", "");
+            oSecModel.setProperty("/supplierName", "");
+            oSecModel.setProperty("/supplierDisplay", "");
+            oSecModel.setProperty("/selectedPoInfo", "");
+            oSecModel.setProperty("/soNumber", "");
+            oSecModel.setProperty("/invoiceNumber", "");
+            oSecModel.setProperty("/invoiceDate", null);
+            oSecModel.setProperty("/rgpDocumentNo", "");
+            oSecModel.setProperty("/nrgpDocumentNo", "");
+            oSecModel.setProperty("/gatePassType", "");
+            oSecModel.setProperty("/assignedRoute", "WEIGHBRIDGE");
+            oSecModel.setProperty("/gatePassVerified", false);
+            oSecModel.setProperty("/emptyInspectionVerified", false);
+            oSecModel.setProperty("/remarks", "");
+            oSecModel.setProperty("/driverVerified", false);
+            oSecModel.setProperty("/vehicleVerified", false);
+            oSecModel.setProperty("/documentsVerified", false);
+
+            if (!this._pGateInDialog) {
+                this._pGateInDialog = Fragment.load({
+                    id: sId,
+                    name: "factory.gate.fragment.SecurityGateInDialog",
+                    controller: this
+                }).then(function (oDialog) {
+                    this.getView().addDependent(oDialog);
+                    return oDialog;
+                }.bind(this));
+            }
+
+            this._pGateInDialog.then(function (oDialog) {
+                // Determine preselected vehicle
+                let sGateInNo = "";
+                if (bIsPreselected) {
+                    sGateInNo = oPreselectedTx.gateInNumber;
+                } else {
+                    const aWaiting = oSecModel.getProperty("/waitingVehicles") || [];
+                    if (aWaiting.length > 0) sGateInNo = aWaiting[0].gateInNumber;
+                }
+
+                if (sGateInNo) {
+                    this.selectVehicleByGateIn(sGateInNo);
+                } else {
+                    oSecModel.setProperty("/selectedGateInNumber", "");
+                    oSecModel.setProperty("/selectedVehicle", null);
+                }
+
+                const oComboBox = Fragment.byId(sId, "dialogSecGateInComboBox");
+                if (oComboBox) {
+                    oComboBox.setEnabled(!bIsPreselected);
+                    oComboBox.setEditable(!bIsPreselected);
+                }
+
+                this._resetDialogInputStates(sId, [
+                    "dialogSecDriverPhone",
+                    "dialogSecDriverLicense",
+                    "dialogSecPersonnel",
+                    "dialogSecPoNumber",
+                    "dialogSecSupplier",
+                    "dialogSecInvoiceNumber"
+                ]);
+
+                oDialog.open();
+            }.bind(this));
+        },
+
+        onGateInSelectChange: function (oEvt) {
+            const oSecModel = this.getView().getModel("secModel");
+            if (oSecModel && oSecModel.getProperty("/isVehicleSelectable") === false) {
+                return;
+            }
+            let sKey = "";
+            if (oEvt) {
+                const oSelectedItem = oEvt.getParameter("selectedItem");
+                if (oSelectedItem) {
+                    sKey = oSelectedItem.getKey();
+                } else {
+                    const sTypedVal = (oEvt.getParameter("newValue") || "").trim();
+                    if (sTypedVal) {
+                        const aWaiting = this.getView().getModel("secModel").getProperty("/waitingVehicles") || [];
+                        const matched = aWaiting.find(v =>
+                            v.gateInNumber.toLowerCase() === sTypedVal.toLowerCase() ||
+                            (v.vehicleRegNo && v.vehicleRegNo.toLowerCase() === sTypedVal.toLowerCase())
+                        );
+                        sKey = matched ? matched.gateInNumber : sTypedVal;
+                    } else {
+                        sKey = "";
+                    }
+                }
+            } else {
+                sKey = this.getView().getModel("secModel").getProperty("/selectedGateInNumber");
+            }
+            this.selectVehicleByGateIn(sKey);
+        },
+
+        selectVehicleByGateIn: async function (gateInNumber) {
+            const oSecModel = this.getView().getModel("secModel");
+            const sId = this.getView().createId("secGateInFrag");
+
+            // Reset user-fillable fields so no previous vehicle data remains
+            oSecModel.setProperty("/driverLicenseNo", "");
+            oSecModel.setProperty("/driverPhoneNo", "");
+            oSecModel.setProperty("/helperName", "");
+            oSecModel.setProperty("/driverVerified", false);
+            oSecModel.setProperty("/vehicleVerified", false);
+            oSecModel.setProperty("/documentsVerified", false);
+            oSecModel.setProperty("/emptyInspectionVerified", false);
+            oSecModel.setProperty("/withoutPO", false);
+            oSecModel.setProperty("/poNumber", "");
+            oSecModel.setProperty("/selectedPoInfo", "");
+            oSecModel.setProperty("/soNumber", "");
+            oSecModel.setProperty("/invoiceNumber", "");
+            oSecModel.setProperty("/invoiceDate", null);
+            oSecModel.setProperty("/rgpDocumentNo", "");
+            oSecModel.setProperty("/nrgpDocumentNo", "");
+            oSecModel.setProperty("/gatePassType", "");
+            oSecModel.setProperty("/assignedRoute", "WEIGHBRIDGE");
+            oSecModel.setProperty("/remarks", "");
+
+            this._resetDialogInputStates(sId, [
+                "dialogSecDriverPhone",
+                "dialogSecDriverLicense",
+                "dialogSecPersonnel",
+                "dialogSecPoNumber",
+                "dialogSecInvoiceNumber"
+            ]);
+
+            if (!gateInNumber) {
+                oSecModel.setProperty("/selectedGateInNumber", "");
+                oSecModel.setProperty("/selectedVehicle", null);
+                oSecModel.setProperty("/isDelivery", true);
+                oSecModel.setProperty("/isPickup", false);
+                return;
+            }
+
+            oSecModel.setProperty("/selectedGateInNumber", gateInNumber);
+            const aWaiting = oSecModel.getProperty("/waitingVehicles") || [];
+            let matched = aWaiting.find(v => v.gateInNumber === gateInNumber);
+
+            if (!matched) {
+                const aAll = oSecModel.getProperty("/records") || [];
+                matched = aAll.find(v => v.gateInNumber === gateInNumber);
+            }
+
+            if (!matched) {
+                try {
+                    const headers = {
+                        "Authorization": models.getAuthHeaderValue(),
+                        "Content-Type": "application/json"
+                    };
+                    const res = await fetch(`${ODATA_BASE}/GateTransactions?$filter=gateInNumber eq '${gateInNumber}'`, { headers });
+                    if (res.ok) {
+                        const d = await res.json();
+                        if (d.value && d.value.length > 0) matched = d.value[0];
+                    }
+                } catch (e) {}
+            }
+
+            if (matched) {
+                if (!aWaiting.some(v => v.gateInNumber === matched.gateInNumber)) {
+                    aWaiting.push(matched);
+                    oSecModel.setProperty("/waitingVehicles", aWaiting);
+                }
+                oSecModel.setProperty("/selectedVehicle", matched);
+                oSecModel.setProperty("/isDelivery", matched.purpose === "DELIVERY");
+                oSecModel.setProperty("/isPickup", matched.purpose === "PICKUP");
+            } else {
+                oSecModel.setProperty("/selectedVehicle", null);
+                oSecModel.setProperty("/isDelivery", true);
+                oSecModel.setProperty("/isPickup", false);
+            }
+        },
+
+        onDriverPhoneLiveChange: function (oEvt) {
+            const oInput = oEvt.getSource();
+            let sVal = oEvt.getParameter("value") || "";
+            // Keep only numbers and max 10 digits
+            const sDigits = sVal.replace(/\D/g, "").slice(0, 10);
+
+            if (sVal !== sDigits) {
+                oInput.setValue(sDigits);
+                this.getView().getModel("secModel").setProperty("/driverPhoneNo", sDigits);
+            }
+
+            if (sDigits.length === 0) {
+                oInput.setValueState(ValueState.None);
+                oInput.setValueStateText("");
+            } else if (sDigits.length < 10) {
+                oInput.setValueState(ValueState.Warning);
+                oInput.setValueStateText(`Enter 10 numeric digits (${sDigits.length}/10)`);
+            } else {
+                oInput.setValueState(ValueState.Success);
+                oInput.setValueStateText("Valid 10-digit phone number");
+            }
+        },
+
+        onWithoutPOToggle: function (oEvt) {
+            const bChecked = oEvt.getParameter("selected");
+            const oSecModel = this.getView().getModel("secModel");
+            oSecModel.setProperty("/withoutPO", bChecked);
+
+            const sId = this.getView().createId("secGateInFrag");
+            const oPoInput = Fragment.byId(sId, "dialogSecPoNumber");
+            const oInvInput = Fragment.byId(sId, "dialogSecInvoiceNumber");
+            if (bChecked) {
+                if (oPoInput) oPoInput.setValueState(ValueState.None);
+                if (oInvInput) oInvInput.setValueState(ValueState.None);
+                MessageToast.show("Without PO mode: PO & Invoice requirement waived.");
+            }
+        },
+
+        onConfirmSecurityGateIn: async function () {
+            const oSecModel = this.getView().getModel("secModel");
+            const m = oSecModel.getData();
+            const sId = this.getView().createId("secGateInFrag");
+
+            if (!m.selectedGateInNumber) {
+                MessageBox.error("Please select a Gate IN Number to inspect.");
+                return;
+            }
+
+            const oLicInput = Fragment.byId(sId, "dialogSecDriverLicense");
+            if (!m.driverLicenseNo || !m.driverLicenseNo.trim()) {
+                if (oLicInput) oLicInput.setValueState(ValueState.Error);
+                MessageBox.error("Driver License Number is mandatory for Security Clearance.");
+                return;
+            }
+            if (oLicInput) oLicInput.setValueState(ValueState.None);
+
+            const oSecInput = Fragment.byId(sId, "dialogSecPersonnel");
+            if (!m.securityPersonnel || !m.securityPersonnel.trim()) {
+                if (oSecInput) oSecInput.setValueState(ValueState.Error);
+                MessageBox.error("Security Personnel identifier is mandatory.");
+                return;
+            }
+            if (oSecInput) oSecInput.setValueState(ValueState.None);
+
+            const oPhoneInput = Fragment.byId(sId, "dialogSecDriverPhone");
+            if (m.driverPhoneNo && m.driverPhoneNo.trim()) {
+                const sPhone = m.driverPhoneNo.trim();
+                if (!/^\d+$/.test(sPhone)) {
+                    if (oPhoneInput) {
+                        oPhoneInput.setValueState(ValueState.Error);
+                        oPhoneInput.setValueStateText("Driver Phone No must contain only numbers (0-9).");
+                    }
+                    MessageBox.error("Invalid Driver Phone No:\nOnly numbers (0-9) are allowed.");
+                    return;
+                }
+                if (sPhone.length > 10) {
+                    if (oPhoneInput) {
+                        oPhoneInput.setValueState(ValueState.Error);
+                        oPhoneInput.setValueStateText("Driver Phone No cannot exceed 10 digits.");
+                    }
+                    MessageBox.error("Invalid Driver Phone No:\nMaximum 10 digits allowed.");
+                    return;
+                }
+                if (sPhone.length < 10) {
+                    if (oPhoneInput) {
+                        oPhoneInput.setValueState(ValueState.Error);
+                        oPhoneInput.setValueStateText("Driver Phone No must be exactly 10 digits.");
+                    }
+                    MessageBox.error("Invalid Driver Phone No:\nPlease enter a complete 10-digit mobile number.");
+                    return;
+                }
+                if (oPhoneInput) oPhoneInput.setValueState(ValueState.None);
+            }
+
+            const oPoInput = Fragment.byId(sId, "dialogSecPoNumber");
+            const oInvInput = Fragment.byId(sId, "dialogSecInvoiceNumber");
+            if (oInvInput) oInvInput.setValueState(ValueState.None);
+
+            if (m.isDelivery && !m.withoutPO) {
+                if (!m.poNumber || !m.poNumber.trim()) {
+                    if (oPoInput) oPoInput.setValueState(ValueState.Error);
+                    MessageBox.error("Purchase Order (PO) Number is mandatory for Delivery vehicles.\n(Or check 'Without PO Allowed' if authorized).");
+                    return;
+                } else {
+                    if (oPoInput) oPoInput.setValueState(ValueState.None);
+                }
+            }
+
+            const payload = {
+                gateInNumber: m.selectedGateInNumber,
+                driverLicenseNo: m.driverLicenseNo.trim(),
+                driverPhoneNo: m.driverPhoneNo ? m.driverPhoneNo.trim() : "",
+                helperName: m.helperName ? m.helperName.trim() : "",
+                vehicleReportingDateTime: new Date().toISOString(),
+                securityPersonnel: m.securityPersonnel.trim(),
+                driverVerified: Boolean(m.driverVerified),
+                vehicleVerified: Boolean(m.vehicleVerified),
+                documentsVerified: Boolean(m.documentsVerified),
+                poNumber: m.isDelivery ? (m.withoutPO ? "" : (m.poNumber ? m.poNumber.trim() : "")) : "",
+                soNumber: m.isDelivery ? (m.withoutPO ? "" : (m.soNumber ? m.soNumber.trim() : "")) : "",
+                invoiceNumber: m.isDelivery ? (m.withoutPO ? "" : (m.invoiceNumber ? m.invoiceNumber.trim() : "")) : "",
+                invoiceDate: m.isDelivery ? (m.withoutPO ? null : (m.invoiceDate || null)) : null,
+                withoutPO: m.isDelivery ? Boolean(m.withoutPO) : false,
+                rgpDocumentNo: m.isPickup ? (m.rgpDocumentNo ? m.rgpDocumentNo.trim() : "") : "",
+                nrgpDocumentNo: m.isPickup ? (m.nrgpDocumentNo ? m.nrgpDocumentNo.trim() : "") : "",
+                gatePassType: m.isPickup ? (m.gatePassType || "") : "",
+                assignedRoute: (m.assignedRoute !== undefined && m.assignedRoute !== null) ? m.assignedRoute.trim() : "",
+                remarks: m.remarks ? m.remarks.trim() : ""
+            };
+
+            const headers = {
+                "Authorization": models.getAuthHeaderValue(),
+                "Content-Type": "application/json"
+            };
+
+            try {
+                const response = await fetch(`${ODATA_BASE}/SecurityGateIn`, {
+                    method: "POST",
+                    headers: headers,
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    const sErrMsg = errData.error && errData.error.message ? errData.error.message : "Failed to clear Security Gate IN";
+                    MessageBox.error("Security Clearance Failed: " + sErrMsg);
+                    return;
+                }
+
+                // Close dialog
+                if (this._pGateInDialog) {
+                    this._pGateInDialog.then(oDialog => oDialog.close());
+                }
+
+                let statusText = "";
+                if (m.isDelivery) {
+                    statusText = m.withoutPO ? "Cleared WITHOUT PO" : "Cleared with PO: " + m.poNumber;
+                } else if (m.isPickup) {
+                    const passText = m.rgpDocumentNo ? `RGP: ${m.rgpDocumentNo}` : (m.nrgpDocumentNo ? `NRGP: ${m.nrgpDocumentNo}` : "Documents to be reconciled at Exit");
+                    statusText = `Cleared for PICKUP (${passText})`;
+                } else {
+                    statusText = "Cleared Security Gate IN";
+                }
+
+                const sRouteDesc = (m.assignedRoute === "FACTORY") ? "To Factory Gate (Direct Delivery)" : (m.assignedRoute === "WEIGHBRIDGE" ? "To Weighbridge (Gross/Tare Scale)" : "Unassigned (Assign from Queue)");
+
+                MessageBox.success(`Security Gate IN successfully authorized for ${m.selectedGateInNumber}!\n\nStatus: SECURITY_IN\nAssigned Route: ${sRouteDesc}\nDocumentation: ${statusText}\n\nVehicle is ${m.assignedRoute ? 'assigned to ' + sRouteDesc : 'awaiting route assignment in Security Queue'}.`, {
+                    title: "Security Clearance Complete",
+                    onClose: () => {
+                        this.loadSecurityData();
+                        this.getOwnerComponent().loadOverviewData();
+                    }
+                });
+
+            } catch (networkErr) {
+                MessageBox.error("Network error communicating with GateService: " + networkErr.message);
+            }
+        },
+
+        onCancelSecurityGateIn: function () {
+            if (this._pGateInDialog) {
+                this._pGateInDialog.then(oDialog => oDialog.close());
+            }
+        },
+
+        // ============================================================
+        // EXTERNAL DATA: Fetch S/4HANA Cloud Suppliers (YY1_Supplier)
+        // ============================================================
+        fetchS4Suppliers: async function () {
+            if (this._aAllSuppliers && this._aAllSuppliers.length > 0) {
+                return this._aAllSuppliers;
+            }
+
+            let authHeader = models.getAuthHeaderValue();
+            if (!authHeader) {
+                const active = models.getActiveUser() || "security_user";
+                const pass = models.defaultPasswords[active] || "password";
+                authHeader = "Basic " + btoa(active + ":" + pass);
+            }
+
+            let aSuppliers = [];
+            // 1. Try CAP Backend endpoint /gate/S4Suppliers
+            try {
+                const res = await fetch(`${ODATA_BASE}/S4Suppliers`, {
+                    headers: {
+                        "Authorization": authHeader,
+                        "Content-Type": "application/json"
+                    }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    aSuppliers = Array.isArray(data) ? data : (data.value || []);
+                }
+            } catch (err) {
+                console.warn("[SecurityOperations] Could not fetch suppliers via /gate/S4Suppliers, trying direct S4 API...", err);
+            }
+
+            // 2. Direct S/4HANA Cloud API fallback with credentials maintained in package.json
+            if (!aSuppliers || aSuppliers.length === 0) {
+                try {
+                    const s4Auth = "Basic " + btoa("BTP_S4_INTEGRATION:Assampetrochemical@123#");
+                    const resDirect = await fetch("https://my443544-api.s4hana.cloud.sap/sap/opu/odata/sap/YY1_SUPPLIER_CDS/YY1_Supplier", {
+                        headers: {
+                            "Authorization": s4Auth,
+                            "Accept": "application/json"
+                        }
+                    });
+                    if (resDirect.ok) {
+                        const dataDirect = await resDirect.json();
+                        const rawResults = dataDirect.d?.results || [];
+                        aSuppliers = rawResults.map(item => ({
+                            Supplier: item.Supplier,
+                            SupplierName: item.SupplierName,
+                            SupplierFullName: item.SupplierFullName,
+                            BPSupplierName: item.BPSupplierName
+                        }));
+                    }
+                } catch (err2) {
+                    console.warn("[SecurityOperations] Direct S4 API call failed, using fallback suppliers:", err2);
+                }
+            }
+
+            // 3. Fallback mock list if completely offline
+            if (!aSuppliers || aSuppliers.length === 0) {
+                aSuppliers = [
+                    { Supplier: "1000011", SupplierName: "Aarbee Enterprises", SupplierFullName: "Company Aarbee Enterprises/711202 Kolkata", BPSupplierName: "Aarbee Enterprises" },
+                    { Supplier: "1000013", SupplierName: "KSB Limited", SupplierFullName: "Company KSB Limited/700017 KOLKATA", BPSupplierName: "KSB Limited" },
+                    { Supplier: "1000024", SupplierName: "CHAMUNDA INDUSTRIES", SupplierFullName: " CHAMUNDA INDUSTRIES/400004 MUMBAI", BPSupplierName: "CHAMUNDA INDUSTRIES" },
+                    { Supplier: "8000001", SupplierName: "Indigi Consulting And solution", SupplierFullName: "Company Indigi Consulting And solution/781037 Guwahati", BPSupplierName: "Indigi Consulting And solution" },
+                    { Supplier: "SUP002", SupplierName: "Assam Chemical Spares Ltd", SupplierFullName: "Assam Chemical Spares Ltd/786623", BPSupplierName: "Assam Chemical Spares Ltd" },
+                    { Supplier: "SUPP-01", SupplierName: "Petrochem Industrial Solutions", SupplierFullName: "Petrochem Industrial Solutions/786623", BPSupplierName: "Petrochem Industrial Solutions" }
+                ];
+            }
+
+            this._aAllSuppliers = aSuppliers;
+            this._supplierMap = new Map();
+            aSuppliers.forEach(s => {
+                if (s.Supplier) {
+                    this._supplierMap.set(String(s.Supplier).trim(), s.SupplierName || s.BPSupplierName || "");
+                }
+            });
+
+            return aSuppliers;
+        },
+
+        // ============================================================
+        // F4 SEARCH HELP: Purchase Orders from SAP S/4HANA Cloud
+        // ============================================================
+        onPoValueHelpRequest: async function () {
+            const sId = this.getView().createId("poVHFrag");
+
+            if (!this._pPoValueHelpDialog) {
+                this._pPoValueHelpDialog = Fragment.load({
+                    id: sId,
+                    name: "factory.gate.fragment.PurchaseOrderValueHelpDialog",
+                    controller: this
+                }).then(function (oDialog) {
+                    this.getView().addDependent(oDialog);
+                    return oDialog;
+                }.bind(this));
+            }
+
+            const oDialog = await this._pPoValueHelpDialog;
+            this._oPoDialog = oDialog;
+            oDialog.open();
+            oDialog.setBusy(true);
+
+            // Reset dialog filter inputs
+            const oSupplierInput = Fragment.byId(sId, "poFilterSupplier");
+            const oDateInput = Fragment.byId(sId, "poFilterDate");
+            const oSearchInput = Fragment.byId(sId, "poFilterSearch");
+            const oConfirmBtn = Fragment.byId(sId, "btnConfirmPoSelection");
+            const oTable = Fragment.byId(sId, "poValueHelpTable");
+            const oCountText = Fragment.byId(sId, "poCountText");
+
+            if (oSupplierInput) oSupplierInput.setValue("");
+            if (oDateInput) oDateInput.setValue("");
+            if (oConfirmBtn) oConfirmBtn.setEnabled(false);
+            if (oTable) oTable.removeSelections(true);
+
+            // Pre-populate filters if user already specified PO number or Supplier in Gate IN form
+            const oSecModel = this.getView().getModel("secModel");
+            const sCurrentPo = (oSecModel ? oSecModel.getProperty("/poNumber") : "") || "";
+            const sCurrentSupplier = (oSecModel ? oSecModel.getProperty("/supplierCode") : "") || "";
+
+            if (oSearchInput && sCurrentPo.trim()) {
+                oSearchInput.setValue(sCurrentPo.trim());
+            }
+            if (oSupplierInput && sCurrentSupplier.trim()) {
+                oSupplierInput.setValue(sCurrentSupplier.trim());
+            }
+
+            try {
+                // Concurrently fetch POs and S/4HANA Suppliers (YY1_Supplier)
+                let authHeader = models.getAuthHeaderValue();
+                if (!authHeader) {
+                    const active = models.getActiveUser() || "security_user";
+                    const pass = models.defaultPasswords[active] || "password";
+                    authHeader = "Basic " + btoa(active + ":" + pass);
+                }
+
+                const [poRes, aSuppliers] = await Promise.all([
+                    fetch(`${ODATA_BASE}/PurchaseOrders?$top=300&$orderby=PurchaseOrderDate desc`, {
+                        headers: {
+                            "Authorization": authHeader,
+                            "Content-Type": "application/json"
+                        }
+                    }),
+                    this.fetchS4Suppliers()
+                ]);
+
+                if (poRes.ok) {
+                    const data = await poRes.json();
+                    const aPOs = Array.isArray(data) ? data : (data.value || []);
+
+                    // Enrich each PO with resolved SupplierName from S/4HANA YY1_Supplier
+                    aPOs.forEach(p => {
+                        const sCode = String(p.Supplier || "").trim();
+                        p.SupplierName = this._supplierMap ? (this._supplierMap.get(sCode) || "") : "";
+                    });
+
+                    this._aAllPurchaseOrders = aPOs;
+
+                    let oPoModel = oDialog.getModel("poModel");
+                    if (!oPoModel) {
+                        oPoModel = new JSONModel(aPOs);
+                        oDialog.setModel(oPoModel, "poModel");
+                    } else {
+                        oPoModel.setData(aPOs);
+                    }
+
+                    // Populate filter model with full suppliers fetched from S/4HANA YY1_Supplier
+                    let oFilterModel = oDialog.getModel("poFilterModel");
+                    if (!oFilterModel) {
+                        oFilterModel = new JSONModel({ suppliers: aSuppliers });
+                        oDialog.setModel(oFilterModel, "poFilterModel");
+                    } else {
+                        oFilterModel.setData({ suppliers: aSuppliers });
+                    }
+
+                    // Apply filter if pre-populated, otherwise show all
+                    if (sCurrentPo.trim() || sCurrentSupplier.trim()) {
+                        this.onPoFilterApply();
+                    } else {
+                        if (oTable) {
+                            const oBinding = oTable.getBinding("items");
+                            if (oBinding) oBinding.filter([]);
+                        }
+                        if (oCountText) {
+                            oCountText.setText(`Showing ${aPOs.length} Purchase Orders`);
+                        }
+                    }
+                } else {
+                    MessageToast.show("Failed to fetch Purchase Orders from server.");
+                }
+            } catch (err) {
+                console.error("Error fetching purchase orders:", err);
+                MessageToast.show("An error occurred while retrieving purchase order data.");
+            } finally {
+                oDialog.setBusy(false);
+            }
+        },
+
+        onPoFilterApply: function () {
+            const sId = this.getView().createId("poVHFrag");
+            const oSupplierInput = Fragment.byId(sId, "poFilterSupplier");
+            const oDateInput = Fragment.byId(sId, "poFilterDate");
+            const oSearchInput = Fragment.byId(sId, "poFilterSearch");
+            const oTable = Fragment.byId(sId, "poValueHelpTable");
+            const oCountText = Fragment.byId(sId, "poCountText");
+            const oConfirmBtn = Fragment.byId(sId, "btnConfirmPoSelection");
+
+            if (!oTable) return;
+            const oBinding = oTable.getBinding("items");
+            if (!oBinding) return;
+
+            const aFilters = [];
+
+            // 1. Supplier filter - matches Supplier code or resolved SupplierName
+            const sSupplier = (oSupplierInput ? oSupplierInput.getValue() : "").trim();
+            if (sSupplier) {
+                aFilters.push(new Filter([
+                    new Filter("Supplier", FilterOperator.Contains, sSupplier),
+                    new Filter("SupplierName", FilterOperator.Contains, sSupplier)
+                ], false));
+            }
+
+            // 2. PurchaseOrderDate filter
+            const sDate = (oDateInput ? oDateInput.getValue() : "").trim();
+            if (sDate) {
+                aFilters.push(new Filter("PurchaseOrderDate", FilterOperator.Contains, sDate));
+            }
+
+            // 3. Keyword / PO Number Search filter
+            const sSearch = (oSearchInput ? oSearchInput.getValue() : "").trim();
+            if (sSearch) {
+                aFilters.push(new Filter([
+                    new Filter("PurchaseOrder", FilterOperator.Contains, sSearch),
+                    new Filter("PurchaseOrderType", FilterOperator.Contains, sSearch),
+                    new Filter("Supplier", FilterOperator.Contains, sSearch),
+                    new Filter("SupplierName", FilterOperator.Contains, sSearch),
+                    new Filter("CompanyCode", FilterOperator.Contains, sSearch),
+                    new Filter("PurchasingOrganization", FilterOperator.Contains, sSearch),
+                    new Filter("PurchasingGroup", FilterOperator.Contains, sSearch)
+                ], false));
+            }
+
+            if (aFilters.length > 0) {
+                oBinding.filter(new Filter(aFilters, true)); // AND combination
+            } else {
+                oBinding.filter([]);
+            }
+
+            if (oTable) {
+                oTable.removeSelections(true);
+            }
+            if (oConfirmBtn) {
+                oConfirmBtn.setEnabled(false);
+            }
+
+            setTimeout(function () {
+                const iCount = oBinding.getLength ? oBinding.getLength() : 0;
+                if (oCountText) {
+                    oCountText.setText(`Found ${iCount} Purchase Orders`);
+                }
+            }, 60);
+        },
+
+        onPoFilterReset: function () {
+            const sId = this.getView().createId("poVHFrag");
+            const oSupplierInput = Fragment.byId(sId, "poFilterSupplier");
+            const oDateInput = Fragment.byId(sId, "poFilterDate");
+            const oSearchInput = Fragment.byId(sId, "poFilterSearch");
+            const oTable = Fragment.byId(sId, "poValueHelpTable");
+            const oCountText = Fragment.byId(sId, "poCountText");
+            const oConfirmBtn = Fragment.byId(sId, "btnConfirmPoSelection");
+
+            if (oSupplierInput) oSupplierInput.setValue("");
+            if (oDateInput) oDateInput.setValue("");
+            if (oSearchInput) oSearchInput.setValue("");
+
+            if (oTable) {
+                oTable.removeSelections(true);
+                const oBinding = oTable.getBinding("items");
+                if (oBinding) {
+                    oBinding.filter([]);
+                    setTimeout(function () {
+                        const iCount = oBinding.getLength ? oBinding.getLength() : 0;
+                        if (oCountText) {
+                            oCountText.setText(`Showing ${iCount} Purchase Orders`);
+                        }
+                    }, 60);
+                }
+            }
+            if (oConfirmBtn) {
+                oConfirmBtn.setEnabled(false);
+            }
+        },
+
+        onPoSelectionChange: function () {
+            const sId = this.getView().createId("poVHFrag");
+            const oConfirmBtn = Fragment.byId(sId, "btnConfirmPoSelection");
+            const oTable = Fragment.byId(sId, "poValueHelpTable");
+            const oSelectedItem = oTable ? oTable.getSelectedItem() : null;
+            if (oConfirmBtn) {
+                oConfirmBtn.setEnabled(!!oSelectedItem);
+            }
+        },
+
+        onPoRowSelect: function (oEvt) {
+            const oItem = oEvt.getSource();
+            this._selectAndApplyPo(oItem);
+        },
+
+        onPoConfirmSelected: function () {
+            const sId = this.getView().createId("poVHFrag");
+            const oTable = Fragment.byId(sId, "poValueHelpTable");
+            const oSelectedItem = oTable ? oTable.getSelectedItem() : null;
+            if (oSelectedItem) {
+                this._selectAndApplyPo(oSelectedItem);
+            }
+        },
+
+        _selectAndApplyPo: function (oItem) {
+            if (!oItem) return;
+            const oContext = oItem.getBindingContext("poModel");
+            if (oContext) {
+                const sSelectedPo = oContext.getProperty("PurchaseOrder");
+                const sSupplier = oContext.getProperty("Supplier");
+                let sSupplierName = oContext.getProperty("SupplierName") || "";
+                if (!sSupplierName && this._supplierMap && sSupplier) {
+                    sSupplierName = this._supplierMap.get(String(sSupplier).trim()) || "";
+                }
+                const sDate = oContext.getProperty("PurchaseOrderDate");
+                const sDisplaySupplier = sSupplier ? (sSupplierName ? `${sSupplier} - ${sSupplierName}` : sSupplier) : "";
+
+                const oSecModel = this.getView().getModel("secModel");
+                oSecModel.setProperty("/poNumber", sSelectedPo);
+                oSecModel.setProperty("/supplierCode", sSupplier);
+                oSecModel.setProperty("/supplierName", sSupplierName);
+                oSecModel.setProperty("/supplierDisplay", sDisplaySupplier);
+                oSecModel.setProperty("/selectedPoInfo", `Supplier: ${sSupplier || '-'} ${sSupplierName ? '(' + sSupplierName + ')' : ''} • Date: ${sDate || '-'} • Verified S/4HANA PO`);
+
+                // Clear error states if set
+                const sGateInFragId = this.getView().createId("secGateInFrag");
+                const oPoInput = Fragment.byId(sGateInFragId, "dialogSecPoNumber");
+                if (oPoInput) {
+                    oPoInput.setValueState(ValueState.None);
+                    oPoInput.setValueStateText("");
+                }
+                const oSupplierField = Fragment.byId(sGateInFragId, "dialogSecSupplier");
+                if (oSupplierField) {
+                    oSupplierField.setValueState(ValueState.None);
+                    oSupplierField.setValueStateText("");
+                }
+
+                const sMsg = sDisplaySupplier ? `Selected Purchase Order: ${sSelectedPo} (${sDisplaySupplier})` : `Selected Purchase Order: ${sSelectedPo}`;
+                MessageToast.show(sMsg);
+            }
+
+            if (this._oPoDialog) {
+                this._oPoDialog.close();
+            }
+        },
+
+        onPoValueHelpSearch: function () {
+            this.onPoFilterApply();
+        },
+
+        onPoValueHelpConfirm: function () {
+            this.onPoConfirmSelected();
+        },
+
+        onPoValueHelpCancel: function () {
+            if (this._oPoDialog) {
+                this._oPoDialog.close();
+            }
+        },
+
+        // ============================================================
+        // F4 SEARCH HELP: Suppliers from SAP S/4HANA Cloud (YY1_Supplier)
+        // ============================================================
+        onSupplierValueHelpRequest: async function () {
+            const sId = this.getView().createId("supplierVHFrag");
+
+            if (!this._pSupplierValueHelpDialog) {
+                this._pSupplierValueHelpDialog = Fragment.load({
+                    id: sId,
+                    name: "factory.gate.fragment.SupplierValueHelpDialog",
+                    controller: this
+                }).then(function (oDialog) {
+                    this.getView().addDependent(oDialog);
+                    return oDialog;
+                }.bind(this));
+            }
+
+            const oDialog = await this._pSupplierValueHelpDialog;
+            this._oSupplierDialog = oDialog;
+            oDialog.open();
+            oDialog.setBusy(true);
+
+            const oSearchField = Fragment.byId(sId, "supplierSearchField");
+            const oConfirmBtn = Fragment.byId(sId, "btnConfirmSupplierSelection");
+            const oTable = Fragment.byId(sId, "supplierValueHelpTable");
+            const oCountText = Fragment.byId(sId, "supplierCountText");
+
+            if (oSearchField) oSearchField.setValue("");
+            if (oConfirmBtn) oConfirmBtn.setEnabled(false);
+            if (oTable) oTable.removeSelections(true);
+
+            try {
+                const aSuppliers = await this.fetchS4Suppliers();
+                let oSupplierModel = oDialog.getModel("supplierModel");
+                if (!oSupplierModel) {
+                    oSupplierModel = new JSONModel(aSuppliers);
+                    oDialog.setModel(oSupplierModel, "supplierModel");
+                } else {
+                    oSupplierModel.setData(aSuppliers);
+                }
+
+                if (oTable) {
+                    const oBinding = oTable.getBinding("items");
+                    if (oBinding) oBinding.filter([]);
+                }
+                if (oCountText) {
+                    oCountText.setText(`Showing ${aSuppliers.length} Suppliers`);
+                }
+            } catch (err) {
+                console.error("Error loading suppliers in value help:", err);
+                MessageToast.show("An error occurred while loading suppliers from SAP S/4HANA Cloud.");
+            } finally {
+                oDialog.setBusy(false);
+            }
+        },
+
+        onSupplierSearch: function (oEvt) {
+            const sId = this.getView().createId("supplierVHFrag");
+            const oTable = Fragment.byId(sId, "supplierValueHelpTable");
+            const oCountText = Fragment.byId(sId, "supplierCountText");
+            const oConfirmBtn = Fragment.byId(sId, "btnConfirmSupplierSelection");
+
+            if (!oTable) return;
+            const oBinding = oTable.getBinding("items");
+            if (!oBinding) return;
+
+            const sQuery = (oEvt.getParameter("query") || oEvt.getParameter("newValue") || "").trim();
+            if (sQuery) {
+                const oFilter = new Filter([
+                    new Filter("Supplier", FilterOperator.Contains, sQuery),
+                    new Filter("SupplierName", FilterOperator.Contains, sQuery),
+                    new Filter("SupplierFullName", FilterOperator.Contains, sQuery),
+                    new Filter("BPSupplierName", FilterOperator.Contains, sQuery)
+                ], false);
+                oBinding.filter(oFilter);
+            } else {
+                oBinding.filter([]);
+            }
+
+            if (oTable) oTable.removeSelections(true);
+            if (oConfirmBtn) oConfirmBtn.setEnabled(false);
+
+            setTimeout(function () {
+                const iCount = oBinding.getLength ? oBinding.getLength() : 0;
+                if (oCountText) {
+                    oCountText.setText(`Found ${iCount} Suppliers`);
+                }
+            }, 50);
+        },
+
+        onSupplierSelectionChange: function () {
+            const sId = this.getView().createId("supplierVHFrag");
+            const oConfirmBtn = Fragment.byId(sId, "btnConfirmSupplierSelection");
+            const oTable = Fragment.byId(sId, "supplierValueHelpTable");
+            const oSelectedItem = oTable ? oTable.getSelectedItem() : null;
+            if (oConfirmBtn) {
+                oConfirmBtn.setEnabled(!!oSelectedItem);
+            }
+        },
+
+        onSupplierRowSelect: function (oEvt) {
+            const oItem = oEvt.getSource();
+            this._selectAndApplySupplier(oItem);
+        },
+
+        onSupplierConfirmSelected: function () {
+            const sId = this.getView().createId("supplierVHFrag");
+            const oTable = Fragment.byId(sId, "supplierValueHelpTable");
+            const oSelectedItem = oTable ? oTable.getSelectedItem() : null;
+            if (oSelectedItem) {
+                this._selectAndApplySupplier(oSelectedItem);
+            }
+        },
+
+        _selectAndApplySupplier: function (oItem) {
+            if (!oItem) return;
+            const oContext = oItem.getBindingContext("supplierModel");
+            if (!oContext) return;
+
+            const sSupplier = oContext.getProperty("Supplier");
+            const sSupplierName = oContext.getProperty("SupplierName") || "";
+            const sDisplay = sSupplier ? (sSupplierName ? `${sSupplier} - ${sSupplierName}` : sSupplier) : "";
+
+            // 1. If PO Value Help Dialog is open, set the Supplier filter input and trigger filter
+            const sPoId = this.getView().createId("poVHFrag");
+            const oPoSupplierInput = Fragment.byId(sPoId, "poFilterSupplier");
+            if (oPoSupplierInput) {
+                oPoSupplierInput.setValue(sSupplier);
+                this.onPoFilterApply();
+            }
+
+            // 2. Also update SecurityGateInDialog model so Supplier is saved and displayed
+            const oSecModel = this.getView().getModel("secModel");
+            if (oSecModel) {
+                oSecModel.setProperty("/supplierCode", sSupplier);
+                oSecModel.setProperty("/supplierName", sSupplierName);
+                oSecModel.setProperty("/supplierDisplay", sDisplay);
+            }
+
+            MessageToast.show(`Selected Supplier: ${sDisplay}`);
+
+            if (this._oSupplierDialog) {
+                this._oSupplierDialog.close();
+            }
+        },
+
+        onSupplierValueHelpCancel: function () {
+            if (this._oSupplierDialog) {
+                this._oSupplierDialog.close();
+            }
+        },
+
+        // ============================================================
+        // DIALOG: Security Gate OUT
+        // ============================================================
+        onOpenSecurityGateOutDialog: function (oPreselectedTx) {
+            const sId = this.getView().createId("secGateOutFrag");
+            const oSecModel = this.getView().getModel("secModel");
+            const defaultOfficer = models.getUserDisplayName();
+
+            const bIsPreselected = Boolean(oPreselectedTx && oPreselectedTx.gateInNumber);
+            oSecModel.setProperty("/isOutVehicleSelectable", !bIsPreselected);
+
+            // Reset Gate OUT fields
+            oSecModel.setProperty("/outSecurityPersonnel", defaultOfficer);
+            oSecModel.setProperty("/outDriverVerified", true);
+            oSecModel.setProperty("/outVehicleVerified", true);
+            oSecModel.setProperty("/outEmptyInspectionVerified", true);
+            oSecModel.setProperty("/outMaterialInspected", true);
+            oSecModel.setProperty("/outDocumentsVerified", true);
+            oSecModel.setProperty("/outGatePassVerified", false);
+            const initialPassType = (oPreselectedTx && oPreselectedTx.factoryEntry && (oPreselectedTx.factoryEntry.gateOutType || oPreselectedTx.factoryEntry.gatePassType)) ||
+                                    (oPreselectedTx && oPreselectedTx.securityEntry && (oPreselectedTx.securityEntry.exitGatePassType || oPreselectedTx.securityEntry.gatePassType)) ||
+                                    (oPreselectedTx && oPreselectedTx.purpose === "PICKUP" ? "RGP" : "STANDARD");
+            oSecModel.setProperty("/outGatePassType", initialPassType);
+            oSecModel.setProperty("/outGatePassDocumentNo", "");
+            oSecModel.setProperty("/outRemarks", "");
+            oSecModel.setProperty("/outInboundRecord", null);
+            oSecModel.setProperty("/outWeighmentSummary", "");
+
+            if (!this._pGateOutDialog) {
+                this._pGateOutDialog = Fragment.load({
+                    id: sId,
+                    name: "factory.gate.fragment.SecurityGateOutDialog",
+                    controller: this
+                }).then(function (oDialog) {
+                    this.getView().addDependent(oDialog);
+                    return oDialog;
+                }.bind(this));
+            }
+
+            this._pGateOutDialog.then(function (oDialog) {
+                let sGateInNo = "";
+                if (bIsPreselected) {
+                    sGateInNo = oPreselectedTx.gateInNumber;
+                } else {
+                    const aWaitingOut = oSecModel.getProperty("/waitingOutVehicles") || [];
+                    if (aWaitingOut.length > 0) sGateInNo = aWaitingOut[0].gateInNumber;
+                }
+
+                if (sGateInNo) {
+                    this.selectVehicleForGateOut(sGateInNo);
+                } else {
+                    oSecModel.setProperty("/outSelectedGateInNumber", "");
+                    oSecModel.setProperty("/outSelectedVehicle", null);
+                }
+
+                const oComboBox = Fragment.byId(sId, "dialogSecOutGateInComboBox");
+                if (oComboBox) {
+                    oComboBox.setEnabled(!bIsPreselected);
+                    oComboBox.setEditable(!bIsPreselected);
+                }
+
+                this._resetDialogInputStates(sId, [
+                    "dialogSecOutPersonnel",
+                    "dialogSecOutDocNo"
+                ]);
+
+                oDialog.open();
+            }.bind(this));
+        },
+
+        onGateOutSelectChange: function (oEvt) {
+            const oSecModel = this.getView().getModel("secModel");
+            if (oSecModel && oSecModel.getProperty("/isOutVehicleSelectable") === false) {
+                return;
+            }
+            let sKey = "";
+            if (oEvt) {
+                const oSelectedItem = oEvt.getParameter("selectedItem");
+                if (oSelectedItem) {
+                    sKey = oSelectedItem.getKey();
+                } else {
+                    const sTypedVal = (oEvt.getParameter("newValue") || "").trim();
+                    const aWaitingOut = this.getView().getModel("secModel").getProperty("/waitingOutVehicles") || [];
+                    const matched = aWaitingOut.find(v =>
+                        v.gateInNumber.toLowerCase() === sTypedVal.toLowerCase() ||
+                        (v.vehicleRegNo && v.vehicleRegNo.toLowerCase() === sTypedVal.toLowerCase())
+                    );
+                    sKey = matched ? matched.gateInNumber : sTypedVal;
+                }
+            }
+            if (!sKey) {
+                sKey = this.getView().getModel("secModel").getProperty("/outSelectedGateInNumber");
+            }
+            this.selectVehicleForGateOut(sKey);
+        },
+
+        selectVehicleForGateOut: async function (gateInNumber) {
+            const oSecModel = this.getView().getModel("secModel");
+            if (!gateInNumber) return;
+
+            oSecModel.setProperty("/outSelectedGateInNumber", gateInNumber);
+            const aWaitingOut = oSecModel.getProperty("/waitingOutVehicles") || [];
+            let matched = aWaitingOut.find(v => v.gateInNumber === gateInNumber);
+
+            if (!matched) {
+                const aAll = oSecModel.getProperty("/records") || [];
+                matched = aAll.find(v => v.gateInNumber === gateInNumber);
+            }
+
+            if (!matched) {
+                try {
+                    const headers = {
+                        "Authorization": models.getAuthHeaderValue(),
+                        "Content-Type": "application/json"
+                    };
+                    const res = await fetch(`${ODATA_BASE}/GateTransactions?$filter=gateInNumber eq '${gateInNumber}'&$expand=driver`, { headers });
+                    if (res.ok) {
+                        const d = await res.json();
+                        if (d.value && d.value.length > 0) matched = d.value[0];
+                    }
+                } catch (e) {}
+            }
+
+            if (matched) {
+                if (!aWaitingOut.some(v => v.gateInNumber === matched.gateInNumber)) {
+                    aWaitingOut.push(matched);
+                    oSecModel.setProperty("/waitingOutVehicles", aWaitingOut);
+                }
+                oSecModel.setProperty("/outSelectedVehicle", matched);
+
+                // Fetch single consolidated Security record and weighments for prior clearance verification
+                try {
+                    const headers = {
+                        "Authorization": models.getAuthHeaderValue(),
+                        "Content-Type": "application/json"
+                    };
+
+                    const [resSec, resWb, resFac] = await Promise.all([
+                        fetch(`${ODATA_BASE}/SecurityGateEntries?$filter=gateTransaction_ID eq '${matched.ID}'`, { headers }),
+                        fetch(`${ODATA_BASE}/WeighbridgeTransactions?$filter=gateTransaction_ID eq '${matched.ID}'&$orderby=weighbridgeDateTime desc`, { headers }),
+                        fetch(`${ODATA_BASE}/FactoryGateEntries?$filter=gateTransaction_ID eq '${matched.ID}'`, { headers })
+                    ]);
+
+                    let secRecord = null;
+                    if (resSec.ok) {
+                        const dSec = await resSec.json();
+                        secRecord = (dSec.value && dSec.value[0]) || null;
+                        oSecModel.setProperty("/outInboundRecord", secRecord);
+
+                    }
+
+                    let facRecord = null;
+                    if (resFac && resFac.ok) {
+                        const dFac = await resFac.json();
+                        facRecord = (dFac.value && dFac.value[0]) || null;
+                        oSecModel.setProperty("/outFactoryRecord", facRecord);
+                    }
+
+                    // Gate Pass Type assigned during Factory Gate Operations
+                    const assignedGatePassType = (facRecord && (facRecord.gateOutType || facRecord.gatePassType)) ||
+                                                 (matched.factoryEntry && (matched.factoryEntry.gateOutType || matched.factoryEntry.gatePassType)) ||
+                                                 (secRecord && (secRecord.exitGatePassType || secRecord.gatePassType)) ||
+                                                 (matched.purpose === "PICKUP" ? "RGP" : "STANDARD");
+
+                    oSecModel.setProperty("/outGatePassType", assignedGatePassType);
+
+                    if (secRecord) {
+                        if (secRecord.rgpDocumentNo) {
+                            oSecModel.setProperty("/outGatePassDocumentNo", secRecord.rgpDocumentNo);
+                        } else if (secRecord.nrgpDocumentNo) {
+                            oSecModel.setProperty("/outGatePassDocumentNo", secRecord.nrgpDocumentNo);
+                        } else if (secRecord.exitGatePassDocumentNo) {
+                            oSecModel.setProperty("/outGatePassDocumentNo", secRecord.exitGatePassDocumentNo);
+                        }
+                    }
+                    if (!oSecModel.getProperty("/outGatePassDocumentNo") && facRecord && facRecord.deliveryNoteNo) {
+                        oSecModel.setProperty("/outGatePassDocumentNo", facRecord.deliveryNoteNo);
+                    }
+
+                    if (resWb.ok) {
+                        const dWb = await resWb.json();
+                        const aWb = dWb.value || [];
+                        if (aWb.length > 0) {
+                            const latest = aWb[0];
+                            const sSummary = `${latest.weighmentType}: ${latest.weight} ${latest.weightUnit || "KG"} on Scale #${latest.weighbridgeNumber} (${formatter.formatDateTime(latest.weighbridgeDateTime)}) by ${latest.operator}`;
+                            oSecModel.setProperty("/outWeighmentSummary", sSummary);
+                        } else {
+                            oSecModel.setProperty("/outWeighmentSummary", "Direct factory movement (No scale weighments recorded)");
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Failed to load outbound clearance summary:", e);
+                }
+            }
+        },
+
+        onConfirmSecurityGateOut: async function () {
+            const oSecModel = this.getView().getModel("secModel");
+            const m = oSecModel.getData();
+            const sId = this.getView().createId("secGateOutFrag");
+
+            // 1. Validate Gate IN selection
+            if (!m.outSelectedGateInNumber) {
+                MessageBox.error("Please select a vehicle awaiting Security Gate OUT.");
+                return;
+            }
+
+            // 2. Validate Security Personnel
+            const oSecOutInput = Fragment.byId(sId, "dialogSecOutPersonnel");
+            if (!m.outSecurityPersonnel || !m.outSecurityPersonnel.trim()) {
+                if (oSecOutInput) oSecOutInput.setValueState(ValueState.Error);
+                MessageBox.error("Security Exit Officer identifier is mandatory.");
+                return;
+            }
+            if (oSecOutInput) oSecOutInput.setValueState(ValueState.None);
+
+            // 3. For Pickup, Gate Pass Document Number is required
+            const isPickup = (m.outSelectedVehicle && m.outSelectedVehicle.purpose === "PICKUP");
+            const oDocInput = Fragment.byId(sId, "dialogSecOutDocNo");
+            if (isPickup && (!m.outGatePassDocumentNo || !m.outGatePassDocumentNo.trim())) {
+                if (oDocInput) oDocInput.setValueState(ValueState.Error);
+                MessageBox.error("Gate Pass Document Number (RGP / NRGP) is mandatory for material pickup exits.");
+                return;
+            }
+            if (oDocInput) oDocInput.setValueState(ValueState.None);
+
+            // 4. Prepare SecurityGateOut payload
+            const payload = {
+                gateInNumber: m.outSelectedGateInNumber,
+                securityPersonnel: m.outSecurityPersonnel.trim(),
+                gatePassType: m.outGatePassType || (isPickup ? "RGP" : "STANDARD"),
+                gatePassDocumentNo: m.outGatePassDocumentNo ? m.outGatePassDocumentNo.trim() : "",
+                driverVerified: Boolean(m.outDriverVerified),
+                vehicleVerified: Boolean(m.outVehicleVerified),
+                documentsVerified: Boolean(m.outDocumentsVerified),
+                gatePassVerified: Boolean(m.outGatePassVerified || isPickup),
+                deliveryDetailsVerified: Boolean(m.outDeliveryDetailsVerified || !isPickup),
+                emptyInspectionVerified: Boolean(m.outEmptyInspectionVerified),
+                materialInspected: Boolean(m.outMaterialInspected),
+                remarks: m.outRemarks ? m.outRemarks.trim() : ""
+            };
+
+            const headers = {
+                "Authorization": models.getAuthHeaderValue(),
+                "Content-Type": "application/json"
+            };
+
+            try {
+                const response = await fetch(`${ODATA_BASE}/SecurityGateOut`, {
+                    method: "POST",
+                    headers: headers,
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    const sErrMsg = errData.error && errData.error.message ? errData.error.message : "Failed to authorize Security Gate OUT";
+                    MessageBox.error("Security Exit Clearance Failed: " + sErrMsg);
+                    return;
+                }
+
+                // Close dialog
+                if (this._pGateOutDialog) {
+                    this._pGateOutDialog.then(oDialog => oDialog.close());
+                }
+
+                MessageBox.success(`Security Gate OUT successfully cleared for ${m.outSelectedGateInNumber}!\n\nStatus transitioned to: SECURITY_OUT\nCurrent Stage: SECURITY_GATE_OUT\n\nThe vehicle is now authorized for final Main Gate Exit. Both Gate IN and Gate OUT have been consolidated onto a single security record.`, {
+                    title: "Security Exit Clearance Complete",
+                    onClose: () => {
+                        this.loadSecurityData();
+                        this.getOwnerComponent().loadOverviewData();
+                    }
+                });
+
+            } catch (networkErr) {
+                MessageBox.error("Network error communicating with GateService: " + networkErr.message);
+            }
+        },
+
+        onCancelSecurityGateOut: function () {
+            if (this._pGateOutDialog) {
+                this._pGateOutDialog.then(oDialog => oDialog.close());
+            }
+        },
+
+        _resetDialogInputStates: function (sFragId, aControlIds) {
+            aControlIds.forEach(ctrlId => {
+                const ctrl = Fragment.byId(sFragId, ctrlId);
+                if (ctrl && ctrl.setValueState) {
+                    ctrl.setValueState(ValueState.None);
+                    ctrl.setValueStateText("");
+                }
+            });
+        },
+
+        // ============================================================
+        // ROW ACTIONS
+        // ============================================================
+        onRowGateInPress: function (oEvt) {
+            const oTx = oEvt.getSource().getBindingContext("secModel").getObject();
+            this.onOpenSecurityGateInDialog(oTx);
+        },
+
+        onRowSendToWeighbridgePress: function (oEvt) {
+            const oTx = oEvt.getSource().getBindingContext("secModel").getObject();
+            if (!oTx || !oTx.gateInNumber) return;
+
+            MessageBox.confirm(
+                `Assign Route to Weighbridge:\n\nSend vehicle ${oTx.vehicleRegNo} (${oTx.gateInNumber}) to Weighbridge for Gross/Tare weighment?`,
+                {
+                    title: "Route to Weighbridge",
+                    actions: [MessageBox.Action.YES, MessageBox.Action.NO],
+                    emphasizedAction: MessageBox.Action.YES,
+                    onClose: async (sAction) => {
+                        if (sAction !== MessageBox.Action.YES) return;
+
+                        const oTable = this.byId("secTxTable");
+                        if (oTable) oTable.setBusy(true);
+
+                        try {
+                            const headers = {
+                                "Authorization": models.getAuthHeaderValue(),
+                                "Content-Type": "application/json"
+                            };
+                            const res = await fetch(`${ODATA_BASE}/AssignRoute`, {
+                                method: "POST",
+                                headers: headers,
+                                body: JSON.stringify({
+                                    gateInNumber: oTx.gateInNumber,
+                                    route: "WEIGHBRIDGE",
+                                    remarks: "Route assigned to Weighbridge by Security Gate"
+                                })
+                            });
+
+                            if (!res.ok) {
+                                const errData = await res.json();
+                                const sErrMsg = errData.error && errData.error.message ? errData.error.message : "Failed to assign route to Weighbridge";
+                                throw new Error(sErrMsg);
+                            }
+
+                            MessageToast.show(`Vehicle ${oTx.vehicleRegNo} successfully routed to Weighbridge.`);
+                            await this.loadSecurityData();
+                            this.getOwnerComponent().loadOverviewData();
+                        } catch (err) {
+                            MessageBox.error("Route Assignment Error: " + err.message);
+                        } finally {
+                            if (oTable) oTable.setBusy(false);
+                        }
+                    }
+                }
+            );
+        },
+
+        onRowSendToFactoryPress: function (oEvt) {
+            const oTx = oEvt.getSource().getBindingContext("secModel").getObject();
+            if (!oTx || !oTx.gateInNumber) return;
+
+            MessageBox.confirm(
+                `Direct Factory Entry:\n\nSend vehicle ${oTx.vehicleRegNo} (${oTx.gateInNumber}) directly to Factory Gate without Weighbridge?`,
+                {
+                    title: "Route to Factory Gate",
+                    actions: [MessageBox.Action.YES, MessageBox.Action.NO],
+                    emphasizedAction: MessageBox.Action.YES,
+                    onClose: async (sAction) => {
+                        if (sAction !== MessageBox.Action.YES) return;
+
+                        const oTable = this.byId("secTxTable");
+                        if (oTable) oTable.setBusy(true);
+
+                        try {
+                            const headers = {
+                                "Authorization": models.getAuthHeaderValue(),
+                                "Content-Type": "application/json"
+                            };
+                            const res = await fetch(`${ODATA_BASE}/AssignRoute`, {
+                                method: "POST",
+                                headers: headers,
+                                body: JSON.stringify({
+                                    gateInNumber: oTx.gateInNumber,
+                                    route: "FACTORY",
+                                    remarks: "Direct Factory Entry assigned by Security Gate"
+                                })
+                            });
+
+                            if (!res.ok) {
+                                const errData = await res.json();
+                                const sErrMsg = errData.error && errData.error.message ? errData.error.message : "Failed to assign route to Factory Gate";
+                                throw new Error(sErrMsg);
+                            }
+
+                            MessageToast.show(`Vehicle ${oTx.vehicleRegNo} successfully routed to Factory Gate.`);
+                            await this.loadSecurityData();
+                            this.getOwnerComponent().loadOverviewData();
+                        } catch (err) {
+                            MessageBox.error("Route Assignment Error: " + err.message);
+                        } finally {
+                            if (oTable) oTable.setBusy(false);
+                        }
+                    }
+                }
+            );
+        },
+
+        onRowReleaseFromFactoryPress: function (oEvt) {
+            const oTx = oEvt.getSource().getBindingContext("secModel").getObject();
+            if (!oTx || !oTx.gateInNumber) return;
+
+            MessageBox.confirm(
+                `Complete Factory Operations:\n\nRelease vehicle ${oTx.vehicleRegNo} (${oTx.gateInNumber}) from Factory Gate?`,
+                {
+                    title: "Factory Gate Release",
+                    actions: [MessageBox.Action.YES, MessageBox.Action.NO],
+                    emphasizedAction: MessageBox.Action.YES,
+                    onClose: async (sAction) => {
+                        if (sAction !== MessageBox.Action.YES) return;
+
+                        const oTable = this.byId("secTxTable");
+                        if (oTable) oTable.setBusy(true);
+
+                        try {
+                            const headers = {
+                                "Authorization": models.getAuthHeaderValue(),
+                                "Content-Type": "application/json"
+                            };
+                            const res = await fetch(`${ODATA_BASE}/FactoryGateOut`, {
+                                method: "POST",
+                                headers: headers,
+                                body: JSON.stringify({ gateInNumber: oTx.gateInNumber })
+                            });
+
+                            if (!res.ok) {
+                                const errData = await res.json();
+                                const sErrMsg = errData.error && errData.error.message ? errData.error.message : "Failed to record Factory Gate OUT";
+                                throw new Error(sErrMsg);
+                            }
+
+                            MessageToast.show(`Vehicle ${oTx.vehicleRegNo} successfully released from Factory Gate. Ready for Gate OUT.`);
+                            await this.loadSecurityData();
+                            this.getOwnerComponent().loadOverviewData();
+                        } catch (err) {
+                            MessageBox.error("Factory Gate Release Error: " + err.message);
+                        } finally {
+                            if (oTable) oTable.setBusy(false);
+                        }
+                    }
+                }
+            );
+        },
+
+        onRowNavToWeighbridge: function (oEvt) {
+            const oTx = oEvt.getSource().getBindingContext("secModel").getObject();
+            const oModel = this.getOwnerComponent().getModel();
+            if (oModel.getProperty("/canViewWeighbridgeOps")) {
+                if (oTx) {
+                    MessageToast.show(`Vehicle ${oTx.vehicleRegNo} (${oTx.gateInNumber}) is currently assigned to Weighbridge.`);
+                }
+                this.getOwnerComponent().navigateTo("weighbridgeOpsPage", "slide");
+            } else {
+                MessageToast.show(`Vehicle ${oTx?.vehicleRegNo || ''} is assigned to Weighbridge. Weighment must be completed by the Weighbridge Operator.`);
+            }
+        },
+
+        onRowNavToFactory: function (oEvt) {
+            const oTx = oEvt.getSource().getBindingContext("secModel").getObject();
+            const oModel = this.getOwnerComponent().getModel();
+            if (oModel.getProperty("/canViewFactoryGateOps")) {
+                if (oTx) {
+                    MessageToast.show(`Vehicle ${oTx.vehicleRegNo} (${oTx.gateInNumber}) is currently assigned to Factory Gate.`);
+                    this.getOwnerComponent().openFactoryOperationsFor(oTx.gateInNumber);
+                } else {
+                    this.getOwnerComponent().navigateTo("factoryGateOpsPage", "slide");
+                }
+            } else {
+                MessageToast.show(`Vehicle ${oTx?.vehicleRegNo || ''} is assigned to Factory Gate area. Factory Gate IN must be recorded by the Factory Operator.`);
+            }
+        },
+
+        onRowGateOutPress: function (oEvt) {
+            const oTx = oEvt.getSource().getBindingContext("secModel").getObject();
+            this.onOpenSecurityGateOutDialog(oTx);
+        },
+
+        onRowPrintPress: function (oEvt) {
+            const oTx = oEvt.getSource().getBindingContext("secModel").getObject();
+            this.getOwnerComponent().printGateInPass(oTx);
+        },
+
+        onRowDetailPress: function (oEvt) {
+            const oTx = oEvt.getSource().getBindingContext("secModel").getObject();
+            this.getOwnerComponent().openDetailDialog(oTx);
+        },
+
+        onRowEditPress: function (oEvt) {
+            const oTx = oEvt.getSource().getBindingContext("secModel").getObject();
+            this.getOwnerComponent().openEditSecurityGateEntryPage(oTx);
+        },
+
+        onTxRowPress: function (oEvt) {
+            const oTx = oEvt.getSource().getBindingContext("secModel").getObject();
+            this.getOwnerComponent().openDetailDialog(oTx);
+        },
+
+        // ============================================================
+        // NAVIGATION
+        // ============================================================
+        onNavBack: function () {
+            this.getOwnerComponent().navigateTo("launchpadPage", "slide");
+        },
+
+        onNavMainGateOps: function () {
+            this.getOwnerComponent().navigateTo("mainGateOpsPage", "slide");
+        },
+
+        onNavWeighbridgeOps: function () {
+            this.getOwnerComponent().navigateTo("weighbridgeOpsPage", "slide");
+        },
+
+        onNavFactoryGateOps: function () {
+            this.getOwnerComponent().navigateTo("factoryGateOpsPage", "slide");
+        }
+    });
+});

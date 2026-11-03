@@ -1,0 +1,4 @@
+ID;supplierCode;supplierName;gstin;contactPerson;phoneNo;address;sapBusinessPartner;active
+d930f821-2b22-5f90-ab39-111111111111;SUP001;Reliance Polymers Ltd;27AAACR5566A1Z3;Vikram Malhotra;+91 9811002233;Complex 12, Hazira Industrial Zone, Surat;BP-100450;true
+d930f821-2b22-5f90-ab39-222222222222;SUP002;Tata Chemicals Ltd;24AAACT7788B1Z7;Sunil Mehta;+91 9822334455;Mithapur Plant, Gujarat;BP-100890;true
+d930f821-2b22-5f90-ab39-333333333333;SUP003;Adani Enterprises Ltd;24AAACA9900C1Z1;Deepak Roy;+91 9833445566;Mundra Port Industrial Hub, Kutch;BP-100999;true

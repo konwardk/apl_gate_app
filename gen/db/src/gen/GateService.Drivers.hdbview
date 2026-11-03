@@ -1,0 +1,17 @@
+VIEW GateService_Drivers AS SELECT
+  Drivers_0.ID,
+  Drivers_0.createdAt,
+  Drivers_0.createdBy,
+  Drivers_0.modifiedAt,
+  Drivers_0.modifiedBy,
+  Drivers_0.driverCode,
+  Drivers_0.driverName,
+  Drivers_0.drivingLicenseNo,
+  Drivers_0.licenseType,
+  Drivers_0.licenseExpiryDate,
+  Drivers_0.phoneNo,
+  Drivers_0.alternatePhoneNo,
+  Drivers_0.address,
+  Drivers_0.transporter_ID,
+  Drivers_0.active
+FROM factory_gate_Drivers AS Drivers_0

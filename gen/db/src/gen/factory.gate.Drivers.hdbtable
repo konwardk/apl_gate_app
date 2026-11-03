@@ -1,0 +1,18 @@
+COLUMN TABLE factory_gate_Drivers (
+  ID NVARCHAR(36) NOT NULL,
+  createdAt TIMESTAMP,
+  createdBy NVARCHAR(255),
+  modifiedAt TIMESTAMP,
+  modifiedBy NVARCHAR(255),
+  driverCode NVARCHAR(20),
+  driverName NVARCHAR(100),
+  drivingLicenseNo NVARCHAR(30),
+  licenseType NVARCHAR(20),
+  licenseExpiryDate DATE,
+  phoneNo NVARCHAR(20),
+  alternatePhoneNo NVARCHAR(20),
+  address NVARCHAR(250),
+  transporter_ID NVARCHAR(36),
+  active BOOLEAN DEFAULT TRUE,
+  PRIMARY KEY(ID)
+)

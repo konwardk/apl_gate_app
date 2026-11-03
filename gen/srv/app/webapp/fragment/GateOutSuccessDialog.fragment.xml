@@ -1,0 +1,39 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+    <Dialog
+        id="gateOutSuccessDialog"
+        title="Gate OUT Exit Completed"
+        type="Message"
+        state="Success"
+        contentWidth="440px">
+        <content>
+            <VBox alignItems="Center">
+                <Title
+                    text="{gateOutSuccess>/gateInNumber}"
+                    level="H1"
+                    titleStyle="H1"
+                    class="sapUiSmallMarginTop success-gate-number" />
+                <ObjectStatus
+                    text="Status: Exit (Authorized)"
+                    state="Success"
+                    class="sapUiSmallMarginTop sapUiSmallMarginBottom" />
+                <Text
+                    text="Vehicle {gateOutSuccess>/vehicleRegNo} has cleared the Main Gate and exited factory premises."
+                    class="sapUiSmallMarginTop" />
+                <ObjectStatus
+                    text="{= 'Main Gate Operator: ' + (${gateOutSuccess>/gateOutOperator} || '-') }"
+                    state="Information"
+                    icon="sap-icon://person-placeholder"
+                    visible="{= !!${gateOutSuccess>/gateOutOperator} }"
+                    class="sapUiTinyMarginTop" />
+            </VBox>
+        </content>
+        <beginButton>
+            <Button
+                text="Done"
+                type="Emphasized"
+                press=".onGateOutSuccessDone" />
+        </beginButton>
+    </Dialog>
+</core:FragmentDefinition>

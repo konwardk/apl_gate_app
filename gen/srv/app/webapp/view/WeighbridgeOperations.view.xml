@@ -1,0 +1,237 @@
+<mvc:View
+    controllerName="factory.gate.controller.WeighbridgeOperations"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+    <Page showHeader="false" enableScrolling="true">
+        <!-- Subtoolbar matching Main Gate and Security Gate stations -->
+        <OverflowToolbar class="fe-subtoolbar">
+            <Button
+                text="Back to Launchpad"
+                icon="sap-icon://nav-back"
+                type="Emphasized"
+                press=".onNavBack" />
+            <ToolbarSpacer />
+            <Title text="Weighbridge Operations &amp; Material Weight Clearance" level="H2" titleStyle="H3" />
+            <ToolbarSpacer />
+            <Button
+                text="Main Gate"
+                icon="sap-icon://log-in"
+                type="Default"
+                visible="{/canViewMainGateOps}"
+                press=".onNavMainGateOps" />
+            <Button
+                text="Security Gate"
+                icon="sap-icon://shield"
+                type="Default"
+                visible="{/canViewSecurityGateOps}"
+                press=".onNavSecurityGateOps" />
+            <Button
+                text="Factory Gate"
+                icon="sap-icon://factory"
+                type="Default"
+                visible="{/canViewFactoryGateOps}"
+                press=".onNavFactoryGateOps" />
+            <Button
+                id="btnTopWbIn"
+                text="Scale IN"
+                icon="sap-icon://dimension"
+                type="Emphasized"
+                tooltip="Capture Inbound Gross/Tare Scale Weight"
+                press=".onOpenWeighbridgeInDialog" />
+            <Button
+                id="btnTopWbOut"
+                text="Scale OUT"
+                icon="sap-icon://log-out"
+                type="Success"
+                tooltip="Capture Outbound Tare/Gross Scale Weight"
+                press=".onOpenWeighbridgeOutDialog" />
+        </OverflowToolbar>
+
+        <VBox class="flp-dashboard">
+            <!-- Context Banner -->
+            <MessageStrip
+                text="Weighbridge Clearance Station: Capture gross and tare weights for material consignments (Delivery: Gross IN / Tare OUT • Pickup: Tare IN / Gross OUT) to calculate verified net cargo weight and generate electronic weight slips."
+                type="Information"
+                showIcon="true"
+                class="sapUiSmallMarginBottom" />
+
+            <!-- Weighbridge Operations Queue Table -->
+            <Table
+                id="wbTxTable"
+                growing="true"
+                growingThreshold="20"
+                noDataText="No vehicles currently in weighbridge queue"
+                items="{wbModel>/displayedRecords}"
+                class="sapUiMediumMarginTop">
+                <headerToolbar>
+                    <OverflowToolbar>
+                        <Title text="Weighbridge Scale Records ({= ${wbModel>/displayedRecords} ? ${wbModel>/displayedRecords}.length : 0 })" />
+                        <ToolbarSpacer />
+                        <SegmentedButton
+                            id="wbFilterSegmentedBtn"
+                            selectedKey="{wbModel>/selectedFilter}"
+                            selectionChange=".onFilterCategoryChange">
+                            <items>
+                                <SegmentedButtonItem key="ALL" text="All ({= ${wbModel>/allCount} })" />
+                                <SegmentedButtonItem key="AWAITING_IN" text="Awaiting IN ({= ${wbModel>/awaitingInCount} })" />
+                                <SegmentedButtonItem key="INSIDE_YARD" text="Inside Yard ({= ${wbModel>/insideYardCount} })" />
+                                <SegmentedButtonItem key="AWAITING_OUT" text="Awaiting Exit ({= ${wbModel>/awaitingOutCount} })" />
+                                <SegmentedButtonItem key="COMPLETED" text="Scale Done ({= ${wbModel>/completedCount} })" />
+                            </items>
+                        </SegmentedButton>
+                        <SearchField
+                            id="wbSearchField"
+                            width="260px"
+                            placeholder="Search Vehicle, Pass, Driver..."
+                            liveChange=".onSearchLiveChange"
+                            search=".onSearch" />
+                        <Button
+                            icon="sap-icon://clear-filter"
+                            tooltip="Reset Search &amp; Filters"
+                            press=".onResetSearch" />
+                        <ToolbarSeparator />
+                        <Button
+                            icon="sap-icon://refresh"
+                            tooltip="Refresh Weighbridge Queue"
+                            press=".onRefreshQueue" />
+                    </OverflowToolbar>
+                </headerToolbar>
+                <columns>
+                    <Column><header><Text text="Gate IN # / Vehicle" /></header></Column>
+                    <Column><header><Text text="Driver / Transporter" /></header></Column>
+                    <Column><header><Text text="Purpose &amp; Route" /></header></Column>
+                    <Column><header><Text text="Inbound Scale (1st)" /></header></Column>
+                    <Column><header><Text text="Outbound Scale (2nd)" /></header></Column>
+                    <Column><header><Text text="Net Cargo Weight" /></header></Column>
+                    <Column><header><Text text="Status / Stage" /></header></Column>
+                    <Column hAlign="End" width="340px"><header><Text text="Actions" /></header></Column>
+                </columns>
+                <items>
+                    <ColumnListItem type="Navigation" press=".onTxRowPress">
+                        <cells>
+                            <!-- 1. Gate IN # & Vehicle -->
+                            <VBox>
+                                <ObjectIdentifier
+                                    title="{wbModel>gateInNumber}"
+                                    text="{wbModel>vehicleRegNo}" />
+                            </VBox>
+
+                            <!-- 2. Driver & Transporter -->
+                            <VBox>
+                                <Text text="{= ${wbModel>driverName} || '-' }" design="Bold" />
+                                <Text text="{= ${wbModel>transporter/transporterName} || '-' }" class="sapUiTinyMarginTop text-muted" />
+                            </VBox>
+
+                            <!-- 3. Purpose & Route -->
+                            <VBox>
+                                <ObjectStatus
+                                    text="{path: 'wbModel>purpose', formatter: '.formatter.getPurposeText'}"
+                                    state="{path: 'wbModel>purpose', formatter: '.formatter.getPurposeState'}" />
+                                <Text
+                                    text="{= ${wbModel>assignedRoute} ? 'Route: ' + ${wbModel>assignedRoute} : 'Direct' }"
+                                    class="sapUiTinyMarginTop text-muted" />
+                            </VBox>
+
+                            <!-- 4. Inbound Scale (1st) -->
+                            <VBox>
+                                <HBox alignItems="Center">
+                                    <ObjectStatus
+                                        text="{path: 'wbModel>inboundWeighment/weighmentType', formatter: '.formatter.getWeighmentTypeDesc'}"
+                                        state="{path: 'wbModel>inboundWeighment/weighmentType', formatter: '.formatter.getWeighmentTypeState'}"
+                                        visible="{= Boolean(${wbModel>inboundWeighment}) }"
+                                        class="sapUiTinyMarginEnd" />
+                                    <Text
+                                        text="{parts: [{path: 'wbModel>inboundWeighment/weight'}, {path: 'wbModel>inboundWeighment/weightUnit'}], formatter: '.formatter.formatWeight'}"
+                                        design="Bold"
+                                        visible="{= Boolean(${wbModel>inboundWeighment}) }" />
+                                </HBox>
+                                <Text
+                                    text="{path: 'wbModel>inboundWeighment/weighbridgeDateTime', formatter: '.formatter.formatDateTime'}"
+                                    class="sapUiTinyMarginTop"
+                                    visible="{= Boolean(${wbModel>inboundWeighment}) }" />
+                                <Text
+                                    text="{= ${wbModel>isAwaitingInbound} ? 'Awaiting 1st Weighment' : 'Bypassed / Not Weighed' }"
+                                    class="sapUiTinyMarginTop text-muted"
+                                    visible="{= !Boolean(${wbModel>inboundWeighment}) }" />
+                            </VBox>
+
+                            <!-- 5. Outbound Scale (2nd) -->
+                            <VBox>
+                                <HBox alignItems="Center">
+                                    <ObjectStatus
+                                        text="{path: 'wbModel>outboundWeighment/weighmentType', formatter: '.formatter.getWeighmentTypeDesc'}"
+                                        state="{path: 'wbModel>outboundWeighment/weighmentType', formatter: '.formatter.getWeighmentTypeState'}"
+                                        visible="{= Boolean(${wbModel>outboundWeighment}) }"
+                                        class="sapUiTinyMarginEnd" />
+                                    <Text
+                                        text="{parts: [{path: 'wbModel>outboundWeighment/weight'}, {path: 'wbModel>outboundWeighment/weightUnit'}], formatter: '.formatter.formatWeight'}"
+                                        design="Bold"
+                                        visible="{= Boolean(${wbModel>outboundWeighment}) }" />
+                                </HBox>
+                                <Text
+                                    text="{path: 'wbModel>outboundWeighment/weighbridgeDateTime', formatter: '.formatter.formatDateTime'}"
+                                    class="sapUiTinyMarginTop"
+                                    visible="{= Boolean(${wbModel>outboundWeighment}) }" />
+                                <Text
+                                    text="{= ${wbModel>isAwaitingOutbound} ? 'Awaiting 2nd Weighment' : (${wbModel>isInsideYard} ? 'Inside Factory Yard' : '-') }"
+                                    class="sapUiTinyMarginTop text-muted"
+                                    visible="{= !Boolean(${wbModel>outboundWeighment}) }" />
+                            </VBox>
+
+                            <!-- 6. Net Cargo Weight -->
+                            <VBox>
+                                <ObjectStatus
+                                    text="{wbModel>netWeightFormatted}"
+                                    state="{= ${wbModel>netWeightFormatted} ? 'Success' : 'None' }"
+                                    icon="{= ${wbModel>netWeightFormatted} ? 'sap-icon://dimension' : '' }" />
+                            </VBox>
+
+                            <!-- 7. Stage & Status -->
+                            <VBox>
+                                <ObjectStatus
+                                    text="{path: 'wbModel>status', formatter: '.formatter.getStatusText'}"
+                                    state="{path: 'wbModel>status', formatter: '.formatter.getStatusState'}" />
+                                <Text text="{path: 'wbModel>currentStage', formatter: '.formatter.getStageText'}" class="sapUiTinyMarginTop text-muted" />
+                            </VBox>
+
+                            <!-- 8. Actions -->
+                            <HBox justifyContent="End" class="sapUiTinyMarginBeginEnd">
+                                <Button
+                                    text="Scale IN"
+                                    icon="sap-icon://dimension"
+                                    type="Emphasized"
+                                    tooltip="Record Inbound Weighment for this vehicle"
+                                    visible="{wbModel>canWeighIn}"
+                                    press=".onRowWeighInPress"
+                                    class="sapUiTinyMarginEnd" />
+                                <Button
+                                    text="Scale OUT"
+                                    icon="sap-icon://log-out"
+                                    type="Success"
+                                    tooltip="Record Outbound Weighment for this vehicle"
+                                    visible="{wbModel>canWeighOut}"
+                                    press=".onRowWeighOutPress"
+                                    class="sapUiTinyMarginEnd" />
+                                <Button
+                                    text="Slip"
+                                    icon="sap-icon://pdf-attachment"
+                                    type="Transparent"
+                                    tooltip="View &amp; Print Weighment Slip"
+                                    visible="{wbModel>hasAnyWeighment}"
+                                    press=".onRowSlipPress"
+                                    class="sapUiTinyMarginEnd" />
+                                <Button
+                                    text="View"
+                                    icon="sap-icon://hint"
+                                    type="Transparent"
+                                    tooltip="View Transaction Details"
+                                    press=".onRowViewPress" />
+                            </HBox>
+                        </cells>
+                    </ColumnListItem>
+                </items>
+            </Table>
+        </VBox>
+    </Page>
+</mvc:View>

@@ -1,0 +1,96 @@
+<mvc:View
+    controllerName="factory.gate.controller.Login"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:f="sap.f"
+    xmlns:core="sap.ui.core"
+    xmlns:layout="sap.ui.layout"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:custom="http://schemas.sap.com/sapui5/extension/sap.ui.core.CustomData/1"
+    displayBlock="true"
+    height="100%">
+    <Page showHeader="false" enableScrolling="true" class="login-page-container">
+        <VBox alignItems="Center" justifyContent="Center" class="login-wrapper sapUiMediumMarginTop sapUiMediumMarginBottom">
+
+            <!-- Brand Header -->
+            <VBox alignItems="Center" class="login-brand-header sapUiSmallMarginBottom">
+                <HBox alignItems="Center" justifyContent="Center" class="sapUiTinyMarginBottom">
+                    <Image
+                        src="https://www.sap.com/dam/application/shared/logos/sap-logo-svg.svg"
+                        height="32px"
+                        class="sapUiTinyMarginEnd" />
+                    <Image
+                        src="/images/APL_Logo.jpg"
+                        height="44px"
+                        class="sapUiTinyMarginBegin" />
+                </HBox>
+                <Title text="APL Gate In - Gate Exit" level="H1" titleStyle="H1" class="login-main-title" />
+                <Text text="Enterprise Plant Logistics &amp; Role-Based Gate Operations Workspace" class="login-sub-title sapUiTinyMarginTop" />
+            </VBox>
+
+            <!-- Main Login Card -->
+            <VBox class="login-card sapUiResponsiveMargin" width="100%">
+                <layoutData>
+                    <FlexItemData maxWidth="540px" />
+                </layoutData>
+
+                <HBox alignItems="Center" class="login-card-header sapUiSmallMarginBottom">
+                    <core:Icon src="sap-icon://user-settings" size="24px" color="#0070f2" class="sapUiTinyMarginEnd" />
+                    <VBox>
+                        <Title text="Sign In to Your Workspace" level="H2" titleStyle="H3" />
+                        <Text text="Enter your user credentials to access your assigned operational dashboard." class="sapUiTinyMarginTop text-muted" />
+                    </VBox>
+                </HBox>
+
+                <!-- Dynamic Error Notification -->
+                <MessageStrip
+                    id="loginErrorStrip"
+                    text="{/loginError}"
+                    type="Error"
+                    showIcon="true"
+                    showCloseButton="true"
+                    close=".onClearError"
+                    visible="{= !!${/loginError} }"
+                    class="sapUiSmallMarginBottom" />
+
+                <!-- Login Form -->
+                <VBox class="sapUiSmallMarginTop">
+                    <Label text="Username / User ID" required="true" labelFor="inputLoginUsername" class="login-field-label" />
+                    <Input
+                        id="inputLoginUsername"
+                        value="{/loginUsername}"
+                        placeholder="Enter username (e.g. superadmin_user or SAP User ID)"
+                        width="100%"
+                        liveChange=".onCredentialChange"
+                        submit=".onLoginPress"
+                        editable="{= !${/isLoginBusy} }"
+                        class="sapUiTinyMarginBottom" />
+
+                    <Label text="Password" required="true" labelFor="inputLoginPassword" class="login-field-label sapUiSmallMarginTop" />
+                    <Input
+                        id="inputLoginPassword"
+                        type="Password"
+                        value="{/loginPassword}"
+                        placeholder="Enter password"
+                        width="100%"
+                        liveChange=".onCredentialChange"
+                        submit=".onLoginPress"
+                        editable="{= !${/isLoginBusy} }"
+                        class="sapUiMediumMarginBottom" />
+
+                    <Button
+                        id="btnLoginSubmit"
+                        text="Sign In to Workspace"
+                        icon="sap-icon://log-in"
+                        type="Emphasized"
+                        press=".onLoginPress"
+                        enabled="{= !${/isLoginBusy} }"
+                        width="100%"
+                        class="login-submit-btn" />
+                </VBox>
+            </VBox>
+
+            <Text text="SAP Cloud Application Programming Model (CAP) • Role-Based Access Control (RBAC)" class="login-footer-text sapUiSmallMarginTop" />
+        </VBox>
+    </Page>
+</mvc:View>
