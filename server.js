@@ -79,7 +79,10 @@ cds.on('bootstrap', (app) => {
         next();
     });
 
-    const webappDir = path.join(__dirname, 'app', 'webapp');
+    const appDir = path.join(__dirname, 'app');
+    const webappDir = path.join(appDir, 'webapp');
+    const gateEntryDir = path.join(appDir, 'gate-entry');
+    app.use('/gate-entry', express.static(gateEntryDir));
     app.use('/webapp', express.static(webappDir));
     app.use(express.static(webappDir));
     // Middleware to catch SAP flexibility & metrics requests without path-to-regexp issues

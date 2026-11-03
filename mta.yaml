@@ -59,7 +59,7 @@ modules:
       keep-existing-routes: true
       instances: 1
       memory: 256M
-      disk-quota: 256M
+      disk-quota: 512M
     build-parameters:
       builder: npm
     requires:

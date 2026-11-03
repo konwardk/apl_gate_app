@@ -1,0 +1,148 @@
+<mvc:View
+    controllerName="factory.gate.controller.Landing"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m">
+    <Page showHeader="false" enableScrolling="true">
+        <VBox alignItems="Center" justifyContent="Center" class="flp-dashboard">
+            <!-- Vehicle Selection Hero Section -->
+            <VBox alignItems="Center" class="vehicle-selection-hero">
+                <Title
+                    text="Select Vehicle Stream"
+                    level="H1"
+                    titleStyle="H1"
+                    class="sapUiMediumMarginTop sapUiTinyMarginBottom" />
+                <HBox alignItems="Center" visible="{/isAuthenticated}" class="sapUiTinyMarginBottom">
+                    <Text text="Signed in as: " class="text-muted sapUiTinyMarginEnd" />
+                    <ObjectStatus text="{/userPrimaryRoleTitle}" state="Information" inverted="true" />
+                </HBox>
+                <Text
+                    text="Choose your vehicle processing stream to access your role-based operations dashboard."
+                    class="sapUiSmallMarginBottom" />
+            </VBox>
+
+            <!-- Vehicle Category Selection Cards -->
+            <HBox justifyContent="Center" class="vehicle-selection-cards">
+                <GenericTile
+                    header="TANKER"
+                    subheader="Tanker Management System"
+                    sizeBehavior="Responsive"
+                    state="Loaded"
+                    press=".onTankerTilePress"
+                    class="vehicle-select-tile sapUiMediumMargin">
+                    <tileContent>
+                        <TileContent footer="External S/4HANA Cloud TMS">
+                            <content>
+                                <NumericContent
+                                    icon="sap-icon://mileage"
+                                    value="TMS"
+                                    valueColor="Neutral" />
+                            </content>
+                        </TileContent>
+                    </tileContent>
+                </GenericTile>
+
+                <GenericTile
+                    header="OTHER VEHICLE"
+                    subheader="Operations Launchpad &amp; Role Dashboard"
+                    sizeBehavior="Responsive"
+                    press=".onOtherVehiclePress"
+                    class="vehicle-select-tile sapUiMediumMargin">
+                    <tileContent>
+                        <TileContent footer="{= ${/userPrimaryRoleTitle} ? 'Enter ' + ${/userPrimaryRoleTitle} + ' Dashboard' : 'Trucks, Containers, Trailers &amp; Other Cargo' }">
+                            <content>
+                                <NumericContent
+                                    icon="sap-icon://shipping-status"
+                                    value="GATE IN/OUT"
+                                    valueColor="Good" />
+                            </content>
+                        </TileContent>
+                    </tileContent>
+                </GenericTile>
+            </HBox>
+
+            <!-- Notification Strip -->
+            <MessageStrip
+                text="Notice: Tanker operations are managed via the dedicated Tanker Management System. Click 'OTHER VEHICLE' to access Main Gate operations for general cargo, trucks, and trailers."
+                type="Information"
+                showIcon="true"
+                class="sapUiMediumMarginTop sapUiMediumMarginBottom" />
+
+            <!-- Live Operations KPI Overview -->
+            <Title
+                text="Plant Real-Time Overview"
+                level="H2"
+                titleStyle="H3"
+                class="flp-section-title" />
+
+            <HBox wrap="NoWrap" class="flp-kpi-bar">
+                <GenericTile
+                    header="Total Gate Entries"
+                    subheader="All Vehicles"
+                    press=".onKpiPress"
+                    class="kpi-tile-card">
+                    <tileContent>
+                        <TileContent>
+                            <content>
+                                <NumericContent
+                                    value="{/counts/TOTAL}"
+                                    icon="sap-icon://shipping-status"
+                                    valueColor="Neutral" />
+                            </content>
+                        </TileContent>
+                    </tileContent>
+                </GenericTile>
+
+                <GenericTile
+                    header="Active In Plant"
+                    subheader="Inside Factory Yard"
+                    press=".onKpiPress"
+                    class="kpi-tile-card">
+                    <tileContent>
+                        <TileContent>
+                            <content>
+                                <NumericContent
+                                    value="{/counts/ACTIVE}"
+                                    icon="sap-icon://factory"
+                                    valueColor="Neutral" />
+                            </content>
+                        </TileContent>
+                    </tileContent>
+                </GenericTile>
+
+                <GenericTile
+                    header="Ready for Gate Exit"
+                    subheader="Cleared Security"
+                    press=".onKpiPress"
+                    class="kpi-tile-card">
+                    <tileContent>
+                        <TileContent>
+                            <content>
+                                <NumericContent
+                                    value="{/counts/READY_OUT}"
+                                    icon="sap-icon://log-out"
+                                    valueColor="Neutral" />
+                            </content>
+                        </TileContent>
+                    </tileContent>
+                </GenericTile>
+
+                <GenericTile
+                    header="Completed Exits"
+                    subheader="Final Exit Authorized"
+                    press=".onKpiPress"
+                    class="kpi-tile-card">
+                    <tileContent>
+                        <TileContent>
+                            <content>
+                                <NumericContent
+                                    value="{/counts/COMPLETED}"
+                                    icon="sap-icon://accept"
+                                    valueColor="Neutral" />
+                            </content>
+                        </TileContent>
+                    </tileContent>
+                </GenericTile>
+            </HBox>
+        </VBox>
+    </Page>
+</mvc:View>

@@ -1,5 +1,5 @@
 {
-  "welcomeFile": "/webapp/index.html",
+  "welcomeFile": "/index.html",
   "authenticationMethod": "route",
   "routes": [
     {
@@ -24,23 +24,23 @@
       "csrfProtection": false
     },
     {
-      "source": "^/webapp/(.*)$",
-      "target": "/webapp/$1",
-      "destination": "srv-api",
+      "source": "^/gate-entry/webapp/(.*)$",
+      "target": "/gate-entry/webapp/$1",
+      "localDir": "resources",
       "authenticationType": "none",
       "csrfProtection": false
     },
     {
-      "source": "^/images/(.*)$",
-      "target": "/images/$1",
-      "destination": "srv-api",
+      "source": "^/webapp/(.*)$",
+      "target": "/$1",
+      "localDir": "resources",
       "authenticationType": "none",
       "csrfProtection": false
     },
     {
       "source": "^/(.*)$",
-      "target": "$1",
-      "destination": "srv-api",
+      "target": "/$1",
+      "localDir": "resources",
       "authenticationType": "none",
       "csrfProtection": false
     }

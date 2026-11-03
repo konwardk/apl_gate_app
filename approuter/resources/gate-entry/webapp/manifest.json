@@ -1,0 +1,110 @@
+{
+  "_version": "1.49.0",
+  "sap.app": {
+    "id": "factory.gate.entry",
+    "type": "application",
+    "i18n": "i18n/i18n.properties",
+    "applicationVersion": {
+      "version": "1.0.0"
+    },
+    "title": "{{appTitle}}",
+    "description": "{{appDescription}}",
+    "dataSources": {
+      "mainService": {
+        "uri": "/gate/",
+        "type": "OData",
+        "settings": {
+          "odataVersion": "4.0"
+        }
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": true
+    }
+  },
+  "sap.ui5": {
+    "dependencies": {
+      "minUI5Version": "1.108.0",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.ushell": {},
+        "sap.fe.core": {},
+        "sap.fe.templates": {}
+      }
+    },
+    "contentDensities": {
+      "compact": true,
+      "cozy": true
+    },
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "factory.gate.entry.i18n.i18n"
+        }
+      },
+      "": {
+        "dataSource": "mainService",
+        "preload": true,
+        "settings": {
+          "synchronizationMode": "None",
+          "operationMode": "Server",
+          "autoExpandSelect": true,
+          "earlyRequests": true
+        }
+      }
+    },
+    "routing": {
+      "routes": [
+        {
+          "pattern": ":?query:",
+          "name": "GateTransactionsList",
+          "target": "GateTransactionsList"
+        },
+        {
+          "pattern": "GateTransactions({key}):?query:",
+          "name": "GateTransactionsObjectPage",
+          "target": "GateTransactionsObjectPage"
+        }
+      ],
+      "targets": {
+        "GateTransactionsList": {
+          "type": "Component",
+          "id": "GateTransactionsList",
+          "name": "sap.fe.templates.ListReport",
+          "options": {
+            "settings": {
+              "contextPath": "/GateTransactions",
+              "entitySet": "GateTransactions",
+              "variantManagement": "Page",
+              "navigation": {
+                "GateTransactions": {
+                  "detail": {
+                    "route": "GateTransactionsObjectPage"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "GateTransactionsObjectPage": {
+          "type": "Component",
+          "id": "GateTransactionsObjectPage",
+          "name": "sap.fe.templates.ObjectPage",
+          "options": {
+            "settings": {
+              "contextPath": "/GateTransactions",
+              "entitySet": "GateTransactions"
+            }
+          }
+        }
+      }
+    }
+  }
+}

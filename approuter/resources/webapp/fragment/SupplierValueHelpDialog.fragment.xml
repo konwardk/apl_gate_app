@@ -1,0 +1,105 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+    <Dialog
+        id="supplierValueHelpDialog"
+        title="Select Supplier (SAP S/4HANA Cloud)"
+        icon="sap-icon://supplier"
+        contentWidth="820px"
+        contentHeight="580px"
+        resizable="true"
+        draggable="true"
+        class="sapUiContentPadding">
+        <customHeader>
+            <Toolbar>
+                <core:Icon src="sap-icon://supplier" class="sapUiTinyMarginBegin" />
+                <Title text="Select Supplier (SAP S/4HANA Cloud: YY1_Supplier)" level="H2" />
+                <ToolbarSpacer />
+                <Button
+                    icon="sap-icon://decline"
+                    type="Transparent"
+                    tooltip="Close"
+                    press=".onSupplierValueHelpCancel" />
+            </Toolbar>
+        </customHeader>
+        <content>
+            <VBox class="sapUiTinyMarginBottom">
+                <!-- Search Section -->
+                <VBox class="dashboard-hero-card sapUiSmallMarginBottom">
+                    <HBox alignItems="Center" justifyContent="SpaceBetween" wrap="Wrap" class="sapUiTinyMarginBottom">
+                        <HBox alignItems="Center">
+                            <core:Icon src="sap-icon://search" size="16px" color="#0070f2" class="sapUiTinyMarginEnd" />
+                            <Title text="Search Suppliers" level="H4" titleStyle="H5" />
+                        </HBox>
+                        <Text id="supplierCountText" text="{= 'Showing ' + (${supplierModel>/}.length || 0) + ' Suppliers' }" class="text-muted" />
+                    </HBox>
+                    <HBox alignItems="Center" class="sapUiTinyMarginTop">
+                        <SearchField
+                            id="supplierSearchField"
+                            placeholder="Search by Supplier Code, Name, or Location..."
+                            width="100%"
+                            search=".onSupplierSearch"
+                            liveChange=".onSupplierSearch" />
+                    </HBox>
+                </VBox>
+
+                <!-- Suppliers Table -->
+                <Table
+                    id="supplierValueHelpTable"
+                    mode="SingleSelectLeft"
+                    selectionChange=".onSupplierSelectionChange"
+                    growing="true"
+                    growingThreshold="25"
+                    growingScrollToLoad="true"
+                    noDataText="No Suppliers found matching the criteria"
+                    items="{
+                        path: 'supplierModel>/',
+                        templateShareable: false
+                    }">
+                    <columns>
+                        <Column width="22%">
+                            <header>
+                                <Text text="Supplier Code" />
+                            </header>
+                        </Column>
+                        <Column width="38%">
+                            <header>
+                                <Text text="Supplier Name" />
+                            </header>
+                        </Column>
+                        <Column width="40%" minScreenWidth="Tablet" demandPopin="true">
+                            <header>
+                                <Text text="Full Name / Location" />
+                            </header>
+                        </Column>
+                    </columns>
+                    <items>
+                        <ColumnListItem type="Active" press=".onSupplierRowSelect">
+                            <cells>
+                                <ObjectIdentifier
+                                    title="{supplierModel>Supplier}"
+                                    text="S/4HANA Partner" />
+                                <Text text="{supplierModel>SupplierName}" design="Bold" />
+                                <Text text="{= ${supplierModel>SupplierFullName} || ${supplierModel>BPSupplierName} || '-' }" />
+                            </cells>
+                        </ColumnListItem>
+                    </items>
+                </Table>
+            </VBox>
+        </content>
+        <beginButton>
+            <Button
+                id="btnConfirmSupplierSelection"
+                text="Select"
+                icon="sap-icon://accept"
+                type="Emphasized"
+                enabled="false"
+                press=".onSupplierConfirmSelected" />
+        </beginButton>
+        <endButton>
+            <Button
+                text="Cancel"
+                press=".onSupplierValueHelpCancel" />
+        </endButton>
+    </Dialog>
+</core:FragmentDefinition>
