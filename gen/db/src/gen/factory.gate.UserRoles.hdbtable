@@ -1,9 +1,0 @@
-COLUMN TABLE factory_gate_UserRoles (
-  ID NVARCHAR(36) NOT NULL,
-  user_ID NVARCHAR(36) NOT NULL,
-  roleCode NVARCHAR(50),
-  roleName NVARCHAR(100),
-  assignedDate TIMESTAMP,
-  assignedBy NVARCHAR(100),
-  PRIMARY KEY(ID)
-)

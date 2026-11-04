@@ -115,4 +115,10 @@ cds.on('bootstrap', (app) => {
     });
 });
 
-export default cds.server;
+export default async function (options) {
+    options = options || {};
+    if (cds.env?.requires?.db?.credentials?.url === ':memory:' || cds.env?.requires?.db?.kind === 'sqlite') {
+        options.in_memory = true;
+    }
+    return cds.server(options);
+};

@@ -1,6 +1,6 @@
-using factory.gate as db from '../db/schema';
+using { GateService } from '../srv/gate-service';
 
-annotate db.GateTransactions with {
+annotate GateService.GateTransactions with {
     gateInNumber    @title: 'Gate IN Number' @label: 'Gate IN Number';
     vehicleRegNo    @title: 'Vehicle Reg No' @label: 'Vehicle Reg No';
     vehicleType     @title: 'Vehicle Type' @label: 'Vehicle Type';
@@ -14,26 +14,26 @@ annotate db.GateTransactions with {
     remarks         @title: 'Remarks' @label: 'Remarks';
 };
 
-annotate db.Vehicles with {
-    vehicleRegNo    @title: 'Vehicle Registration No' @label: 'Vehicle Reg No';
-    vehicleType     @title: 'Vehicle Type' @label: 'Vehicle Type';
-    vehicleCategory @title: 'Vehicle Category' @label: 'Category';
-    make            @title: 'Make / Manufacturer' @label: 'Make';
-    model           @title: 'Vehicle Model' @label: 'Model';
-    capacity        @title: 'Carrying Capacity' @label: 'Capacity';
-    capacityUnit    @title: 'Capacity Unit' @label: 'Unit';
-    insuranceNo     @title: 'Insurance Policy No' @label: 'Insurance No';
-    insuranceExpiry @title: 'Insurance Expiry Date' @label: 'Insurance Expiry';
-    fitnessCertificateNo @title: 'Fitness Certificate No' @label: 'Fitness Cert No';
-    fitnessExpiry   @title: 'Fitness Expiry Date' @label: 'Fitness Expiry';
+annotate GateService.Vehicles with {
+    vehicleRegNo          @title: 'Vehicle Registration No' @label: 'Vehicle Reg No';
+    vehicleType           @title: 'Vehicle Type' @label: 'Vehicle Type';
+    vehicleCategory       @title: 'Vehicle Category' @label: 'Category';
+    make                  @title: 'Make / Manufacturer' @label: 'Make';
+    model                 @title: 'Vehicle Model' @label: 'Model';
+    capacity              @title: 'Carrying Capacity' @label: 'Capacity';
+    capacityUnit          @title: 'Capacity Unit' @label: 'Unit';
+    insuranceNo           @title: 'Insurance Policy No' @label: 'Insurance No';
+    insuranceExpiry       @title: 'Insurance Expiry Date' @label: 'Insurance Expiry';
+    fitnessCertificateNo  @title: 'Fitness Certificate No' @label: 'Fitness Cert No';
+    fitnessExpiry         @title: 'Fitness Expiry Date' @label: 'Fitness Expiry';
     pollutionCertificateNo @title: 'PUC Certificate No' @label: 'PUC Cert No';
-    pollutionExpiry @title: 'PUC Expiry Date' @label: 'PUC Expiry';
-    permitNo        @title: 'Permit Number' @label: 'Permit No';
-    permitExpiry    @title: 'Permit Expiry Date' @label: 'Permit Expiry';
-    active          @title: 'Active Status' @label: 'Active';
+    pollutionExpiry       @title: 'PUC Expiry Date' @label: 'PUC Expiry';
+    permitNo              @title: 'Permit Number' @label: 'Permit No';
+    permitExpiry          @title: 'Permit Expiry Date' @label: 'Permit Expiry';
+    active                @title: 'Active Status' @label: 'Active';
 };
 
-annotate db.Drivers with {
+annotate GateService.Drivers with {
     driverCode        @title: 'Driver Code' @label: 'Driver Code';
     driverName        @title: 'Driver Name' @label: 'Driver Name';
     drivingLicenseNo  @title: 'Driving License No' @label: 'License No';
@@ -45,7 +45,7 @@ annotate db.Drivers with {
     active            @title: 'Active Status' @label: 'Active';
 };
 
-annotate db.Transporters with {
+annotate GateService.Transporters with {
     transporterCode @title: 'Transporter Code' @label: 'Transporter Code';
     transporterName @title: 'Transporter Name' @label: 'Transporter Name';
     gstin           @title: 'GSTIN' @label: 'GSTIN';
@@ -57,7 +57,7 @@ annotate db.Transporters with {
     active          @title: 'Active Status' @label: 'Active';
 };
 
-annotate db.Suppliers with {
+annotate GateService.Suppliers with {
     supplierCode       @title: 'Supplier Code' @label: 'Supplier Code';
     supplierName       @title: 'Supplier Name' @label: 'Supplier Name';
     gstin              @title: 'GSTIN' @label: 'GSTIN';
@@ -68,7 +68,7 @@ annotate db.Suppliers with {
     active             @title: 'Active Status' @label: 'Active';
 };
 
-annotate db.WeighbridgeTransactions with {
+annotate GateService.WeighbridgeTransactions with {
     weighbridgeNumber   @title: 'Weighbridge No' @label: 'Weighbridge No';
     weighmentType       @title: 'Weighment Type' @label: 'Weighment Type';
     weight              @title: 'Weight' @label: 'Weight';
@@ -78,7 +78,7 @@ annotate db.WeighbridgeTransactions with {
     remarks             @title: 'Remarks' @label: 'Remarks';
 };
 
-annotate db.GateAuditLogs with {
+annotate GateService.GateAuditLogs with {
     action         @title: 'Action Performed' @label: 'Action';
     oldStatus      @title: 'Previous Status' @label: 'Old Status';
     newStatus      @title: 'New Status' @label: 'New Status';

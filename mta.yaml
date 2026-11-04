@@ -31,26 +31,12 @@ modules:
         properties:
           srv-url: ${default-url}
     requires:
-      - name: apl-gate-app-db
       - name: apl-gate-app-auth
       - name: apl-gate-app-destination
       - name: apl-gate-app-connectivity
 
   # ------------------------------------------------------------
-  # 2. SAP HANA Cloud HDI Container Deployer
-  # ------------------------------------------------------------
-  - name: apl-gate-app-db-deployer
-    type: hdb
-    path: gen/db
-    parameters:
-      buildpack: nodejs_buildpack
-      memory: 256M
-      disk-quota: 512M
-    requires:
-      - name: apl-gate-app-db
-
-  # ------------------------------------------------------------
-  # 3. Enterprise Approuter (Authentication & Ingress Proxy)
+  # 2. Enterprise Approuter (Authentication & Ingress Proxy)
   # ------------------------------------------------------------
   - name: apl-gate-app-router
     type: approuter.nodejs
@@ -79,16 +65,7 @@ modules:
 
 resources:
   # ------------------------------------------------------------
-  # A. SAP HANA Cloud HDI Container
-  # ------------------------------------------------------------
-  - name: apl-gate-app-db
-    type: com.sap.xs.hdi-container
-    parameters:
-      service: hana
-      service-plan: hdi-shared
-
-  # ------------------------------------------------------------
-  # B. SAP BTP XSUAA Service (Identity & RBAC Authorization)
+  # A. SAP BTP XSUAA Service (Identity & RBAC Authorization)
   # ------------------------------------------------------------
   - name: apl-gate-app-auth
     type: org.cloudfoundry.managed-service
@@ -109,7 +86,7 @@ resources:
       - name: app-api
 
   # ------------------------------------------------------------
-  # C. SAP BTP Destination Service (S/4HANA PO Integration)
+  # B. SAP BTP Destination Service (S/4HANA PO Integration)
   # ------------------------------------------------------------
   - name: apl-gate-app-destination
     type: org.cloudfoundry.managed-service
@@ -130,7 +107,7 @@ resources:
       - name: srv-api
 
   # ------------------------------------------------------------
-  # D. SAP BTP Connectivity Service (Cloud & On-Premises Connector)
+  # C. SAP BTP Connectivity Service (Cloud & On-Premises Connector)
   # ------------------------------------------------------------
   - name: apl-gate-app-connectivity
     type: org.cloudfoundry.managed-service

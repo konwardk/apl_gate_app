@@ -66,21 +66,15 @@
         },
         "gateInNumber": {
           "@mandatory": true,
-          "@title": "Gate IN Number",
-          "@label": "Gate IN Number",
           "type": "cds.String",
           "length": 30
         },
         "vehicleRegNo": {
           "@mandatory": true,
-          "@title": "Vehicle Reg No",
-          "@label": "Vehicle Reg No",
           "type": "cds.String",
           "length": 20
         },
         "vehicleType": {
-          "@title": "Vehicle Type",
-          "@label": "Vehicle Type",
           "type": "factory.gate.VehicleType",
           "default": {
             "val": "TRUCK"
@@ -92,14 +86,10 @@
         },
         "purpose": {
           "@mandatory": true,
-          "@title": "Visit Purpose",
-          "@label": "Visit Purpose",
           "type": "factory.gate.VisitPurpose"
         },
         "status": {
           "@mandatory": true,
-          "@title": "Status",
-          "@label": "Status",
           "type": "factory.gate.GateStatus",
           "default": {
             "val": "GATE_IN"
@@ -107,8 +97,6 @@
         },
         "currentStage": {
           "@mandatory": true,
-          "@title": "Current Process Stage",
-          "@label": "Process Stage",
           "type": "factory.gate.GateStage",
           "default": {
             "val": "MAIN_GATE_IN"
@@ -116,31 +104,21 @@
         },
         "gateInDateTime": {
           "@mandatory": true,
-          "@title": "Gate IN Date & Time",
-          "@label": "Gate IN Time",
           "type": "cds.Timestamp"
         },
         "gateInOperator": {
           "@mandatory": true,
-          "@title": "Gate IN Operator",
-          "@label": "Gate IN Operator",
           "type": "cds.String",
           "length": 100
         },
         "gateOutDateTime": {
-          "@title": "Gate OUT Date & Time",
-          "@label": "Gate OUT Time",
           "type": "cds.Timestamp"
         },
         "gateOutOperator": {
-          "@title": "Gate OUT Operator",
-          "@label": "Gate OUT Operator",
           "type": "cds.String",
           "length": 100
         },
         "remarks": {
-          "@title": "Remarks",
-          "@label": "Remarks",
           "type": "cds.String",
           "length": 500
         },
@@ -898,29 +876,21 @@
         },
         "weighbridgeNumber": {
           "@mandatory": true,
-          "@title": "Weighbridge No",
-          "@label": "Weighbridge No",
           "type": "cds.String",
           "length": 30
         },
         "weighmentType": {
           "@mandatory": true,
-          "@title": "Weighment Type",
-          "@label": "Weighment Type",
           "type": "factory.gate.WeighmentType"
         },
         "weight": {
           "@mandatory": true,
-          "@title": "Weight",
-          "@label": "Weight",
           "type": "cds.Decimal",
           "precision": 15,
           "scale": 3
         },
         "weightUnit": {
           "@mandatory": true,
-          "@title": "Unit",
-          "@label": "Unit",
           "type": "factory.gate.WeightUnit",
           "default": {
             "val": "KG"
@@ -928,20 +898,14 @@
         },
         "weighbridgeDateTime": {
           "@mandatory": true,
-          "@title": "Weighing Timestamp",
-          "@label": "Weighing Time",
           "type": "cds.Timestamp"
         },
         "operator": {
           "@mandatory": true,
-          "@title": "Operator",
-          "@label": "Operator",
           "type": "cds.String",
           "length": 100
         },
         "remarks": {
-          "@title": "Remarks",
-          "@label": "Remarks",
           "type": "cds.String",
           "length": 250
         }
@@ -1369,45 +1333,31 @@
         },
         "vehicleRegNo": {
           "@mandatory": true,
-          "@title": "Vehicle Registration No",
-          "@label": "Vehicle Reg No",
           "type": "cds.String",
           "length": 20
         },
         "vehicleType": {
           "@mandatory": true,
-          "@title": "Vehicle Type",
-          "@label": "Vehicle Type",
           "type": "factory.gate.VehicleType"
         },
         "vehicleCategory": {
-          "@title": "Vehicle Category",
-          "@label": "Category",
           "type": "cds.String",
           "length": 30
         },
         "make": {
-          "@title": "Make / Manufacturer",
-          "@label": "Make",
           "type": "cds.String",
           "length": 50
         },
         "model": {
-          "@title": "Vehicle Model",
-          "@label": "Model",
           "type": "cds.String",
           "length": 50
         },
         "capacity": {
-          "@title": "Carrying Capacity",
-          "@label": "Capacity",
           "type": "cds.Decimal",
           "precision": 15,
           "scale": 3
         },
         "capacityUnit": {
-          "@title": "Capacity Unit",
-          "@label": "Unit",
           "type": "factory.gate.WeightUnit"
         },
         "transporter": {
@@ -1422,52 +1372,34 @@
           ]
         },
         "insuranceNo": {
-          "@title": "Insurance Policy No",
-          "@label": "Insurance No",
           "type": "cds.String",
           "length": 50
         },
         "insuranceExpiry": {
-          "@title": "Insurance Expiry Date",
-          "@label": "Insurance Expiry",
           "type": "cds.Date"
         },
         "fitnessCertificateNo": {
-          "@title": "Fitness Certificate No",
-          "@label": "Fitness Cert No",
           "type": "cds.String",
           "length": 50
         },
         "fitnessExpiry": {
-          "@title": "Fitness Expiry Date",
-          "@label": "Fitness Expiry",
           "type": "cds.Date"
         },
         "pollutionCertificateNo": {
-          "@title": "PUC Certificate No",
-          "@label": "PUC Cert No",
           "type": "cds.String",
           "length": 50
         },
         "pollutionExpiry": {
-          "@title": "PUC Expiry Date",
-          "@label": "PUC Expiry",
           "type": "cds.Date"
         },
         "permitNo": {
-          "@title": "Permit Number",
-          "@label": "Permit No",
           "type": "cds.String",
           "length": 50
         },
         "permitExpiry": {
-          "@title": "Permit Expiry Date",
-          "@label": "Permit Expiry",
           "type": "cds.Date"
         },
         "active": {
-          "@title": "Active Status",
-          "@label": "Active",
           "type": "cds.Boolean",
           "default": {
             "val": true
@@ -1539,51 +1471,35 @@
           "length": 255
         },
         "driverCode": {
-          "@title": "Driver Code",
-          "@label": "Driver Code",
           "type": "cds.String",
           "length": 20
         },
         "driverName": {
           "@mandatory": true,
-          "@title": "Driver Name",
-          "@label": "Driver Name",
           "type": "cds.String",
           "length": 100
         },
         "drivingLicenseNo": {
           "@mandatory": true,
-          "@title": "Driving License No",
-          "@label": "License No",
           "type": "cds.String",
           "length": 30
         },
         "licenseType": {
-          "@title": "License Type",
-          "@label": "License Type",
           "type": "cds.String",
           "length": 20
         },
         "licenseExpiryDate": {
-          "@title": "License Expiry Date",
-          "@label": "License Expiry",
           "type": "cds.Date"
         },
         "phoneNo": {
-          "@title": "Contact Phone No",
-          "@label": "Phone No",
           "type": "cds.String",
           "length": 20
         },
         "alternatePhoneNo": {
-          "@title": "Alternate Phone No",
-          "@label": "Alt Phone No",
           "type": "cds.String",
           "length": 20
         },
         "address": {
-          "@title": "Address",
-          "@label": "Address",
           "type": "cds.String",
           "length": 250
         },
@@ -1599,8 +1515,6 @@
           ]
         },
         "active": {
-          "@title": "Active Status",
-          "@label": "Active",
           "type": "cds.Boolean",
           "default": {
             "val": true
@@ -1673,57 +1587,39 @@
         },
         "transporterCode": {
           "@mandatory": true,
-          "@title": "Transporter Code",
-          "@label": "Transporter Code",
           "type": "cds.String",
           "length": 20
         },
         "transporterName": {
           "@mandatory": true,
-          "@title": "Transporter Name",
-          "@label": "Transporter Name",
           "type": "cds.String",
           "length": 100
         },
         "gstin": {
-          "@title": "GSTIN",
-          "@label": "GSTIN",
           "type": "cds.String",
           "length": 20
         },
         "pan": {
-          "@title": "PAN",
-          "@label": "PAN",
           "type": "cds.String",
           "length": 20
         },
         "contactPerson": {
-          "@title": "Contact Person",
-          "@label": "Contact Person",
           "type": "cds.String",
           "length": 100
         },
         "phoneNo": {
-          "@title": "Phone Number",
-          "@label": "Phone No",
           "type": "cds.String",
           "length": 20
         },
         "email": {
-          "@title": "Email Address",
-          "@label": "Email",
           "type": "cds.String",
           "length": 100
         },
         "address": {
-          "@title": "Address",
-          "@label": "Address",
           "type": "cds.String",
           "length": 250
         },
         "active": {
-          "@title": "Active Status",
-          "@label": "Active",
           "type": "cds.Boolean",
           "default": {
             "val": true
@@ -1796,50 +1692,34 @@
         },
         "supplierCode": {
           "@mandatory": true,
-          "@title": "Supplier Code",
-          "@label": "Supplier Code",
           "type": "cds.String",
           "length": 20
         },
         "supplierName": {
-          "@title": "Supplier Name",
-          "@label": "Supplier Name",
           "type": "cds.String",
           "length": 100
         },
         "gstin": {
-          "@title": "GSTIN",
-          "@label": "GSTIN",
           "type": "cds.String",
           "length": 20
         },
         "contactPerson": {
-          "@title": "Contact Person",
-          "@label": "Contact Person",
           "type": "cds.String",
           "length": 100
         },
         "phoneNo": {
-          "@title": "Phone Number",
-          "@label": "Phone No",
           "type": "cds.String",
           "length": 20
         },
         "address": {
-          "@title": "Address",
-          "@label": "Address",
           "type": "cds.String",
           "length": 250
         },
         "sapBusinessPartner": {
-          "@title": "SAP BP Number",
-          "@label": "SAP BP",
           "type": "cds.String",
           "length": 20
         },
         "active": {
-          "@title": "Active Status",
-          "@label": "Active",
           "type": "cds.Boolean",
           "default": {
             "val": true
@@ -1870,52 +1750,34 @@
         },
         "action": {
           "@mandatory": true,
-          "@title": "Action Performed",
-          "@label": "Action",
           "type": "cds.String",
           "length": 50
         },
         "oldStatus": {
-          "@title": "Previous Status",
-          "@label": "Old Status",
           "type": "factory.gate.GateStatus"
         },
         "newStatus": {
-          "@title": "New Status",
-          "@label": "New Status",
           "type": "factory.gate.GateStatus"
         },
         "oldStage": {
-          "@title": "Previous Stage",
-          "@label": "Old Stage",
           "type": "factory.gate.GateStage"
         },
         "newStage": {
-          "@title": "New Stage",
-          "@label": "New Stage",
           "type": "factory.gate.GateStage"
         },
         "actionDateTime": {
           "@mandatory": true,
-          "@title": "Timestamp",
-          "@label": "Timestamp",
           "type": "cds.Timestamp"
         },
         "userId": {
-          "@title": "User ID",
-          "@label": "User ID",
           "type": "cds.String",
           "length": 100
         },
         "userName": {
-          "@title": "User Name",
-          "@label": "User Name",
           "type": "cds.String",
           "length": 100
         },
         "remarks": {
-          "@title": "Remarks",
-          "@label": "Remarks",
           "type": "cds.String",
           "length": 500
         }
@@ -2630,9 +2492,9 @@
         },
         "gateInNumber": {
           "@readonly": true,
-          "@mandatory": true,
           "@title": "Gate IN Number",
           "@label": "Gate IN Number",
+          "@mandatory": true,
           "type": "cds.String",
           "length": 30
         },
@@ -2647,6 +2509,14 @@
           "@title": "Vehicle Type",
           "@label": "Vehicle Type",
           "type": "factory.gate.VehicleType",
+          "enum": {
+            "TANKER": {},
+            "TRUCK": {},
+            "TRAILER": {},
+            "CONTAINER": {},
+            "LCV": {},
+            "OTHER": {}
+          },
           "default": {
             "val": "TRUCK"
           }
@@ -2666,33 +2536,55 @@
           }
         },
         "status": {
-          "@mandatory": true,
           "@title": "Status",
           "@label": "Status",
+          "@mandatory": true,
           "type": "factory.gate.GateStatus",
+          "enum": {
+            "GATE_IN": {},
+            "SECURITY_IN": {},
+            "WEIGHBRIDGE_IN": {},
+            "FACTORY_IN": {},
+            "FACTORY_OUT": {},
+            "WEIGHBRIDGE_OUT": {},
+            "SECURITY_OUT": {},
+            "COMPLETED": {},
+            "HOLD": {},
+            "CANCELLED": {}
+          },
           "default": {
             "val": "GATE_IN"
           }
         },
         "currentStage": {
-          "@mandatory": true,
           "@title": "Current Process Stage",
           "@label": "Process Stage",
+          "@mandatory": true,
           "type": "factory.gate.GateStage",
+          "enum": {
+            "MAIN_GATE_IN": {},
+            "SECURITY_GATE_IN": {},
+            "WEIGHBRIDGE_IN": {},
+            "FACTORY": {},
+            "WEIGHBRIDGE_OUT": {},
+            "SECURITY_GATE_OUT": {},
+            "MAIN_GATE_OUT": {},
+            "COMPLETED": {}
+          },
           "default": {
             "val": "MAIN_GATE_IN"
           }
         },
         "gateInDateTime": {
-          "@mandatory": true,
           "@title": "Gate IN Date & Time",
           "@label": "Gate IN Time",
+          "@mandatory": true,
           "type": "cds.Timestamp"
         },
         "gateInOperator": {
-          "@mandatory": true,
           "@title": "Gate IN Operator",
           "@label": "Gate IN Operator",
+          "@mandatory": true,
           "type": "cds.String",
           "length": 100
         },
@@ -4406,45 +4298,56 @@
           "notNull": true
         },
         "weighbridgeNumber": {
-          "@mandatory": true,
           "@title": "Weighbridge No",
           "@label": "Weighbridge No",
+          "@mandatory": true,
           "type": "cds.String",
           "length": 30
         },
         "weighmentType": {
-          "@mandatory": true,
           "@title": "Weighment Type",
           "@label": "Weighment Type",
-          "type": "factory.gate.WeighmentType"
+          "@mandatory": true,
+          "type": "factory.gate.WeighmentType",
+          "enum": {
+            "GROSS_IN": {},
+            "TARE_IN": {},
+            "GROSS_OUT": {},
+            "TARE_OUT": {}
+          }
         },
         "weight": {
-          "@mandatory": true,
           "@title": "Weight",
           "@label": "Weight",
+          "@mandatory": true,
           "type": "cds.Decimal",
           "precision": 15,
           "scale": 3
         },
         "weightUnit": {
-          "@mandatory": true,
           "@title": "Unit",
           "@label": "Unit",
+          "@mandatory": true,
           "type": "factory.gate.WeightUnit",
+          "enum": {
+            "KG": {},
+            "MT": {},
+            "TON": {}
+          },
           "default": {
             "val": "KG"
           }
         },
         "weighbridgeDateTime": {
-          "@mandatory": true,
           "@title": "Weighing Timestamp",
           "@label": "Weighing Time",
+          "@mandatory": true,
           "type": "cds.Timestamp"
         },
         "operator": {
-          "@mandatory": true,
           "@title": "Operator",
           "@label": "Operator",
+          "@mandatory": true,
           "type": "cds.String",
           "length": 100
         },
@@ -5043,17 +4946,25 @@
           "length": 255
         },
         "vehicleRegNo": {
-          "@mandatory": true,
           "@title": "Vehicle Registration No",
           "@label": "Vehicle Reg No",
+          "@mandatory": true,
           "type": "cds.String",
           "length": 20
         },
         "vehicleType": {
-          "@mandatory": true,
           "@title": "Vehicle Type",
           "@label": "Vehicle Type",
-          "type": "factory.gate.VehicleType"
+          "@mandatory": true,
+          "type": "factory.gate.VehicleType",
+          "enum": {
+            "TANKER": {},
+            "TRUCK": {},
+            "TRAILER": {},
+            "CONTAINER": {},
+            "LCV": {},
+            "OTHER": {}
+          }
         },
         "vehicleCategory": {
           "@title": "Vehicle Category",
@@ -5083,7 +4994,12 @@
         "capacityUnit": {
           "@title": "Capacity Unit",
           "@label": "Unit",
-          "type": "factory.gate.WeightUnit"
+          "type": "factory.gate.WeightUnit",
+          "enum": {
+            "KG": {},
+            "MT": {},
+            "TON": {}
+          }
         },
         "transporter": {
           "type": "cds.Association",
@@ -5304,16 +5220,16 @@
           "length": 20
         },
         "driverName": {
-          "@mandatory": true,
           "@title": "Driver Name",
           "@label": "Driver Name",
+          "@mandatory": true,
           "type": "cds.String",
           "length": 100
         },
         "drivingLicenseNo": {
-          "@mandatory": true,
           "@title": "Driving License No",
           "@label": "License No",
+          "@mandatory": true,
           "type": "cds.String",
           "length": 30
         },
@@ -5515,16 +5431,16 @@
           "length": 255
         },
         "transporterCode": {
-          "@mandatory": true,
           "@title": "Transporter Code",
           "@label": "Transporter Code",
+          "@mandatory": true,
           "type": "cds.String",
           "length": 20
         },
         "transporterName": {
-          "@mandatory": true,
           "@title": "Transporter Name",
           "@label": "Transporter Name",
+          "@mandatory": true,
           "type": "cds.String",
           "length": 100
         },
@@ -5722,9 +5638,9 @@
           "length": 255
         },
         "supplierCode": {
-          "@mandatory": true,
           "@title": "Supplier Code",
           "@label": "Supplier Code",
+          "@mandatory": true,
           "type": "cds.String",
           "length": 20
         },
@@ -8746,36 +8662,80 @@
           ]
         },
         "action": {
-          "@mandatory": true,
           "@title": "Action Performed",
           "@label": "Action",
+          "@mandatory": true,
           "type": "cds.String",
           "length": 50
         },
         "oldStatus": {
           "@title": "Previous Status",
           "@label": "Old Status",
-          "type": "factory.gate.GateStatus"
+          "type": "factory.gate.GateStatus",
+          "enum": {
+            "GATE_IN": {},
+            "SECURITY_IN": {},
+            "WEIGHBRIDGE_IN": {},
+            "FACTORY_IN": {},
+            "FACTORY_OUT": {},
+            "WEIGHBRIDGE_OUT": {},
+            "SECURITY_OUT": {},
+            "COMPLETED": {},
+            "HOLD": {},
+            "CANCELLED": {}
+          }
         },
         "newStatus": {
           "@title": "New Status",
           "@label": "New Status",
-          "type": "factory.gate.GateStatus"
+          "type": "factory.gate.GateStatus",
+          "enum": {
+            "GATE_IN": {},
+            "SECURITY_IN": {},
+            "WEIGHBRIDGE_IN": {},
+            "FACTORY_IN": {},
+            "FACTORY_OUT": {},
+            "WEIGHBRIDGE_OUT": {},
+            "SECURITY_OUT": {},
+            "COMPLETED": {},
+            "HOLD": {},
+            "CANCELLED": {}
+          }
         },
         "oldStage": {
           "@title": "Previous Stage",
           "@label": "Old Stage",
-          "type": "factory.gate.GateStage"
+          "type": "factory.gate.GateStage",
+          "enum": {
+            "MAIN_GATE_IN": {},
+            "SECURITY_GATE_IN": {},
+            "WEIGHBRIDGE_IN": {},
+            "FACTORY": {},
+            "WEIGHBRIDGE_OUT": {},
+            "SECURITY_GATE_OUT": {},
+            "MAIN_GATE_OUT": {},
+            "COMPLETED": {}
+          }
         },
         "newStage": {
           "@title": "New Stage",
           "@label": "New Stage",
-          "type": "factory.gate.GateStage"
+          "type": "factory.gate.GateStage",
+          "enum": {
+            "MAIN_GATE_IN": {},
+            "SECURITY_GATE_IN": {},
+            "WEIGHBRIDGE_IN": {},
+            "FACTORY": {},
+            "WEIGHBRIDGE_OUT": {},
+            "SECURITY_GATE_OUT": {},
+            "MAIN_GATE_OUT": {},
+            "COMPLETED": {}
+          }
         },
         "actionDateTime": {
-          "@mandatory": true,
           "@title": "Timestamp",
           "@label": "Timestamp",
+          "@mandatory": true,
           "type": "cds.Timestamp"
         },
         "userId": {

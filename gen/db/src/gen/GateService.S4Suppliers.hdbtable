@@ -1,7 +1,0 @@
-COLUMN TABLE GateService_S4Suppliers (
-  Supplier NVARCHAR(20) NOT NULL,
-  SupplierName NVARCHAR(100),
-  SupplierFullName NVARCHAR(250),
-  BPSupplierName NVARCHAR(100),
-  PRIMARY KEY(Supplier)
-)

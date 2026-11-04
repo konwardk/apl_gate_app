@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "@cap-js/hana": "^3",
+    "@cap-js/sqlite": "^3",
     "@sap-cloud-sdk/connectivity": "^4",
     "@sap-cloud-sdk/http-client": "^4",
     "@sap-cloud-sdk/resilience": "^4",
@@ -11,7 +11,6 @@
     "@sap/xssec": "^4"
   },
   "devDependencies": {
-    "@cap-js/sqlite": "^3",
     "@sap/cds-dk": "^10"
   },
   "engines": {
@@ -30,7 +29,19 @@
   ],
   "private": true,
   "cds": {
+    "model": "srv/csn.json",
+    "[production]": {
+      "auth": {
+        "kind": "xsuaa"
+      }
+    },
     "requires": {
+      "db": {
+        "kind": "sqlite",
+        "credentials": {
+          "url": ":memory:"
+        }
+      },
       "auth": {
         "kind": "mocked",
         "users": {
@@ -66,7 +77,7 @@
         },
         "[production]": {
           "credentials": {
-            "destination": "S4HANA_CLOUD_PO",
+            "destination": "my443555_CUST_SAML_ASSERTION",
             "path": "/sap/opu/odata4/sap/api_purchaseorder_2/srvd_a2x/sap/purchaseorder/0001"
           }
         },
@@ -77,11 +88,6 @@
             "username": "BTP_S4_INTEGRATION",
             "password": "Assampetrochemical@123#"
           }
-        }
-      },
-      "[production]": {
-        "auth": {
-          "kind": "xsuaa"
         }
       },
       "YY1_API_VEHICLEENTRY_0001": {
@@ -100,7 +106,7 @@
         },
         "[production]": {
           "credentials": {
-            "destination": "S4HANA_CLOUD_CUSTOMUSER",
+            "destination": "my443555_CUST_SAML_ASSERTION",
             "path": "/sap/opu/odata4/sap/yy1_api_customuser/srvd_a2x/sap/yy1_api_customuser/0001"
           }
         },
@@ -125,7 +131,7 @@
         },
         "[production]": {
           "credentials": {
-            "destination": "S4HANA_CLOUD_VEHICLEGATEOPERATION",
+            "destination": "my443555_CUST_SAML_ASSERTION",
             "path": "/sap/opu/odata4/sap/yy1_api_vehiclegateoperation/srvd_a2x/sap/yy1_api_vehiclegateoperation/0001"
           }
         },
@@ -148,7 +154,7 @@
         },
         "[production]": {
           "credentials": {
-            "destination": "S4HANA_CLOUD_SUPPLIER",
+            "destination": "my443555_CUST_SAML_ASSERTION",
             "path": "/sap/opu/odata/sap/YY1_SUPPLIER_CDS"
           }
         },
