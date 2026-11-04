@@ -3,7 +3,7 @@
     xmlns:form="sap.ui.layout.form"
     xmlns:core="sap.ui.core">
     <Dialog
-        id="weighbridgeDialog"
+        id="idWeighbridgeDialog"
         title="{= ${wbModel>/dialogTitle} || 'Record Weighbridge Scale Weighment' }"
         icon="sap-icon://dimension"
         contentWidth="680px"
@@ -14,7 +14,7 @@
         class="sapUiContentPadding">
         <content>
             <form:SimpleForm
-                id="weighbridgeDialogForm"
+                id="idWeighbridgeDialogSimpleForm"
                 editable="true"
                 layout="ResponsiveGridLayout"
                 labelSpanXL="4"
@@ -30,16 +30,15 @@
 
                     <Label text="Select Vehicle" required="{= ${wbModel>/isVehicleSelectable} !== false }" />
                     <ComboBox
-                        id="dialogWbGateInComboBox"
+                        id="idDialogEligibleVehiclesComboBox"
                         width="100%"
                         placeholder="Type or select Gate IN #, Vehicle Reg, or Driver..."
                         selectedKey="{wbModel>/selectedGateInNumber}"
-                        change=".onGateInSelectChange"
+                        change=".onDialogEligibleVehiclesComboBoxChange"
                         filterSecondaryValues="true"
                         showSecondaryValues="true"
                         editable="{= ${wbModel>/isVehicleSelectable} !== false }"
                         enabled="{= ${wbModel>/isVehicleSelectable} !== false }"
-                        noDataText="No vehicles currently awaiting Weighbridge scale clearance"
                         items="{
                             path: 'wbModel>/dialogEligibleVehicles',
                             templateShareable: false

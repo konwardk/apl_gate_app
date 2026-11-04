@@ -3,7 +3,7 @@
     xmlns:form="sap.ui.layout.form"
     xmlns:core="sap.ui.core">
     <Dialog
-        id="securityGateInDialog"
+        id="idSecurityGateInDialog"
         title="Security Gate IN - Vehicle &amp; Driver Check-In"
         icon="sap-icon://shield"
         contentWidth="720px"
@@ -14,7 +14,7 @@
         class="sapUiContentPadding security-gate-dialog">
         <content>
             <form:SimpleForm
-                id="secGateInDialogForm"
+                id="idSecGateInDialogSimpleForm"
                 editable="true"
                 layout="ResponsiveGridLayout"
                 labelSpanXL="4"
@@ -30,11 +30,11 @@
 
                     <Label text="Select Vehicle" required="{= ${secModel>/isVehicleSelectable} !== false }" />
                     <ComboBox
-                        id="dialogSecGateInComboBox"
+                        id="idWaitingVehiclesComboBox"
                         width="100%"
                         placeholder="Select Gate IN #, Vehicle Reg No, or Driver..."
                         selectedKey="{secModel>/selectedGateInNumber}"
-                        change=".onGateInSelectChange"
+                        change=".onWaitingVehiclesComboBoxChange"
                         filterSecondaryValues="true"
                         showSecondaryValues="true"
                         editable="{= ${secModel>/isVehicleSelectable} !== false }"

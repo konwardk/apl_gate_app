@@ -164,7 +164,13 @@ sap.ui.define([
             return "Accent1";
         },
 
-        formatWeight: function (val, unit) {
+        /**
+         * Formats numeric weight values with localization and optional unit suffix.
+         * @param {number|string} val - Numeric or string weight value.
+         * @param {string} [unit] - Optional unit of measurement (defaults to "KG").
+         * @returns {string} Formatted weight string.
+         */
+        formatWeight: function (val, unit = "") {
             if (val === null || val === undefined || val === "") return "-";
             const num = typeof val === "string" ? parseFloat(val.replace(/,/g, "")) : parseFloat(val);
             if (isNaN(num)) return "-";

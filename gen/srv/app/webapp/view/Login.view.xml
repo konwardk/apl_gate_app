@@ -2,11 +2,7 @@
     controllerName="factory.gate.controller.Login"
     xmlns:mvc="sap.ui.core.mvc"
     xmlns="sap.m"
-    xmlns:f="sap.f"
     xmlns:core="sap.ui.core"
-    xmlns:layout="sap.ui.layout"
-    xmlns:form="sap.ui.layout.form"
-    xmlns:custom="http://schemas.sap.com/sapui5/extension/sap.ui.core.CustomData/1"
     displayBlock="true"
     height="100%">
     <Page showHeader="false" enableScrolling="true" class="login-page-container">
@@ -44,46 +40,46 @@
 
                 <!-- Dynamic Error Notification -->
                 <MessageStrip
-                    id="loginErrorStrip"
+                    id="idLoginErrorMessageStrip"
                     text="{/loginError}"
                     type="Error"
                     showIcon="true"
                     showCloseButton="true"
-                    close=".onClearError"
+                    close=".onLoginErrorMessageStripClose"
                     visible="{= !!${/loginError} }"
                     class="sapUiSmallMarginBottom" />
 
                 <!-- Login Form -->
                 <VBox class="sapUiSmallMarginTop">
-                    <Label text="Username / User ID" required="true" labelFor="inputLoginUsername" class="login-field-label" />
+                    <Label text="Username / User ID" required="true" labelFor="idLoginUsernameInput" class="login-field-label" />
                     <Input
-                        id="inputLoginUsername"
+                        id="idLoginUsernameInput"
                         value="{/loginUsername}"
                         placeholder="Enter username (e.g. superadmin_user or SAP User ID)"
                         width="100%"
-                        liveChange=".onCredentialChange"
-                        submit=".onLoginPress"
+                        liveChange=".onLoginUsernameInputLiveChange"
+                        submit=".onLoginUsernameInputSubmit"
                         editable="{= !${/isLoginBusy} }"
                         class="sapUiTinyMarginBottom" />
 
-                    <Label text="Password" required="true" labelFor="inputLoginPassword" class="login-field-label sapUiSmallMarginTop" />
+                    <Label text="Password" required="true" labelFor="idLoginPasswordInput" class="login-field-label sapUiSmallMarginTop" />
                     <Input
-                        id="inputLoginPassword"
+                        id="idLoginPasswordInput"
                         type="Password"
                         value="{/loginPassword}"
                         placeholder="Enter password"
                         width="100%"
-                        liveChange=".onCredentialChange"
-                        submit=".onLoginPress"
+                        liveChange=".onLoginPasswordInputLiveChange"
+                        submit=".onLoginPasswordInputSubmit"
                         editable="{= !${/isLoginBusy} }"
                         class="sapUiMediumMarginBottom" />
 
                     <Button
-                        id="btnLoginSubmit"
+                        id="idSignInToWorkspaceButton"
                         text="Sign In to Workspace"
                         icon="sap-icon://log-in"
                         type="Emphasized"
-                        press=".onLoginPress"
+                        press=".onSignInToWorkspaceButtonPress"
                         enabled="{= !${/isLoginBusy} }"
                         width="100%"
                         class="login-submit-btn" />

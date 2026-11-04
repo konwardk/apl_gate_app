@@ -62,7 +62,7 @@ sap.ui.define([
             this.getView().setModel(oWbModel, "wbModel");
 
             // Only load data if user is authenticated (prevents 401 error on startup)
-            if (models.getAuthHeaderValue()) {
+            if (models.isSessionActive()) {
                 this.loadWeighbridgeData();
             }
         },
@@ -199,17 +199,13 @@ sap.ui.define([
         },
 
         loadWeighbridgeData: async function () {
-            const authHeader = models.getAuthHeaderValue();
-            if (!authHeader) {
+            if (!models.isSessionActive()) {
                 // Not authenticated yet; skip loading to prevent 401 error on startup
                 return;
             }
 
             const oWbModel = this.getView().getModel("wbModel");
-            const headers = {
-                "Authorization": authHeader,
-                "Content-Type": "application/json"
-            };
+            const headers = models.getAuthHeaders();
 
             try {
                 const res = await fetch(`${ODATA_BASE}/GateTransactions?$expand=weighments,transporter,supplier,driver,securityEntry&$orderby=createdAt desc`, { headers });
@@ -345,6 +341,10 @@ sap.ui.define([
             this.selectVehicleByGateIn(sKey);
         },
 
+        onDialogEligibleVehiclesComboBoxChange: function (oEvt) {
+            return this.onGateInSelectChange(oEvt);
+        },
+
         _getWeighmentTypeOptions: function (sPurpose) {
             if (sPurpose === "PICKUP") {
                 return [
@@ -390,10 +390,7 @@ sap.ui.define([
             // If not found in loaded queue, try direct server fetch with expand weighments & securityEntry
             if (!vehicle && gateInNumber && gateInNumber.trim()) {
                 try {
-                    const headers = {
-                        "Authorization": models.getAuthHeaderValue(),
-                        "Content-Type": "application/json"
-                    };
+                    const headers = models.getAuthHeaders();
                     const sQuery = encodeURIComponent(gateInNumber.trim());
                     const res = await fetch(`${ODATA_BASE}/GateTransactions?$filter=gateInNumber eq '${sQuery}' or tolower(vehicleRegNo) eq '${sQuery.toLowerCase()}'&$expand=weighments,transporter,supplier,driver,securityEntry`, { headers });
                     if (res.ok) {
@@ -760,10 +757,7 @@ sap.ui.define([
                 remarks: m.remarks ? m.remarks.trim() : ""
             };
 
-            const headers = {
-                "Authorization": models.getAuthHeaderValue(),
-                "Content-Type": "application/json"
-            };
+            const headers = models.getAuthHeaders();
 
             try {
                 const response = await fetch(`${ODATA_BASE}/RecordWeighment`, {
@@ -787,10 +781,10 @@ sap.ui.define([
 
                 // Prepare summary text
                 const sTypeDesc = formatter.getWeighmentTypeDesc(sType);
-                let sSuccessDetail = `Weighbridge Number: ${sWbNum}\nWeighment Type: ${sTypeDesc}\nRecorded Weight: ${formatter.formatWeight(fWeight)} ${sUnit}\nOperator: ${sOp}\nNew Process Stage: ${updatedTx.currentStage || 'WEIGHBRIDGE'}`;
+                let sSuccessDetail = `Weighbridge Number: ${sWbNum}\nWeighment Type: ${sTypeDesc}\nRecorded Weight: ${formatter.formatWeight(fWeight, sUnit)}\nOperator: ${sOp}\nNew Process Stage: ${updatedTx.currentStage || 'WEIGHBRIDGE'}`;
 
                 if (m.isOutboundStage && m.calculatedNetWeight > 0) {
-                    sSuccessDetail += `\nNet Material Weight: ${formatter.formatWeight(m.calculatedNetWeight)} ${sUnit} (${m.calculatedNetWeightMT} MT)`;
+                    sSuccessDetail += `\nNet Material Weight: ${formatter.formatWeight(m.calculatedNetWeight, sUnit)} (${m.calculatedNetWeightMT} MT)`;
                 }
 
                 MessageBox.success(`Weighment Successfully Recorded for ${m.selectedGateInNumber}!\n\n${sSuccessDetail}`, {
@@ -836,7 +830,13 @@ sap.ui.define([
         // ============================================================
         // Weighment Slip / Certificate Dialog
         // ============================================================
-        _buildSlipData: function (oTx, specificWb) {
+        /**
+         * Builds structured weighment certificate/slip data.
+         * @param {Object} oTx - The transaction or gate entry record.
+         * @param {Object} [specificWb=null] - Optional specific weighment item.
+         * @returns {Object|null} Formatted slip data object or null.
+         */
+        _buildSlipData: function (oTx, specificWb = null) {
             if (!oTx) return null;
 
             const tx = (oTx.grossWeight !== undefined && oTx.hasNetCalculation !== undefined) ? oTx : this._enrichRecord(oTx);
@@ -886,10 +886,7 @@ sap.ui.define([
 
             if (!parentTx && gateIn) {
                 try {
-                    const headers = {
-                        "Authorization": models.getAuthHeaderValue(),
-                        "Content-Type": "application/json"
-                    };
+                    const headers = models.getAuthHeaders();
                     const sFilter = encodeURIComponent(`gateInNumber eq '${gateIn}'`);
                     const res = await fetch(`${ODATA_BASE}/GateTransactions?$filter=${sFilter}&$expand=weighments,transporter,supplier,driver`, { headers });
                     if (res.ok) {
@@ -1496,10 +1493,7 @@ sap.ui.define([
             // If weighments array is missing or empty, fetch fresh transaction data from backend
             if (!oTx.weighments || oTx.weighments.length === 0) {
                 try {
-                    const headers = {
-                        "Authorization": models.getAuthHeaderValue(),
-                        "Content-Type": "application/json"
-                    };
+                    const headers = models.getAuthHeaders();
                     const sFilter = encodeURIComponent(`gateInNumber eq '${oTx.gateInNumber}'`);
                     const res = await fetch(`${ODATA_BASE}/GateTransactions?$filter=${sFilter}&$expand=weighments,transporter,supplier,driver`, { headers });
                     if (res.ok) {

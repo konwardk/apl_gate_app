@@ -84,14 +84,11 @@ sap.ui.define([
                 sGateInNo = txOrId.gateInNumber;
             }
 
-            const oPage = this.byId("editSecGateEntryPageControl");
+            const oPage = this.byId("idEditSecGateEntryPage") || this.byId("editSecGateEntryPageControl");
             if (oPage) oPage.setBusy(true);
 
             try {
-                const headers = {
-                    "Authorization": models.getAuthHeaderValue(),
-                    "Content-Type": "application/json"
-                };
+                const headers = models.getAuthHeaders();
 
                 let oTx = null;
                 if (sId) {
@@ -378,14 +375,11 @@ sap.ui.define([
                 remarks: m.remarks ? m.remarks.trim() : ""
             };
 
-            const oPage = this.byId("editSecGateEntryPageControl");
+            const oPage = this.byId("idEditSecGateEntryPage") || this.byId("editSecGateEntryPageControl");
             if (oPage) oPage.setBusy(true);
 
             try {
-                const headers = {
-                    "Authorization": models.getAuthHeaderValue(),
-                    "Content-Type": "application/json"
-                };
+                const headers = models.getAuthHeaders();
 
                 let res = null;
                 if (m.ID) {
@@ -409,7 +403,7 @@ sap.ui.define([
                     try {
                         const errData = await res.json();
                         sErr = errData.error?.message || sErr;
-                    } catch (e) {}
+                    } catch (e) { }
                     throw new Error(sErr);
                 }
 

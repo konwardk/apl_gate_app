@@ -2,7 +2,6 @@
     controllerName="factory.gate.controller.App"
     xmlns:mvc="sap.ui.core.mvc"
     xmlns="sap.m"
-    xmlns:f="sap.f"
     xmlns:tnt="sap.tnt"
     xmlns:core="sap.ui.core"
     displayBlock="true"
@@ -82,8 +81,8 @@
                 press=".onToggleTheme" /> -->
 
             <!-- User Profile Avatar & Sign Out -->
-            <f:Avatar
-                id="shellAvatar"
+            <Avatar
+                id="idShellAvatar"
                 initials="{/userInitials}"
                 backgroundColor="{/userAvatarColor}"
                 displaySize="XS"
@@ -111,7 +110,7 @@
 
         <!-- Navigation Container: pages registered here -->
         <NavContainer
-            id="navContainer"
+            id="idAppNavContainer"
             autoFocus="false"
             class="app-nav-container">
             <layoutData>

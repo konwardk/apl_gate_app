@@ -2,7 +2,7 @@
     xmlns="sap.m"
     xmlns:core="sap.ui.core">
     <Dialog
-        id="poValueHelpDialog"
+        id="idPoValueHelpDialog"
         title="Select Purchase Order (SAP S/4HANA Cloud)"
         icon="sap-icon://sales-order"
         contentWidth="960px"

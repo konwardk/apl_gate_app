@@ -83,7 +83,7 @@ sap.ui.define([
             this.getView().setModel(oSecModel, "secModel");
 
             // Only load data if user is authenticated (prevents 401 toast on startup)
-            if (models.getAuthHeaderValue()) {
+            if (models.isSessionActive()) {
                 this.loadSecurityData();
             }
         },
@@ -142,8 +142,7 @@ sap.ui.define([
         },
 
         loadSecurityData: async function () {
-            const authHeader = models.getAuthHeaderValue();
-            if (!authHeader) {
+            if (!models.isSessionActive()) {
                 // Not authenticated yet; skip loading to prevent 401 error toast on startup
                 return;
             }
@@ -152,10 +151,7 @@ sap.ui.define([
             const oTable = this.byId("secTxTable");
             if (oTable) oTable.setBusy(true);
 
-            const headers = {
-                "Authorization": authHeader,
-                "Content-Type": "application/json"
-            };
+            const headers = models.getAuthHeaders();
 
             try {
                 // Fetch all GateTransactions expanding unified securityEntry, factoryEntry, driver, and weighments
@@ -194,7 +190,7 @@ sap.ui.define([
                 this._applyFilters();
             } catch (err) {
                 console.error("Error loading security operations data:", err);
-                if (models.getAuthHeaderValue()) {
+                if (models.isSessionActive()) {
                     MessageToast.show("Failed to load security records: " + err.message);
                 }
             } finally {
@@ -366,6 +362,10 @@ sap.ui.define([
             }.bind(this));
         },
 
+        onWaitingVehiclesComboBoxChange: function (oEvt) {
+            return this.onGateInSelectChange(oEvt);
+        },
+
         onGateInSelectChange: function (oEvt) {
             const oSecModel = this.getView().getModel("secModel");
             if (oSecModel && oSecModel.getProperty("/isVehicleSelectable") === false) {
@@ -446,10 +446,7 @@ sap.ui.define([
 
             if (!matched) {
                 try {
-                    const headers = {
-                        "Authorization": models.getAuthHeaderValue(),
-                        "Content-Type": "application/json"
-                    };
+                    const headers = models.getAuthHeaders();
                     const res = await fetch(`${ODATA_BASE}/GateTransactions?$filter=gateInNumber eq '${gateInNumber}'`, { headers });
                     if (res.ok) {
                         const d = await res.json();
@@ -603,10 +600,7 @@ sap.ui.define([
                 remarks: m.remarks ? m.remarks.trim() : ""
             };
 
-            const headers = {
-                "Authorization": models.getAuthHeaderValue(),
-                "Content-Type": "application/json"
-            };
+                const headers = models.getAuthHeaders();
 
             try {
                 const response = await fetch(`${ODATA_BASE}/SecurityGateIn`, {
@@ -666,21 +660,13 @@ sap.ui.define([
                 return this._aAllSuppliers;
             }
 
-            let authHeader = models.getAuthHeaderValue();
-            if (!authHeader) {
-                const active = models.getActiveUser() || "security_user";
-                const pass = models.defaultPasswords[active] || "password";
-                authHeader = "Basic " + btoa(active + ":" + pass);
-            }
+            const sHeaders = models.getAuthHeaders();
 
             let aSuppliers = [];
             // 1. Try CAP Backend endpoint /gate/S4Suppliers
             try {
                 const res = await fetch(`${ODATA_BASE}/S4Suppliers`, {
-                    headers: {
-                        "Authorization": authHeader,
-                        "Content-Type": "application/json"
-                    }
+                    headers: sHeaders
                 });
                 if (res.ok) {
                     const data = await res.json();
@@ -787,19 +773,11 @@ sap.ui.define([
 
             try {
                 // Concurrently fetch POs and S/4HANA Suppliers (YY1_Supplier)
-                let authHeader = models.getAuthHeaderValue();
-                if (!authHeader) {
-                    const active = models.getActiveUser() || "security_user";
-                    const pass = models.defaultPasswords[active] || "password";
-                    authHeader = "Basic " + btoa(active + ":" + pass);
-                }
+                const poHeaders = models.getAuthHeaders();
 
                 const [poRes, aSuppliers] = await Promise.all([
                     fetch(`${ODATA_BASE}/PurchaseOrders?$top=300&$orderby=PurchaseOrderDate desc`, {
-                        headers: {
-                            "Authorization": authHeader,
-                            "Content-Type": "application/json"
-                        }
+                        headers: poHeaders
                     }),
                     this.fetchS4Suppliers()
                 ]);
@@ -1254,6 +1232,10 @@ sap.ui.define([
             }.bind(this));
         },
 
+        onWaitingOutVehiclesComboBoxChange: function (oEvt) {
+            return this.onGateOutSelectChange(oEvt);
+        },
+
         onGateOutSelectChange: function (oEvt) {
             const oSecModel = this.getView().getModel("secModel");
             if (oSecModel && oSecModel.getProperty("/isOutVehicleSelectable") === false) {
@@ -1295,10 +1277,7 @@ sap.ui.define([
 
             if (!matched) {
                 try {
-                    const headers = {
-                        "Authorization": models.getAuthHeaderValue(),
-                        "Content-Type": "application/json"
-                    };
+                    const headers = models.getAuthHeaders();
                     const res = await fetch(`${ODATA_BASE}/GateTransactions?$filter=gateInNumber eq '${gateInNumber}'&$expand=driver`, { headers });
                     if (res.ok) {
                         const d = await res.json();
@@ -1316,10 +1295,7 @@ sap.ui.define([
 
                 // Fetch single consolidated Security record and weighments for prior clearance verification
                 try {
-                    const headers = {
-                        "Authorization": models.getAuthHeaderValue(),
-                        "Content-Type": "application/json"
-                    };
+                    const headers = models.getAuthHeaders();
 
                     const [resSec, resWb, resFac] = await Promise.all([
                         fetch(`${ODATA_BASE}/SecurityGateEntries?$filter=gateTransaction_ID eq '${matched.ID}'`, { headers }),
@@ -1426,10 +1402,7 @@ sap.ui.define([
                 remarks: m.outRemarks ? m.outRemarks.trim() : ""
             };
 
-            const headers = {
-                "Authorization": models.getAuthHeaderValue(),
-                "Content-Type": "application/json"
-            };
+                const headers = models.getAuthHeaders();
 
             try {
                 const response = await fetch(`${ODATA_BASE}/SecurityGateOut`, {
@@ -1504,10 +1477,7 @@ sap.ui.define([
                         if (oTable) oTable.setBusy(true);
 
                         try {
-                            const headers = {
-                                "Authorization": models.getAuthHeaderValue(),
-                                "Content-Type": "application/json"
-                            };
+                            const headers = models.getAuthHeaders();
                             const res = await fetch(`${ODATA_BASE}/AssignRoute`, {
                                 method: "POST",
                                 headers: headers,
@@ -1554,10 +1524,7 @@ sap.ui.define([
                         if (oTable) oTable.setBusy(true);
 
                         try {
-                            const headers = {
-                                "Authorization": models.getAuthHeaderValue(),
-                                "Content-Type": "application/json"
-                            };
+                            const headers = models.getAuthHeaders();
                             const res = await fetch(`${ODATA_BASE}/AssignRoute`, {
                                 method: "POST",
                                 headers: headers,
@@ -1604,10 +1571,7 @@ sap.ui.define([
                         if (oTable) oTable.setBusy(true);
 
                         try {
-                            const headers = {
-                                "Authorization": models.getAuthHeaderValue(),
-                                "Content-Type": "application/json"
-                            };
+                            const headers = models.getAuthHeaders();
                             const res = await fetch(`${ODATA_BASE}/FactoryGateOut`, {
                                 method: "POST",
                                 headers: headers,

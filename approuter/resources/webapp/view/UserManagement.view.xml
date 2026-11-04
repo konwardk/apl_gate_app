@@ -2,10 +2,9 @@
     controllerName="factory.gate.controller.UserManagement"
     xmlns:mvc="sap.ui.core.mvc"
     xmlns="sap.m"
-    xmlns:f="sap.f"
     xmlns:core="sap.ui.core">
     <Page
-        id="userManagementPage"
+        id="idUserManagementPage"
         title="Superadmin - User Management &amp; Role Control"
         showNavButton="true"
         navButtonPress=".onNavBack"
@@ -16,11 +15,11 @@
                 icon="sap-icon://add-employee"
                 type="Emphasized"
                 tooltip="Register a new system user with multiple operational roles"
-                press=".onCreateUserPress" />
+                press=".onCreateNewUserButtonPress" />
             <Button
                 icon="sap-icon://refresh"
                 tooltip="Refresh User Directory"
-                press=".onRefreshPress" />
+                press=".onButtonPress" />
         </headerContent>
         <VBox class="sapUiResponsiveMargin">
             <!-- Context Banner -->
@@ -115,7 +114,7 @@
 
             <!-- Users Table -->
             <Table
-                id="usersTable"
+                id="idDisplayedUsersTable"
                 items="{
                     path: 'userModel>/displayedUsers',
                     templateShareable: false
@@ -198,7 +197,7 @@
                         <cells>
                             <!-- User: Avatar + Name + Username + Employee ID -->
                             <HBox alignItems="Center">
-                                <f:Avatar
+                                <Avatar
                                     initials="{path: 'userModel>username', formatter: '.formatter.getUserInitials'}"
                                     backgroundColor="{path: 'userModel>username', formatter: '.formatter.getUserAvatarColor'}"
                                     displaySize="XS"

@@ -4646,23 +4646,40 @@ export default cds.service.impl(async function () {
         roles = expandRoles(roles);
 
         const primaryRole = roles[0] || (s4User?.roleCode || '');
+        const btpFullName = (req.user?.attr?.givenName || req.user?.attr?.familyName)
+            ? `${req.user?.attr?.givenName || ''} ${req.user?.attr?.familyName || ''}`.trim()
+            : (req.user?.attr?.email || req.user?.id || 'User');
+
         const fallbackName = username === 'superadmin_user' ? 'System Superadmin' :
             (username === 'maingate_user' ? 'Mahesh Verma' :
             (username === 'security_user' ? 'Vikram Rathore' :
             (username === 'weighbridge_user' ? 'Suresh Patil' :
             (username === 'factory_user' ? 'Sunil Nair' :
             (username === 'admin_user' ? 'Amit Roy' :
-            (username === 'auditor_user' ? 'Pooja Hegde' : (req.user?.id || 'User')))))));
+            (username === 'auditor_user' ? 'Pooja Hegde' : btpFullName))))));
 
-        if (!req.user?.id || req.user.id === 'anonymous' || roles.length === 0) {
+        if (!req.user?.id || req.user.id === 'anonymous') {
             return req.reject(401, 'User credentials not matched or not found.');
         }
 
         const resolvedName = s4User?.name || userDb?.name || fallbackName;
-        const resolvedEmpId = s4User?.employeeId || s4User?.UserId || userDb?.employeeId || '';
-        const resolvedDesignation = s4User?.designation || s4User?.roleName || userDb?.designation || ROLE_NAMES[primaryRole] || '';
-        const resolvedDepartment = s4User?.department || userDb?.department || '';
+        const resolvedEmpId = s4User?.employeeId || s4User?.UserId || userDb?.employeeId || (req.user?.attr?.email || '');
+        const resolvedDesignation = s4User?.designation || s4User?.roleName || userDb?.designation || ROLE_NAMES[primaryRole] || (roles.length > 0 ? primaryRole : 'Authorized User');
+        const resolvedDepartment = s4User?.department || userDb?.department || 'Operations';
         const resolvedStatus = s4User?.status || userDb?.status || 'ACTIVE';
+
+        if (roles.length === 0) {
+            return {
+                id: req.user.id,
+                roles: [],
+                name: resolvedName,
+                employeeId: resolvedEmpId,
+                designation: 'No Gate Role Assigned',
+                department: resolvedDepartment,
+                status: 'NO_ROLES',
+                message: 'No gate role collections assigned in SAP BTP Cockpit. Please contact your administrator.'
+            };
+        }
 
         return {
             id: req.user.id,

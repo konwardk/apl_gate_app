@@ -1,0 +1,11 @@
+{
+    "sap.ux.service.rules": {
+        "pattern-control-id": "off",
+        "pattern-event-handler-name": "off"
+    },
+    "ui5.plugin.xml.rules": {
+        "pattern-control-id": "off",
+        "pattern-event-handler-name": "off"
+    }
+}
+

@@ -56,21 +56,17 @@ sap.ui.define([
             this.getView().setModel(this._oMasterModel, "masterModel");
 
             this._originalData = null;
-            if (models.getAuthHeaderValue()) {
+            if (models.isSessionActive()) {
                 this.loadMasterData();
             }
         },
 
         loadMasterData: async function () {
-            const authHeader = models.getAuthHeaderValue();
-            if (!authHeader) {
+            if (!models.isSessionActive()) {
                 return;
             }
 
-            const headers = {
-                "Authorization": authHeader,
-                "Content-Type": "application/json"
-            };
+            const headers = models.getAuthHeaders();
 
             try {
                 const [resTrans, resSupp, resDrivers] = await Promise.all([
@@ -111,7 +107,7 @@ sap.ui.define([
                 return;
             }
 
-            const oPage = this.byId("editGateEntryPageControl");
+            const oPage = this.byId("idEditGateEntryPage") || this.byId("editGateEntryPageControl");
             if (oPage) {
                 oPage.setBusy(true);
             }
@@ -128,10 +124,7 @@ sap.ui.define([
             }
 
             try {
-                const headers = {
-                    "Authorization": models.getAuthHeaderValue(),
-                    "Content-Type": "application/json"
-                };
+                const headers = models.getAuthHeaders();
 
                 const url = `${ODATA_BASE}/GateTransactions(${sId})?$expand=vehicle,driver,transporter,supplier,securityEntry,deliveryDetails,pickupDetails,weighments,auditLogs`;
                 const res = await fetch(url, { headers });
@@ -334,14 +327,11 @@ sap.ui.define([
                 }
             }
 
-            const oPage = this.byId("editGateEntryPageControl");
+            const oPage = this.byId("idEditGateEntryPage") || this.byId("editGateEntryPageControl");
             if (oPage) oPage.setBusy(true);
 
             try {
-                const headers = {
-                    "Authorization": models.getAuthHeaderValue(),
-                    "Content-Type": "application/json"
-                };
+                const headers = models.getAuthHeaders();
 
                 const res = await fetch(`${ODATA_BASE}/GateTransactions(${oData.ID})`, {
                     method: "PATCH",

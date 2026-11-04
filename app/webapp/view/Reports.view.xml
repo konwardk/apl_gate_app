@@ -2,10 +2,9 @@
     controllerName="factory.gate.controller.Reports"
     xmlns:mvc="sap.ui.core.mvc"
     xmlns="sap.m"
-    xmlns:f="sap.f"
     xmlns:core="sap.ui.core">
     <Page
-        id="reportsPageView"
+        id="idReportsPage"
         title="Operational Gate Reports &amp; Analytics"
         showNavButton="true"
         navButtonPress=".onNavBack"

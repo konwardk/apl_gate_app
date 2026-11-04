@@ -6,7 +6,7 @@
     xmlns:core="sap.ui.core"
     xmlns:layout="sap.ui.layout"
     xmlns:data="http://schemas.sap.com/sapui5/extension/sap.ui.core.CustomData/1">
-    <Page id="editSecGateEntryPageControl" showHeader="false" enableScrolling="true" showFooter="true">
+    <Page id="idEditSecGateEntryPage" showHeader="false" enableScrolling="true" showFooter="true">
         <!-- Subtoolbar -->
         <OverflowToolbar class="fe-subtoolbar">
             <Button

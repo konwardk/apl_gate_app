@@ -67,7 +67,7 @@ sap.ui.define([
             this.getView().setModel(this._oFacModel, "facModel");
 
             // Only load data if user is authenticated (prevents 401 error toast on startup)
-            if (models.getAuthHeaderValue()) {
+            if (models.isSessionActive()) {
                 this.loadFactoryData();
             }
         },
@@ -145,16 +145,12 @@ sap.ui.define([
         },
 
         loadFactoryData: async function () {
-            const authHeader = models.getAuthHeaderValue();
-            if (!authHeader) {
+            if (!models.isSessionActive()) {
                 // Not authenticated yet; skip loading to prevent 401 error toast on startup
                 return;
             }
 
-            const headers = {
-                "Authorization": authHeader,
-                "Content-Type": "application/json"
-            };
+            const headers = models.getAuthHeaders();
 
             try {
                 // Fetch all transactions without restricting to DELIVERY so any factory deliveries/pickups are loaded
@@ -207,7 +203,7 @@ sap.ui.define([
                 }
             } catch (err) {
                 console.error("Error loading factory data:", err);
-                if (models.getAuthHeaderValue()) {
+                if (models.isSessionActive()) {
                     MessageToast.show("Failed to load Factory Gate data");
                 }
             }
@@ -304,6 +300,14 @@ sap.ui.define([
             this._selectVehicleByGateInNumber(sKey);
         },
 
+        onEligibleVehiclesComboBoxChange: function (oEvt) {
+            return this.onGateInSelectChange(oEvt);
+        },
+
+        onInsideYardVehiclesComboBoxChange: function (oEvt) {
+            return this.onGateInSelectChange(oEvt);
+        },
+
         onSearchGateInBtnPress: function () {
             const oCombo = this.byId("facGateInComboBox");
             const sVal = (oCombo ? (oCombo.getSelectedKey() || oCombo.getValue()) : "").trim();
@@ -354,10 +358,7 @@ sap.ui.define([
             // If not found in loaded memory, direct server lookup
             if (!match) {
                 try {
-                    const headers = {
-                        "Authorization": models.getAuthHeaderValue(),
-                        "Content-Type": "application/json"
-                    };
+                    const headers = models.getAuthHeaders();
                     const sEnc = encodeURIComponent(sGateInNo.trim());
                     const sEncLow = encodeURIComponent(q);
                     const url = `${ODATA_BASE}/GateTransactions?$filter=gateInNumber eq '${sEnc}' or tolower(gateInNumber) eq '${sEncLow}' or tolower(vehicleRegNo) eq '${sEncLow}'&$expand=securityEntry,factoryEntry,weighments,transporter,supplier,driver,deliveryDetails`;
@@ -427,10 +428,7 @@ sap.ui.define([
                 return;
             }
             try {
-                const headers = {
-                    "Authorization": models.getAuthHeaderValue(),
-                    "Content-Type": "application/json"
-                };
+                const headers = models.getAuthHeaders();
                 const sClean = sPoNumber.replace(/^PO-/i, "").trim();
                 const sEnc1 = encodeURIComponent(sPoNumber.trim());
                 const sEnc2 = encodeURIComponent(sClean);
@@ -647,10 +645,7 @@ sap.ui.define([
             if (oForm) oForm.setBusy(true);
 
             try {
-                const headers = {
-                    "Authorization": models.getAuthHeaderValue(),
-                    "Content-Type": "application/json"
-                };
+                const headers = models.getAuthHeaders();
 
                 const res = await fetch(`${ODATA_BASE}/FactoryGateIn`, {
                     method: "POST",
@@ -737,10 +732,7 @@ sap.ui.define([
             if (oForm) oForm.setBusy(true);
 
             try {
-                const headers = {
-                    "Authorization": models.getAuthHeaderValue(),
-                    "Content-Type": "application/json"
-                };
+                const headers = models.getAuthHeaders();
 
                 const res = await fetch(`${ODATA_BASE}/FactoryGateOut`, {
                     method: "POST",
@@ -840,10 +832,7 @@ sap.ui.define([
             if (oForm) oForm.setBusy(true);
 
             try {
-                const headers = {
-                    "Authorization": models.getAuthHeaderValue(),
-                    "Content-Type": "application/json"
-                };
+                const headers = models.getAuthHeaders();
 
                 const res = await fetch(`${ODATA_BASE}/RecordFactoryOperation`, {
                     method: "POST",
@@ -1009,7 +998,11 @@ sap.ui.define([
         // ============================================================
         // Factory Gate IN Dialog Management
         // ============================================================
-        onOpenFactoryGateInDialog: async function (oEvt) {
+        /**
+         * Opens the Factory Gate IN dialog.
+         * @param {sap.ui.base.Event} [oEvt] - Optional UI event if triggered from table row action.
+         */
+        onOpenFactoryGateInDialog: async function (oEvt = null) {
             let oTx = null;
             if (oEvt && oEvt.getSource) {
                 const oCtx = oEvt.getSource().getBindingContext("facModel");
@@ -1071,7 +1064,11 @@ sap.ui.define([
         // ============================================================
         // Factory Gate OUT Dialog Management
         // ============================================================
-        onOpenFactoryGateOutDialog: async function (oEvt) {
+        /**
+         * Opens the Factory Gate OUT dialog.
+         * @param {sap.ui.base.Event} [oEvt] - Optional UI event if triggered from table row action.
+         */
+        onOpenFactoryGateOutDialog: async function (oEvt = null) {
             let oTx = null;
             if (oEvt && oEvt.getSource) {
                 const oCtx = oEvt.getSource().getBindingContext("facModel");

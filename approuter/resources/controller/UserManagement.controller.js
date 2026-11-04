@@ -90,7 +90,7 @@ sap.ui.define([
             this.getView().setModel(oUserModel, "userModel");
 
             // Only load user management data if user is already authenticated
-            if (models.getAuthHeaderValue()) {
+            if (models.isSessionActive()) {
                 this.loadUsersData();
             }
         },
@@ -103,14 +103,15 @@ sap.ui.define([
             try {
                 await fetch(`${ODATA_BASE}/SyncUsersFromS4Hana`, {
                     method: "POST",
-                    headers: {
-                        "Authorization": models.getAuthHeaderValue(),
-                        "Content-Type": "application/json"
-                    }
+                    headers: models.getAuthHeaders()
                 });
-            } catch (_) {}
+            } catch (_) { }
             this.loadUsersData();
             MessageToast.show("User registry synchronized with SAP S/4HANA Cloud");
+        },
+
+        onButtonPress: async function () {
+            return this.onRefreshPress();
         },
 
         loadUsersData: async function () {
@@ -118,8 +119,7 @@ sap.ui.define([
             const oModel = oView.getModel("userModel");
             if (!oModel) return;
 
-            const sAuthHeader = models.getAuthHeaderValue();
-            if (!sAuthHeader) {
+            if (!models.isSessionActive()) {
                 // Not authenticated yet; skip fetching to avoid HTTP 401 error on app startup
                 return;
             }
@@ -127,10 +127,7 @@ sap.ui.define([
             try {
                 oView.setBusy(true);
                 const res = await fetch(`${ODATA_BASE}/Users?$expand=userRoles&$orderby=createdAt desc`, {
-                    headers: {
-                        "Authorization": sAuthHeader,
-                        "Content-Type": "application/json"
-                    }
+                    headers: models.getAuthHeaders()
                 });
 
                 if (!res.ok) {
@@ -319,6 +316,10 @@ sap.ui.define([
                 });
             }
             return this._pUserDialog;
+        },
+
+        onCreateNewUserButtonPress: function () {
+            this.onCreateUserPress();
         },
 
         onCreateUserPress: function () {
@@ -544,10 +545,7 @@ sap.ui.define([
 
                 const res = await fetch(endpoint, {
                     method: "POST",
-                    headers: {
-                        "Authorization": models.getAuthHeaderValue(),
-                        "Content-Type": "application/json"
-                    },
+                    headers: models.getAuthHeaders(),
                     body: JSON.stringify(bodyData)
                 });
 
@@ -592,10 +590,7 @@ sap.ui.define([
                     try {
                         const res = await fetch(`${ODATA_BASE}/ToggleUserStatus`, {
                             method: "POST",
-                            headers: {
-                                "Authorization": models.getAuthHeaderValue(),
-                                "Content-Type": "application/json"
-                            },
+                            headers: models.getAuthHeaders(),
                             body: JSON.stringify({
                                 ID: u.ID,
                                 UserId: u.UserId || u.employeeId || u.username
@@ -636,10 +631,7 @@ sap.ui.define([
                     try {
                         const res = await fetch(`${ODATA_BASE}/DeleteUser`, {
                             method: "POST",
-                            headers: {
-                                "Authorization": models.getAuthHeaderValue(),
-                                "Content-Type": "application/json"
-                            },
+                            headers: models.getAuthHeaders(),
                             body: JSON.stringify({
                                 ID: u.ID,
                                 UserId: u.UserId || u.employeeId || u.username

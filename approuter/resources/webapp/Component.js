@@ -36,11 +36,74 @@ sap.ui.define([
             const oModel = models.createAppModel();
             this.setModel(oModel);
 
-            // If session is restored, validate session and load overview data
-            if (oModel.getProperty("/isAuthenticated")) {
-                this.loadOverviewData();
-                this.validateCurrentSession();
+            // Check if user is authenticated via BTP XSUAA or saved local session
+            this.initSession();
+        },
+
+        initSession: async function () {
+            const oModel = this.getModel();
+            const authHeader = models.getAuthHeaderValue();
+
+            // First attempt: check if current request has an active BTP XSUAA session
+            // (cookies sent automatically by browser to Approuter, which attaches JWT)
+            try {
+                const headers = models.getAuthHeaders();
+                const res = await fetch(`${ODATA_BASE}/userInfo()`, { headers });
+                if (res.ok) {
+                    const info = await res.json();
+                    if (info && info.id && info.id !== "anonymous") {
+                        if (authHeader) {
+                            models.setSession(info, authHeader);
+                        } else {
+                            models.setXsuaaSession(info);
+                        }
+                        const perms = models.getPermissionsForUser(info.roles || [], info.id);
+                        oModel.setProperty("/isAuthenticated", true);
+                        oModel.setProperty("/activeUser", info.id);
+                        oModel.setProperty("/userName", info.name || info.id);
+                        oModel.setProperty("/userEmployeeId", info.employeeId || "");
+                        oModel.setProperty("/userDesignation", info.designation || perms.primaryRoleTitle);
+                        oModel.setProperty("/userDepartment", info.department || "");
+                        oModel.setProperty("/userRoles", info.roles || []);
+                        oModel.setProperty("/userRolesText", (info.roles || []).map(r => models.ROLE_TITLES[r] || r).join(", "));
+                        oModel.setProperty("/userPrimaryRoleTitle", perms.primaryRoleTitle);
+                        oModel.setProperty("/assignedScreen", perms.assignedScreen);
+                        oModel.setProperty("/assignedScreenTitle", perms.assignedScreenTitle);
+                        oModel.setProperty("/assignedScreenIcon", perms.assignedScreenIcon);
+                        oModel.setProperty("/assignedTab", perms.assignedTab);
+                        oModel.setProperty("/selectedDashboardTab", perms.assignedTab || "OVERVIEW");
+                        oModel.setProperty("/canViewReports", perms.canViewReports);
+                        oModel.setProperty("/canCreateGateIn", perms.canCreateGateIn);
+                        oModel.setProperty("/canMainGateOut", perms.canMainGateOut);
+                        oModel.setProperty("/canViewLiveOps", perms.canViewLiveOps);
+                        oModel.setProperty("/canViewGateOps", perms.canViewGateOps);
+                        oModel.setProperty("/canViewMainGateOps", perms.canViewMainGateOps);
+                        oModel.setProperty("/canViewSecurityGateOps", perms.canViewSecurityGateOps);
+                        oModel.setProperty("/canViewWeighbridgeOps", perms.canViewWeighbridgeOps);
+                        oModel.setProperty("/canViewFactoryGateOps", perms.canViewFactoryGateOps);
+                        oModel.setProperty("/canViewMasterData", perms.canViewMasterData);
+                        oModel.setProperty("/canViewAuditTrail", perms.canViewAuditTrail);
+                        oModel.setProperty("/canManageUsers", perms.canManageUsers);
+
+                        await this.loadOverviewData();
+
+                        if (this._oNavContainer) {
+                            this.navigateTo("landingPage", "show");
+                        }
+                        return true;
+                    }
+                }
+            } catch (e) {
+                console.warn("[Component] BTP XSUAA session check:", e.message || e);
             }
+
+            // Fallback for saved local session
+            if (oModel.getProperty("/isAuthenticated")) {
+                await this.loadOverviewData();
+                this.validateCurrentSession();
+                return true;
+            }
+            return false;
         },
 
         setNavContainer: function (oNavContainer) {
@@ -188,18 +251,15 @@ sap.ui.define([
         // Session Validation & Overview Data Loading
         // ============================================================
         validateCurrentSession: async function () {
-            const authHeader = models.getAuthHeaderValue();
-            if (!authHeader) {
+            if (!models.isSessionActive()) {
                 this.handleSignOut();
                 return;
             }
 
             try {
+                const headers = models.getAuthHeaders();
                 const res = await fetch(`${ODATA_BASE}/userInfo()`, {
-                    headers: {
-                        "Authorization": authHeader,
-                        "Content-Type": "application/json"
-                    }
+                    headers: headers
                 });
 
                 if (!res.ok) {
@@ -214,7 +274,11 @@ sap.ui.define([
                 }
 
                 // Update session info
-                models.setSession(info, authHeader);
+                if (models.isXsuaaAuth()) {
+                    models.setXsuaaSession(info);
+                } else {
+                    models.setSession(info, models.getAuthHeaderValue());
+                }
                 const perms = models.getPermissionsForUser(info.roles || [], info.id);
                 const oModel = this.getModel();
                 oModel.setProperty("/userName", info.name || info.id);
@@ -239,14 +303,10 @@ sap.ui.define([
 
         loadOverviewData: async function () {
             const oModel = this.getModel();
-            const authHeader = models.getAuthHeaderValue();
-            if (!authHeader) return;
+            if (!models.isSessionActive() && !oModel.getProperty("/isAuthenticated")) return;
 
             try {
-                const headers = {
-                    "Authorization": authHeader,
-                    "Content-Type": "application/json"
-                };
+                const headers = models.getAuthHeaders();
 
                 // 1. Fetch User Info & RBAC Roles
                 let currentRoles = [];
@@ -550,6 +610,7 @@ sap.ui.define([
         },
 
         handleSignOut: function () {
+            const wasXsuaa = models.isXsuaaAuth();
             const oModel = this.getModel();
             models.clearSession();
 
@@ -611,6 +672,12 @@ sap.ui.define([
                 AUDIT: 0,
                 USERS: 0
             });
+
+            if (wasXsuaa) {
+                // In BTP Cloud Foundry with Approuter, redirecting to /logout clears the session cookie
+                window.location.replace("/logout");
+                return;
+            }
 
             // Navigate to login page
             this.navigateTo("loginPage", "slide");

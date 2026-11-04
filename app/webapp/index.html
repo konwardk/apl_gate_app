@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,37 +28,44 @@
         }
 
         function getAuthHeaderValue(user) {
+            // In XSUAA mode (BTP Cloud Foundry), authentication is cookie-based via Approuter.
+            // Do NOT inject Basic Auth headers when running with XSUAA SSO.
+            if (sessionStorage.getItem('gate_auth_mode') === 'xsuaa') {
+                return '';
+            }
             const savedHeader = sessionStorage.getItem('gate_auth_header') || localStorage.getItem('gate_auth_header');
             if (savedHeader) return savedHeader;
+            // Only inject default passwords for known local mock development users
             const u = user || getActiveUser();
-            if (!u) return '';
-            const p = userPasswords[u] || 'password';
-            return 'Basic ' + btoa(u + ':' + p);
+            if (u && userPasswords[u]) {
+                return 'Basic ' + btoa(u + ':' + userPasswords[u]);
+            }
+            return '';
         }
 
         // Intercept XMLHttpRequest to auto-inject credentials for GateService and Fiori Preview
-        (function() {
+        (function () {
             const origOpen = XMLHttpRequest.prototype.open;
-            XMLHttpRequest.prototype.open = function(method, url) {
+            XMLHttpRequest.prototype.open = function (method, url) {
                 this._url = url;
                 return origOpen.apply(this, arguments);
             };
 
             const origSend = XMLHttpRequest.prototype.send;
-            XMLHttpRequest.prototype.send = function(data) {
+            XMLHttpRequest.prototype.send = function (data) {
                 if (this._url && (this._url.startsWith('/gate') || this._url.includes('$fiori-preview') || this._url.includes('GateService'))) {
                     const header = getAuthHeaderValue();
                     if (header) {
                         try {
                             this.setRequestHeader('Authorization', header);
-                        } catch (e) {}
+                        } catch (e) { }
                     }
                 }
                 return origSend.apply(this, arguments);
             };
 
             const origFetch = window.fetch;
-            window.fetch = function(input, init) {
+            window.fetch = function (input, init) {
                 let url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
                 if (url && (url.startsWith('/gate') || url.includes('$fiori-preview') || url.includes('GateService'))) {
                     const header = getAuthHeaderValue();
@@ -73,22 +81,17 @@
             };
         })();
     </script>
- 
+
     <!-- PDF Generation Libraries (jsPDF & AutoTable) -->
     <script src="lib/jspdf.umd.min.js"></script>
     <script src="lib/jspdf.plugin.autotable.min.js"></script>
 
     <!-- SAPUI5 Horizon Theme Bootstrap from Official CDN -->
-    <script id="sap-ui-bootstrap"
-        src="https://ui5.sap.com/resources/sap-ui-core.js"
-        data-sap-ui-theme="sap_horizon"
+    <script id="sap-ui-bootstrap" src="https://ui5.sap.com/resources/sap-ui-core.js" data-sap-ui-theme="sap_horizon"
         data-sap-ui-libs="sap.m, sap.f, sap.ui.layout, sap.ui.core, sap.tnt, sap.ui.unified"
-        data-sap-ui-compatVersion="edge"
-        data-sap-ui-async="true"
-        data-sap-ui-bindingSyntax="complex"
-        data-sap-ui-resourceroots='{ "factory.gate": "./" }'
-        data-sap-ui-onInit="onInitBoot">
-    </script>
+        data-sap-ui-compatVersion="edge" data-sap-ui-async="true" data-sap-ui-bindingSyntax="complex"
+        data-sap-ui-resourceroots='{ "factory.gate": "./" }' data-sap-ui-onInit="onInitBoot">
+        </script>
 
     <link rel="stylesheet" type="text/css" href="css/style.css">
 
@@ -119,6 +122,8 @@
         }
     </script>
 </head>
+
 <body class="sapUiBody" id="content">
 </body>
+
 </html>

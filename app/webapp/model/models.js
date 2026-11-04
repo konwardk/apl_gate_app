@@ -110,7 +110,12 @@ sap.ui.define([
             } catch (e) {}
         },
 
-        getPasswordForUser: function (username) {
+        /**
+         * Returns stored or default password for mock authentication.
+         * @param {string} [username] - Optional username.
+         * @returns {string} Password string.
+         */
+        getPasswordForUser: function (username = "") {
             if (!username) return "password";
             const u = username.toLowerCase();
             try {
@@ -124,7 +129,12 @@ sap.ui.define([
             return sessionStorage.getItem("gate_active_user") || localStorage.getItem("gate_active_user") || "";
         },
 
-        getUserDisplayName: function (username) {
+        /**
+         * Returns display name for a given user ID, or defaults to active user.
+         * @param {string} [username] - Optional username / user ID.
+         * @returns {string} User display name.
+         */
+        getUserDisplayName: function (username = "") {
             const saved = this.getSavedUserInfo();
             if (saved && saved.name && saved.name.trim()) {
                 if (!username || (saved.id && saved.id.toLowerCase() === String(username).toLowerCase())) {
@@ -150,8 +160,33 @@ sap.ui.define([
             return username || u || "System User";
         },
 
+        isXsuaaAuth: function () {
+            return sessionStorage.getItem("gate_auth_mode") === "xsuaa" || localStorage.getItem("gate_auth_mode") === "xsuaa";
+        },
+
+        isSessionActive: function () {
+            return !!(this.getActiveUser() && (this.getAuthHeaderValue() || this.isXsuaaAuth()));
+        },
+
         getAuthHeaderValue: function () {
+            if (this.isXsuaaAuth()) return "";
             return sessionStorage.getItem("gate_auth_header") || localStorage.getItem("gate_auth_header") || "";
+        },
+
+        /**
+         * Returns HTTP headers for backend requests.
+         * In XSUAA mode, uses cookie session without basic auth.
+         * In local dev mode, includes basic authorization header if set.
+         * @param {Object} [extra] - Optional additional headers to merge.
+         * @returns {Object} Request headers object.
+         */
+        getAuthHeaders: function (extra = {}) {
+            const h = Object.assign({ "Content-Type": "application/json" }, extra || {});
+            const auth = this.getAuthHeaderValue();
+            if (auth && auth.trim()) {
+                h["Authorization"] = auth.trim();
+            }
+            return h;
         },
 
         getSavedUserInfo: function () {
@@ -164,11 +199,26 @@ sap.ui.define([
             return null;
         },
 
+        setXsuaaSession: function (userInfo) {
+            if (!userInfo) return;
+            const sUsername = (userInfo.id || "").toLowerCase();
+            sessionStorage.setItem("gate_active_user", sUsername);
+            localStorage.setItem("gate_active_user", sUsername);
+            sessionStorage.setItem("gate_auth_mode", "xsuaa");
+            localStorage.setItem("gate_auth_mode", "xsuaa");
+            sessionStorage.removeItem("gate_auth_header");
+            localStorage.removeItem("gate_auth_header");
+            sessionStorage.setItem("gate_user_info", JSON.stringify(userInfo));
+            localStorage.setItem("gate_user_info", JSON.stringify(userInfo));
+        },
+
         setSession: function (userInfo, authHeader) {
             if (!userInfo) return;
             const sUsername = (userInfo.id || "").toLowerCase();
             sessionStorage.setItem("gate_active_user", sUsername);
             localStorage.setItem("gate_active_user", sUsername);
+            sessionStorage.removeItem("gate_auth_mode");
+            localStorage.removeItem("gate_auth_mode");
 
             if (authHeader) {
                 sessionStorage.setItem("gate_auth_header", authHeader);
@@ -182,9 +232,11 @@ sap.ui.define([
         clearSession: function () {
             sessionStorage.removeItem("gate_active_user");
             sessionStorage.removeItem("gate_auth_header");
+            sessionStorage.removeItem("gate_auth_mode");
             sessionStorage.removeItem("gate_user_info");
             localStorage.removeItem("gate_active_user");
             localStorage.removeItem("gate_auth_header");
+            localStorage.removeItem("gate_auth_mode");
             localStorage.removeItem("gate_user_info");
         },
 
@@ -290,7 +342,7 @@ sap.ui.define([
             const savedInfo = this.getSavedUserInfo();
             const activeUser = savedInfo ? savedInfo.id : this.getActiveUser();
             const savedRoles = savedInfo ? (savedInfo.roles || []) : [];
-            const bAuth = !!(activeUser && this.getAuthHeaderValue());
+            const bAuth = !!(activeUser && (this.getAuthHeaderValue() || this.isXsuaaAuth()));
             const perms = bAuth ? this.getPermissionsForUser(savedRoles, activeUser) : this.getPermissionsForUser([], "");
 
             const oModel = new JSONModel({

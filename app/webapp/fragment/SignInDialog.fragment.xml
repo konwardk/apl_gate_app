@@ -1,10 +1,9 @@
 <core:FragmentDefinition
     xmlns="sap.m"
-    xmlns:layout="sap.ui.layout"
     xmlns:form="sap.ui.layout.form"
     xmlns:core="sap.ui.core">
     <Dialog
-        id="signInDialog"
+        id="idSignInDialog"
         title="Sign In to Factory Gate Operations"
         contentWidth="460px">
         <content>

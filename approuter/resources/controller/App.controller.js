@@ -5,17 +5,26 @@ sap.ui.define([
 
     return Controller.extend("factory.gate.controller.App", {
         onInit: function () {
-            const oNavContainer = this.byId("navContainer");
+            const oNavContainer = this.byId("idAppNavContainer") || this.byId("navContainer");
             this.getOwnerComponent().setNavContainer(oNavContainer);
 
             // Determine opening page based on authentication status
-            const oModel = this.getOwnerComponent().getModel();
+            const oComp = this.getOwnerComponent();
+            const oModel = oComp.getModel();
             const bAuth = oModel ? oModel.getProperty("/isAuthenticated") : false;
 
             if (bAuth) {
-                this.getOwnerComponent().navigateTo("landingPage", "show");
+                oComp.navigateTo("landingPage", "show");
             } else {
-                this.getOwnerComponent().navigateTo("loginPage", "show");
+                oComp.initSession().then(function (bLoggedIn) {
+                    if (bLoggedIn) {
+                        oComp.navigateTo("landingPage", "show");
+                    } else {
+                        oComp.navigateTo("loginPage", "show");
+                    }
+                }).catch(function () {
+                    oComp.navigateTo("loginPage", "show");
+                });
             }
         },
 

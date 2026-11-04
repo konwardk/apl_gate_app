@@ -3,7 +3,7 @@
     xmlns:form="sap.ui.layout.form"
     xmlns:core="sap.ui.core">
     <Dialog
-        id="factoryGateOutDialog"
+        id="idFactoryGateOutDialog"
         title="Factory Gate OUT - Yard Exit Clearance"
         icon="sap-icon://log-out"
         contentWidth="680px"
@@ -14,7 +14,7 @@
         class="sapUiContentPadding">
         <content>
             <form:SimpleForm
-                id="factoryGateOutDialogForm"
+                id="idFactoryGateOutDialogSimpleForm"
                 editable="true"
                 layout="ResponsiveGridLayout"
                 labelSpanXL="4"
@@ -30,16 +30,15 @@
 
                     <Label text="Select Vehicle" required="{= ${facModel>/isOutVehicleSelectable} !== false }" />
                     <ComboBox
-                        id="dialogFacOutGateInComboBox"
+                        id="idInsideYardVehiclesComboBox"
                         width="100%"
                         placeholder="Select vehicle awaiting Factory Gate OUT..."
                         selectedKey="{facModel>/selectedGateInNumber}"
-                        change=".onGateInSelectChange"
+                        change=".onInsideYardVehiclesComboBoxChange"
                         filterSecondaryValues="true"
                         showSecondaryValues="true"
                         editable="{= ${facModel>/isOutVehicleSelectable} !== false }"
                         enabled="{= ${facModel>/isOutVehicleSelectable} !== false }"
-                        noDataText="No vehicles currently inside yard awaiting Factory Gate OUT"
                         items="{
                             path: 'facModel>/insideYardVehicles',
                             templateShareable: false

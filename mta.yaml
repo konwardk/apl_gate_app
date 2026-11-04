@@ -24,6 +24,9 @@ modules:
       instances: 1
       memory: 512M
       disk-quota: 1024M
+    properties:
+      NODE_ENV: production
+      CDS_ENV: production
     build-parameters:
       builder: npm-ci
     provides:

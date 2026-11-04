@@ -1,13 +1,12 @@
 <core:FragmentDefinition
     xmlns="sap.m"
-    xmlns:f="sap.f"
     xmlns:core="sap.ui.core">
     <Popover
         title="User Account &amp; RBAC Profile"
         placement="Bottom"
         contentWidth="360px">
         <VBox alignItems="Center" class="sapUiSmallMargin">
-            <f:Avatar
+            <Avatar
                 initials="{/userInitials}"
                 backgroundColor="{/userAvatarColor}"
                 displaySize="L"

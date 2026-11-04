@@ -1,17 +1,20 @@
 node_modules/
-# target/
 _out/
-# gen/
+gen/
 
-# .env
+.env
 .cdsrc-private.json
 default-*.json
 *.sqlite
 
 # MTA
-#mta_archives/
-# *_mta_build_tmp
-# *.mtar
+mta_archives/
+*_mta_build_tmp
+*.mtar
+
+# Approuter generated resources
+approuter/resources/
+approuter/node_modules/
 
 # Other
 .DS_Store

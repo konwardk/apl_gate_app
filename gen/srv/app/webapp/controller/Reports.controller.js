@@ -70,19 +70,15 @@ sap.ui.define([
         loadReportsData: async function () {
             const oView = this.getView();
             const oModel = oView.getModel("reportModel");
-            const authHeader = models.getAuthHeaderValue();
 
-            if (!authHeader) {
+            if (!models.isSessionActive()) {
                 MessageBox.error("Authentication required. Please sign in.");
                 return;
             }
 
             try {
                 oView.setBusy(true);
-                const headers = {
-                    "Authorization": authHeader,
-                    "Content-Type": "application/json"
-                };
+                const headers = models.getAuthHeaders();
 
                 // Fetch data for all operations in parallel
                 const [resTx, resSec, resWb, resFac] = await Promise.all([

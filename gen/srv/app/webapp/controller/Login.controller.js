@@ -19,24 +19,48 @@ sap.ui.define([
             }
         },
 
-        onClearError: function () {
+        onLoginErrorMessageStripClose: function () {
             const oModel = this.getOwnerComponent().getModel();
             if (oModel) {
                 oModel.setProperty("/loginError", "");
             }
-            const oUserInput = this.byId("inputLoginUsername");
-            const oPassInput = this.byId("inputLoginPassword");
+            const oUserInput = this.byId("idLoginUsernameInput");
+            const oPassInput = this.byId("idLoginPasswordInput");
             if (oUserInput) oUserInput.setValueState(ValueState.None);
             if (oPassInput) oPassInput.setValueState(ValueState.None);
         },
 
+        onClearError: function () {
+            this.onLoginErrorMessageStripClose();
+        },
+
+        onLoginUsernameInputLiveChange: function () {
+            this._clearFieldErrors();
+        },
+
+        onLoginUsernameInputSubmit: function () {
+            this.onSignInToWorkspaceButtonPress();
+        },
+
+        onLoginPasswordInputLiveChange: function () {
+            this._clearFieldErrors();
+        },
+
+        onLoginPasswordInputSubmit: function () {
+            this.onSignInToWorkspaceButtonPress();
+        },
+
         onCredentialChange: function () {
+            this._clearFieldErrors();
+        },
+
+        _clearFieldErrors: function () {
             const oModel = this.getOwnerComponent().getModel();
             if (oModel && oModel.getProperty("/loginError")) {
                 oModel.setProperty("/loginError", "");
             }
-            const oUserInput = this.byId("inputLoginUsername");
-            const oPassInput = this.byId("inputLoginPassword");
+            const oUserInput = this.byId("idLoginUsernameInput");
+            const oPassInput = this.byId("idLoginPasswordInput");
             if (oUserInput && oUserInput.getValueState() === ValueState.Error) {
                 oUserInput.setValueState(ValueState.None);
             }
@@ -45,13 +69,13 @@ sap.ui.define([
             }
         },
 
-        onLoginPress: async function () {
+        onSignInToWorkspaceButtonPress: async function () {
             const oModel = this.getOwnerComponent().getModel();
             const sUser = (oModel.getProperty("/loginUsername") || "").trim();
             const sPass = (oModel.getProperty("/loginPassword") || "").trim();
 
-            const oUserInput = this.byId("inputLoginUsername");
-            const oPassInput = this.byId("inputLoginPassword");
+            const oUserInput = this.byId("idLoginUsernameInput");
+            const oPassInput = this.byId("idLoginPasswordInput");
 
             if (!sUser) {
                 if (oUserInput) oUserInput.setValueState(ValueState.Error);
@@ -69,7 +93,7 @@ sap.ui.define([
 
             oModel.setProperty("/loginError", "");
             oModel.setProperty("/isLoginBusy", true);
-            const oBtn = this.byId("btnLoginSubmit");
+            const oBtn = this.byId("idSignInToWorkspaceButton");
             if (oBtn) oBtn.setBusy(true);
 
             try {
@@ -90,6 +114,10 @@ sap.ui.define([
                 oModel.setProperty("/isLoginBusy", false);
                 if (oBtn) oBtn.setBusy(false);
             }
+        },
+
+        onLoginPress: async function () {
+            return this.onSignInToWorkspaceButtonPress();
         }
     });
 });

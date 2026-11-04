@@ -2,7 +2,7 @@
     xmlns="sap.m"
     xmlns:core="sap.ui.core">
     <Dialog
-        id="supplierValueHelpDialog"
+        id="idSupplierValueHelpDialog"
         title="Select Supplier (SAP S/4HANA Cloud)"
         icon="sap-icon://supplier"
         contentWidth="820px"

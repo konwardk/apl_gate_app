@@ -1,6 +1,10 @@
 {
   "welcomeFile": "/index.html",
   "authenticationMethod": "route",
+  "logout": {
+    "logoutEndpoint": "/logout",
+    "logoutPage": "/index.html"
+  },
   "routes": [
     {
       "source": "^/gate/(.*)$",
@@ -24,24 +28,30 @@
       "csrfProtection": false
     },
     {
+      "source": "^/user-api/currentUser$",
+      "target": "$1",
+      "service": "user-container",
+      "authenticationType": "xsuaa"
+    },
+    {
       "source": "^/gate-entry/webapp/(.*)$",
       "target": "/gate-entry/webapp/$1",
       "localDir": "resources",
-      "authenticationType": "none",
+      "authenticationType": "xsuaa",
       "csrfProtection": false
     },
     {
       "source": "^/webapp/(.*)$",
       "target": "/$1",
       "localDir": "resources",
-      "authenticationType": "none",
+      "authenticationType": "xsuaa",
       "csrfProtection": false
     },
     {
       "source": "^/(.*)$",
       "target": "/$1",
       "localDir": "resources",
-      "authenticationType": "none",
+      "authenticationType": "xsuaa",
       "csrfProtection": false
     }
   ]
