@@ -7,7 +7,8 @@
         title="Factory Gate IN Completed"
         type="Message"
         state="Success"
-        contentWidth="520px">
+        contentWidth="520px"
+        class="sapUiContentPadding">
         <content>
             <VBox alignItems="Center" class="sapUiSmallMargin">
                 <Image
@@ -19,7 +20,7 @@
                     level="H4"
                     titleStyle="H5" />
                 <Text
-                    text="Address: Namprup, Dist: Dibrugarh(ASSAM), PO: Parbatpur-786623."
+                    text="Address: Namrup, Dist: Dibrugarh (ASSAM), PO: Parbatpur-786623."
                     class="sapUiTinyMarginBottom text-muted" />
                 <core:Icon
                     src="sap-icon://sys-enter-2"
@@ -34,6 +35,7 @@
                 <ObjectStatus
                     text="Status: Yard IN (Inside Yard)"
                     state="Success"
+                    inverted="true"
                     class="sapUiSmallMarginBottom" />
 
                 <form:SimpleForm
@@ -50,13 +52,13 @@
                     width="100%">
                     <form:content>
                         <Label text="Vehicle Reg No" />
-                        <Text text="{facModel>/gateInSuccess/vehicleRegNo} ({facModel>/gateInSuccess/vehicleType})" design="Bold" />
+                        <Text text="{facModel>/gateInSuccess/vehicleRegNo} ({facModel>/gateInSuccess/vehicleType})" class="fiori-text-strong" />
 
                         <Label text="Driver / Transporter" />
                         <Text text="{facModel>/gateInSuccess/driverName} / {facModel>/gateInSuccess/transporterName}" />
 
                         <Label text="PO Number" />
-                        <Text text="{facModel>/gateInSuccess/poNumber}" design="Bold" />
+                        <Text text="{facModel>/gateInSuccess/poNumber}" class="fiori-text-strong" />
 
                         <Label text="Supplier" />
                         <Text text="{facModel>/gateInSuccess/supplierName}" />
@@ -80,6 +82,7 @@
         <endButton>
             <Button
                 text="Close"
+                type="Transparent"
                 press=".onCloseFactoryGateInSuccessDialog" />
         </endButton>
     </Dialog>

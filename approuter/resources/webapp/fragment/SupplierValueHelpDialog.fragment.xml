@@ -12,7 +12,7 @@
         class="sapUiContentPadding">
         <customHeader>
             <Toolbar>
-                <core:Icon src="sap-icon://supplier" class="sapUiTinyMarginBegin" />
+                <core:Icon src="sap-icon://supplier" color="#0070f2" class="sapUiTinyMarginBegin" />
                 <Title text="Select Supplier (SAP S/4HANA Cloud: YY1_Supplier)" level="H2" />
                 <ToolbarSpacer />
                 <Button
@@ -25,7 +25,7 @@
         <content>
             <VBox class="sapUiTinyMarginBottom">
                 <!-- Search Section -->
-                <VBox class="dashboard-hero-card sapUiSmallMarginBottom">
+                <VBox class="fiori-surface-card sapUiSmallMarginBottom">
                     <HBox alignItems="Center" justifyContent="SpaceBetween" wrap="Wrap" class="sapUiTinyMarginBottom">
                         <HBox alignItems="Center">
                             <core:Icon src="sap-icon://search" size="16px" color="#0070f2" class="sapUiTinyMarginEnd" />
@@ -44,47 +44,40 @@
                 </VBox>
 
                 <!-- Suppliers Table -->
-                <Table
-                    id="supplierValueHelpTable"
-                    mode="SingleSelectLeft"
-                    selectionChange=".onSupplierSelectionChange"
-                    growing="true"
-                    growingThreshold="25"
-                    growingScrollToLoad="true"
-                    noDataText="No Suppliers found matching the criteria"
-                    items="{
-                        path: 'supplierModel>/',
-                        templateShareable: false
-                    }">
-                    <columns>
-                        <Column width="22%">
-                            <header>
-                                <Text text="Supplier Code" />
-                            </header>
-                        </Column>
-                        <Column width="38%">
-                            <header>
-                                <Text text="Supplier Name" />
-                            </header>
-                        </Column>
-                        <Column width="40%" minScreenWidth="Tablet" demandPopin="true">
-                            <header>
-                                <Text text="Full Name / Location" />
-                            </header>
-                        </Column>
-                    </columns>
-                    <items>
-                        <ColumnListItem type="Active" press=".onSupplierRowSelect">
-                            <cells>
-                                <ObjectIdentifier
-                                    title="{supplierModel>Supplier}"
-                                    text="S/4HANA Partner" />
-                                <Text text="{supplierModel>SupplierName}" design="Bold" />
-                                <Text text="{= ${supplierModel>SupplierFullName} || ${supplierModel>BPSupplierName} || '-' }" />
-                            </cells>
-                        </ColumnListItem>
-                    </items>
-                </Table>
+                <VBox class="fiori-table-card">
+                    <Table
+                        id="supplierValueHelpTable"
+                        mode="SingleSelectLeft"
+                        sticky="ColumnHeaders"
+                        alternateRowColors="true"
+                        popinLayout="GridSmall"
+                        selectionChange=".onSupplierSelectionChange"
+                        growing="true"
+                        growingThreshold="25"
+                        growingScrollToLoad="true"
+                        noDataText="No Suppliers found matching the criteria"
+                        items="{
+                            path: 'supplierModel>/',
+                            templateShareable: false
+                        }">
+                        <columns>
+                            <Column width="22%"><header><Text text="Supplier Code" /></header></Column>
+                            <Column width="38%"><header><Text text="Supplier Name" /></header></Column>
+                            <Column width="40%" minScreenWidth="Tablet" demandPopin="true"><header><Text text="Full Name / Location" /></header></Column>
+                        </columns>
+                        <items>
+                            <ColumnListItem type="Active" press=".onSupplierRowSelect">
+                                <cells>
+                                    <ObjectIdentifier
+                                        title="{supplierModel>Supplier}"
+                                        text="S/4HANA Partner" />
+                                    <Text text="{supplierModel>SupplierName}" class="fiori-text-strong" />
+                                    <Text text="{= ${supplierModel>SupplierFullName} || ${supplierModel>BPSupplierName} || '-' }" />
+                                </cells>
+                            </ColumnListItem>
+                        </items>
+                    </Table>
+                </VBox>
             </VBox>
         </content>
         <beginButton>
@@ -99,6 +92,7 @@
         <endButton>
             <Button
                 text="Cancel"
+                type="Transparent"
                 press=".onSupplierValueHelpCancel" />
         </endButton>
     </Dialog>

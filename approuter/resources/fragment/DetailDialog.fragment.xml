@@ -5,7 +5,12 @@
     <Dialog
         id="idDetailDialog"
         title="Gate Transaction Details: {detailModel>/gateInNumber}"
-        contentWidth="620px">
+        icon="sap-icon://detail-view"
+        contentWidth="620px"
+        verticalScrolling="true"
+        draggable="true"
+        resizable="true"
+        class="sapUiContentPadding">
         <content>
             <VBox alignItems="Center" class="sapUiSmallMarginTop sapUiTinyMarginBottom">
                 <Image
@@ -17,7 +22,7 @@
                     level="H4"
                     titleStyle="H5" />
                 <Text
-                    text="Address: Namprup, Dist: Dibrugarh(ASSAM), PO: Parbatpur-786623."
+                    text="Address: Namrup, Dist: Dibrugarh (ASSAM), PO: Parbatpur-786623."
                     class="sapUiTinyMarginBottom text-muted" />
             </VBox>
             <form:SimpleForm
@@ -28,10 +33,10 @@
                 labelSpanS="12">
                 <form:content>
                     <Label text="Gate IN Number" />
-                    <Text text="{detailModel>/gateInNumber}" />
+                    <Text text="{detailModel>/gateInNumber}" class="fiori-text-strong" />
 
                     <Label text="Vehicle Reg No" />
-                    <Text text="{detailModel>/vehicleRegNo}" />
+                    <Text text="{detailModel>/vehicleRegNo}" class="fiori-text-strong" />
 
                     <Label text="Driver Name" />
                     <Text text="{= ${detailModel>/driverName} || '-' }" />
@@ -39,12 +44,14 @@
                     <Label text="Visit Purpose" />
                     <ObjectStatus
                         text="{path: 'detailModel>/purpose', formatter: '.formatter.getPurposeText'}"
-                        state="{path: 'detailModel>/purpose', formatter: '.formatter.getPurposeState'}" />
+                        state="{path: 'detailModel>/purpose', formatter: '.formatter.getPurposeState'}"
+                        inverted="true" />
 
                     <Label text="Current Status" />
                     <ObjectStatus
                         text="{path: 'detailModel>/status', formatter: '.formatter.getStatusText'}"
-                        state="{path: 'detailModel>/status', formatter: '.formatter.getStatusState'}" />
+                        state="{path: 'detailModel>/status', formatter: '.formatter.getStatusState'}"
+                        inverted="true" />
 
                     <Label text="Current Stage" />
                     <Text text="{path: 'detailModel>/currentStage', formatter: '.formatter.getStageText'}" />
@@ -77,6 +84,7 @@
                 press=".onDetailEdit" />
             <Button
                 text="Close"
+                type="Transparent"
                 press=".onDetailClose" />
         </buttons>
     </Dialog>

@@ -65,7 +65,7 @@
                             <VBox class="sapUiSmallMarginTop">
                                 <!-- Main Gate KPI Overview -->
                                 <Title text="Main Gate Operations KPI Overview" level="H3" titleStyle="H4" class="sapUiTinyMarginBottom" />
-                                <HBox wrap="NoWrap" class="flp-kpi-bar">
+                                <HBox wrap="Wrap" class="flp-kpi-bar">
                                     <GenericTile
                                         header="Total Gate Entries"
                                         subheader="All Vehicles Recorded"
@@ -182,60 +182,66 @@
                                 </HBox>
 
                                 <!-- Active Transactions Table for Main Gate Operator -->
-                                <Table
-                                    id="mainGateDashboardTable"
-                                    items="{/transactions}"
-                                    growing="true"
-                                    growingThreshold="15"
-                                    noDataText="No gate entries recorded."
-                                    class="sapUiSmallMarginTop">
-                                    <headerToolbar>
-                                        <OverflowToolbar>
-                                            <Title text="Live Gate Entries &amp; Passes ({= ${/transactions}.length })" level="H3" />
-                                            <ToolbarSpacer />
-                                            <SearchField
-                                                width="280px"
-                                                placeholder="Filter by Pass No, Vehicle, Driver..."
-                                                search=".onSearchDashboardTx"
-                                                liveChange=".onSearchDashboardTx" />
-                                            <Button
-                                                icon="sap-icon://refresh"
-                                                tooltip="Refresh Live Transactions"
-                                                press=".onRefreshDashboard" />
-                                        </OverflowToolbar>
-                                    </headerToolbar>
-                                    <columns>
-                                        <Column width="220px"><header><Text text="Vehicle / Pass" /></header></Column>
-                                        <Column minScreenWidth="Tablet" demandPopin="true"><header><Text text="Driver" /></header></Column>
-                                        <Column width="160px"><header><Text text="Status / Stage" /></header></Column>
-                                        <Column width="170px" minScreenWidth="Desktop" demandPopin="true"><header><Text text="Gate IN Time" /></header></Column>
-                                        <Column width="110px" hAlign="End"><header><Text text="Action" /></header></Column>
-                                    </columns>
-                                    <items>
-                                        <ColumnListItem type="Active" press=".onRowTxPress">
-                                            <cells>
-                                                <ObjectIdentifier
-                                                    title="{vehicleRegNo}"
-                                                    text="{gateInNumber} • {path: 'purpose', formatter: '.formatter.getPurposeText'}" />
-                                                <Text text="{= ${driverName} || '-' }" />
-                                                <VBox>
-                                                    <ObjectStatus
-                                                        text="{path: 'status', formatter: '.formatter.getStatusText'}"
-                                                        state="{path: 'status', formatter: '.formatter.getStatusState'}" />
-                                                    <Text
-                                                        text="{path: 'currentStage', formatter: '.formatter.getStageText'}"
-                                                        class="sapUiTinyMarginTop text-muted" />
-                                                </VBox>
-                                                <Text text="{path: 'gateInDateTime', formatter: '.formatter.formatDateTime'}" />
+                                <VBox class="fiori-table-card sapUiSmallMarginTop">
+                                    <Table
+                                        id="mainGateDashboardTable"
+                                        sticky="ColumnHeaders,HeaderToolbar"
+                                        alternateRowColors="true"
+                                        popinLayout="GridSmall"
+                                        items="{/transactions}"
+                                        growing="true"
+                                        growingThreshold="15"
+                                        noDataText="No gate entries recorded.">
+                                        <headerToolbar>
+                                            <OverflowToolbar style="Clear">
+                                                <Title text="Live Gate Entries &amp; Passes ({= ${/transactions}.length })" level="H3" />
+                                                <ToolbarSpacer />
+                                                <SearchField
+                                                    width="260px"
+                                                    placeholder="Filter by Pass No, Vehicle, Driver..."
+                                                    search=".onSearchDashboardTx"
+                                                    liveChange=".onSearchDashboardTx" />
                                                 <Button
-                                                    text="Slip"
-                                                    icon="sap-icon://hint"
+                                                    icon="sap-icon://refresh"
                                                     type="Transparent"
-                                                    press=".onRowTxPress" />
-                                            </cells>
-                                        </ColumnListItem>
-                                    </items>
-                                </Table>
+                                                    tooltip="Refresh Live Transactions"
+                                                    press=".onRefreshDashboard" />
+                                            </OverflowToolbar>
+                                        </headerToolbar>
+                                        <columns>
+                                            <Column width="220px"><header><Text text="Vehicle / Pass" /></header></Column>
+                                            <Column minScreenWidth="Tablet" demandPopin="true"><header><Text text="Driver" /></header></Column>
+                                            <Column width="165px"><header><Text text="Status / Stage" /></header></Column>
+                                            <Column width="170px" minScreenWidth="Desktop" demandPopin="true"><header><Text text="Gate IN Time" /></header></Column>
+                                            <Column width="110px" hAlign="End"><header><Text text="Action" /></header></Column>
+                                        </columns>
+                                        <items>
+                                            <ColumnListItem type="Active" press=".onRowTxPress">
+                                                <cells>
+                                                    <ObjectIdentifier
+                                                        title="{vehicleRegNo}"
+                                                        text="{gateInNumber} • {path: 'purpose', formatter: '.formatter.getPurposeText'}" />
+                                                    <Text text="{= ${driverName} || '-' }" />
+                                                    <VBox>
+                                                        <ObjectStatus
+                                                            text="{path: 'status', formatter: '.formatter.getStatusText'}"
+                                                            state="{path: 'status', formatter: '.formatter.getStatusState'}"
+                                                            inverted="true" />
+                                                        <Text
+                                                            text="{path: 'currentStage', formatter: '.formatter.getStageText'}"
+                                                            class="sapUiTinyMarginTop text-muted" />
+                                                    </VBox>
+                                                    <Text text="{path: 'gateInDateTime', formatter: '.formatter.formatDateTime'}" />
+                                                    <Button
+                                                        text="Slip"
+                                                        icon="sap-icon://hint"
+                                                        type="Transparent"
+                                                        press=".onRowTxPress" />
+                                                </cells>
+                                            </ColumnListItem>
+                                        </items>
+                                    </Table>
+                                </VBox>
                             </VBox>
                         </content>
                     </IconTabFilter>
@@ -250,7 +256,7 @@
                         <content>
                             <VBox class="sapUiSmallMarginTop">
                                 <Title text="Security Gate Clearance KPI Overview" level="H3" titleStyle="H4" class="sapUiTinyMarginBottom" />
-                                <HBox wrap="NoWrap" class="flp-kpi-bar">
+                                <HBox wrap="Wrap" class="flp-kpi-bar">
                                     <GenericTile
                                         header="Awaiting Security IN"
                                         subheader="Pending Verification"
@@ -363,7 +369,7 @@
                         <content>
                             <VBox class="sapUiSmallMarginTop">
                                 <Title text="Weighbridge Scale KPI Overview" level="H3" titleStyle="H4" class="sapUiTinyMarginBottom" />
-                                <HBox wrap="NoWrap" class="flp-kpi-bar">
+                                <HBox wrap="Wrap" class="flp-kpi-bar">
                                     <GenericTile
                                         header="Total Scale Queue"
                                         subheader="All Weighbridge Vehicles"
@@ -493,7 +499,7 @@
                         <content>
                             <VBox class="sapUiSmallMarginTop">
                                 <Title text="Factory Yard Operations Overview" level="H3" titleStyle="H4" class="sapUiTinyMarginBottom" />
-                                <HBox wrap="NoWrap" class="flp-kpi-bar">
+                                <HBox wrap="Wrap" class="flp-kpi-bar">
                                     <GenericTile
                                         header="Total Factory Queue"
                                         subheader="All Delivery &amp; Pickup"
@@ -613,7 +619,7 @@
                                         titleStyle="H3"
                                         class="flp-section-title" />
 
-                                    <HBox wrap="NoWrap" class="flp-kpi-bar">
+                                    <HBox wrap="Wrap" class="flp-kpi-bar">
                                         <GenericTile
                                             header="Total Gate Entries"
                                             subheader="All Vehicles"

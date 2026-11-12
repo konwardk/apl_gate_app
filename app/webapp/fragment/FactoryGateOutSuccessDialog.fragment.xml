@@ -7,7 +7,8 @@
         title="Factory Gate OUT Clearance Completed"
         type="Message"
         state="Success"
-        contentWidth="540px">
+        contentWidth="540px"
+        class="sapUiContentPadding">
         <content>
             <VBox alignItems="Center" class="sapUiSmallMargin">
                 <Image
@@ -19,7 +20,7 @@
                     level="H4"
                     titleStyle="H5" />
                 <Text
-                    text="Address: Namrup, Dist: Dibrugarh(ASSAM), PO: Parbatpur-786623."
+                    text="Address: Namrup, Dist: Dibrugarh (ASSAM), PO: Parbatpur-786623."
                     class="sapUiTinyMarginBottom text-muted" />
                 <core:Icon
                     src="sap-icon://sys-enter-2"
@@ -34,6 +35,7 @@
                 <ObjectStatus
                     text="Status: Yard OUT (Cleared)"
                     state="Success"
+                    inverted="true"
                     class="sapUiTinyMarginBottom" />
                 <ObjectStatus
                     text="{path: 'facModel>/gateOutSuccess/gateOutType', formatter: '.formatter.getGateOutTypeDesc'}"
@@ -55,19 +57,19 @@
                     width="100%">
                     <form:content>
                         <Label text="Vehicle Reg No" />
-                        <Text text="{facModel>/gateOutSuccess/vehicleRegNo} ({facModel>/gateOutSuccess/vehicleType})" design="Bold" />
+                        <Text text="{facModel>/gateOutSuccess/vehicleRegNo} ({facModel>/gateOutSuccess/vehicleType})" class="fiori-text-strong" />
 
                         <Label text="Driver / Transporter" />
                         <Text text="{facModel>/gateOutSuccess/driverName} / {facModel>/gateOutSuccess/transporterName}" />
 
                         <Label text="PO Number" />
-                        <Text text="{facModel>/gateOutSuccess/poNumber}" design="Bold" />
+                        <Text text="{facModel>/gateOutSuccess/poNumber}" class="fiori-text-strong" />
 
                         <Label text="Supplier" />
                         <Text text="{facModel>/gateOutSuccess/supplierName}" />
 
                         <Label text="Gate Out Type" />
-                        <Text text="{path: 'facModel>/gateOutSuccess/gateOutType', formatter: '.formatter.getGateOutTypeDesc'}" design="Bold" />
+                        <Text text="{path: 'facModel>/gateOutSuccess/gateOutType', formatter: '.formatter.getGateOutTypeDesc'}" class="fiori-text-strong" />
 
                         <Label text="Factory Gate IN" />
                         <Text text="{path: 'facModel>/gateOutSuccess/factoryGateInDateTime', formatter: '.formatter.formatDateTime'}" />
@@ -79,7 +81,7 @@
                         <Text text="{path: 'facModel>/gateOutSuccess/factoryGateOutDateTime', formatter: '.formatter.formatDateTime'}" />
 
                         <Label text="Outbound Operator" />
-                        <Text text="{facModel>/gateOutSuccess/factoryGateOutOperator}" design="Bold" />
+                        <Text text="{facModel>/gateOutSuccess/factoryGateOutOperator}" class="fiori-text-strong" />
 
                         <Label text="Unloaded Quantity" visible="{= Boolean(${facModel>/gateOutSuccess/unloadedQuantity}) }" />
                         <Text text="{facModel>/gateOutSuccess/unloadedQuantity} {facModel>/gateOutSuccess/quantityUnit}" visible="{= Boolean(${facModel>/gateOutSuccess/unloadedQuantity}) }" />
@@ -100,6 +102,7 @@
         <endButton>
             <Button
                 text="Close"
+                type="Transparent"
                 press=".onCloseFactoryGateOutSuccessDialog" />
         </endButton>
     </Dialog>

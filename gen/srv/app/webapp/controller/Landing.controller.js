@@ -24,12 +24,17 @@ sap.ui.define([
         onOtherVehiclePress: function () {
             const oComponent = this.getOwnerComponent();
             const oModel = oComponent ? oComponent.getModel() : null;
+            const sAssignedScreen = oModel ? oModel.getProperty("/assignedScreen") : "launchpadPage";
             const sAssignedTab = oModel ? (oModel.getProperty("/assignedTab") || "OVERVIEW") : "OVERVIEW";
             if (oModel) {
                 oModel.setProperty("/selectedDashboardTab", sAssignedTab);
                 oModel.setProperty("/selectedVehicleStream", "OTHER VEHICLE");
             }
-            oComponent.navigateTo("launchpadPage", "slide");
+            if (sAssignedScreen && sAssignedScreen !== "launchpadPage") {
+                oComponent.navigateTo(sAssignedScreen, "slide");
+            } else {
+                oComponent.navigateTo("launchpadPage", "slide");
+            }
             oComponent.loadOverviewData();
         },
 

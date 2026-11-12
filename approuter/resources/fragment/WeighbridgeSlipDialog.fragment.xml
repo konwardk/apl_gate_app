@@ -6,6 +6,8 @@
         id="idWeighbridgeSlipDialog"
         title="APL Factory Weighbridge Certificate"
         contentWidth="680px"
+        draggable="true"
+        resizable="true"
         class="sapUiContentPadding weighbridge-slip-dialog">
         <customHeader>
             <Bar>
@@ -17,6 +19,7 @@
                     <ObjectStatus
                         text="VERIFIED &amp; CERTIFIED"
                         state="Success"
+                        inverted="true"
                         class="sapUiSmallMarginEnd" />
                 </contentRight>
             </Bar>
@@ -32,13 +35,13 @@
                             class="sapUiSmallMarginEnd" />
                         <VBox>
                             <Title text="Assam Petro-Chemicals Ltd" level="H4" titleStyle="H5" />
-                            <Text text="Address: Namrup, Dist: Dibrugarh(ASSAM), PO: Parbatpur-786623." class="sapUiTinyMarginTop text-muted" />
-                            <Text text="Plant Weighbridge Station • ISO 9001 / Legal Metrology Certified" class="sapUiTinyMarginTop" />
+                            <Text text="Address: Namrup, Dist: Dibrugarh (ASSAM), PO: Parbatpur-786623." class="sapUiTinyMarginTop text-muted" />
+                            <Text text="Plant Weighbridge Station • ISO 9001 / Legal Metrology Certified" class="sapUiTinyMarginTop text-muted" />
                         </VBox>
                     </HBox>
                     <VBox alignItems="End">
                         <Label text="Slip No: {slipModel>/slipNumber}" design="Bold" />
-                        <Text text="Date: {path: 'slipModel>/weighbridgeDateTime', formatter: '.formatter.formatDateTime'}" />
+                        <Text text="Date: {path: 'slipModel>/weighbridgeDateTime', formatter: '.formatter.formatDateTime'}" class="sapUiTinyMarginTop" />
                     </VBox>
                 </HBox>
 
@@ -58,10 +61,10 @@
                         <core:Title text="Vehicle &amp; Consignment Details" />
 
                         <Label text="Gate IN Number" />
-                        <Label text="{slipModel>/gateInNumber}" design="Bold" />
+                        <Text text="{slipModel>/gateInNumber}" class="fiori-text-strong" />
 
                         <Label text="Vehicle Reg No" />
-                        <Label text="{slipModel>/vehicleRegNo}" design="Bold" />
+                        <Text text="{slipModel>/vehicleRegNo}" class="fiori-text-strong" />
 
                         <Label text="Vehicle Type" />
                         <Text text="{path: 'slipModel>/vehicleType', formatter: '.formatter.getVehicleTypeText'}" />
@@ -72,20 +75,22 @@
                         <Label text="Purpose of Visit" />
                         <ObjectStatus
                             text="{path: 'slipModel>/purpose', formatter: '.formatter.getPurposeText'}"
-                            state="{path: 'slipModel>/purpose', formatter: '.formatter.getPurposeState'}" />
+                            state="{path: 'slipModel>/purpose', formatter: '.formatter.getPurposeState'}"
+                            inverted="true" />
 
                         <core:Title text="Scale &amp; Weighing Metadata" />
 
                         <Label text="Weighbridge Number" />
-                        <Label text="{slipModel>/weighbridgeNumber}" design="Bold" />
+                        <Text text="{slipModel>/weighbridgeNumber}" class="fiori-text-strong" />
 
                         <Label text="Weighment Type" />
                         <ObjectStatus
                             text="{path: 'slipModel>/weighmentType', formatter: '.formatter.getWeighmentTypeDesc'}"
-                            state="{path: 'slipModel>/weighmentType', formatter: '.formatter.getWeighmentTypeState'}" />
+                            state="{path: 'slipModel>/weighmentType', formatter: '.formatter.getWeighmentTypeState'}"
+                            inverted="true" />
 
                         <Label text="Recorded Weight" />
-                        <Label text="{parts: [{path: 'slipModel>/weight'}, {path: 'slipModel>/weightUnit'}], formatter: '.formatter.formatWeight'}" design="Bold" />
+                        <Text text="{parts: [{path: 'slipModel>/weight'}, {path: 'slipModel>/weightUnit'}], formatter: '.formatter.formatWeight'}" class="fiori-text-strong" />
 
                         <Label text="Weighbridge Operator" />
                         <Text text="{slipModel>/operator}" />
@@ -109,7 +114,7 @@
                                     level="H3"
                                     titleStyle="H4"
                                     class="weight-metric gross-metric" />
-                                <Text text="{slipModel>/grossTimestampText}" class="sapUiTinyMarginTop" />
+                                <Text text="{slipModel>/grossTimestampText}" class="sapUiTinyMarginTop text-muted" />
                             </VBox>
 
                             <Title text="−" level="H1" titleStyle="H1" class="math-operator" />
@@ -121,7 +126,7 @@
                                     level="H3"
                                     titleStyle="H4"
                                     class="weight-metric tare-metric" />
-                                <Text text="{slipModel>/tareTimestampText}" class="sapUiTinyMarginTop" />
+                                <Text text="{slipModel>/tareTimestampText}" class="sapUiTinyMarginTop text-muted" />
                             </VBox>
 
                             <Title text="=" level="H1" titleStyle="H1" class="math-operator" />
@@ -133,7 +138,7 @@
                                     level="H2"
                                     titleStyle="H2"
                                     class="weight-metric net-metric" />
-                                <Label text="{= ${slipModel>/netWeightMT} ? '(' + ${slipModel>/netWeightMT} + ' MT)' : '' }" class="sapUiTinyMarginTop" design="Bold" />
+                                <Text text="{= ${slipModel>/netWeightMT} ? '(' + ${slipModel>/netWeightMT} + ' MT)' : '' }" class="sapUiTinyMarginTop fiori-text-strong" />
                             </VBox>
                         </HBox>
                     </content>
@@ -143,11 +148,11 @@
                 <HBox justifyContent="SpaceBetween" alignItems="Center" class="sapUiMediumMarginTop slip-footer-signatures">
                     <VBox alignItems="Center">
                         <Text text="___________________________" />
-                        <Text text="Driver Signature" class="sapUiTinyMarginTop" />
+                        <Text text="Driver Signature" class="sapUiTinyMarginTop text-muted" />
                     </VBox>
                     <VBox alignItems="Center">
                         <Text text="___________________________" />
-                        <Text text="Weighbridge Officer ({slipModel>/operator})" class="sapUiTinyMarginTop" />
+                        <Text text="Weighbridge Officer ({slipModel>/operator})" class="sapUiTinyMarginTop text-muted" />
                     </VBox>
                 </HBox>
             </VBox>
@@ -162,6 +167,7 @@
         <endButton>
             <Button
                 text="Close"
+                type="Transparent"
                 press=".onCloseSlipDialog" />
         </endButton>
     </Dialog>

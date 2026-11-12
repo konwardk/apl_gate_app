@@ -50,13 +50,14 @@
                     </ComboBox>
 
                     <Label text="Vehicle Reg No" />
-                    <Label text="{= ${secModel>/selectedVehicle/vehicleRegNo} || 'Select a Gate IN Number above' }" design="Bold" />
+                    <Text text="{= ${secModel>/selectedVehicle/vehicleRegNo} || 'Select a Gate IN Number above' }" class="fiori-text-strong" />
 
                     <Label text="Visit Purpose" />
                     <HBox alignItems="Center">
                         <ObjectStatus
                             text="{= ${secModel>/selectedVehicle/purpose} || '-' }"
                             state="{= ${secModel>/selectedVehicle/purpose} === 'DELIVERY' ? 'Information' : 'Warning' }"
+                            inverted="true"
                             class="sapUiTinyMarginEnd" />
                         <Text text="{= ${secModel>/selectedVehicle/vehicleType} ? '(' + ${secModel>/selectedVehicle/vehicleType} + ')' : '' }" />
                     </HBox>
@@ -117,15 +118,6 @@
                     <!-- Section 3: Consignment & Inbound Documents -->
                     <core:Title text="3. Consignment Documents &amp; Inbound Details" />
 
-                    <!-- Delivery Fields -->
-                    <!-- <Label text="Without PO Allowed" visible="{secModel>/isDelivery}" />
-                    <CheckBox
-                        id="dialogSecCbWithoutPO"
-                        visible="{secModel>/isDelivery}"
-                        text="Special Authorization: Inbound consignment without PO"
-                        selected="{secModel>/withoutPO}"
-                        select=".onWithoutPOToggle" /> -->
-
                     <Label text="PO Number" visible="{secModel>/isDelivery}" required="{= ${secModel>/isDelivery} &amp;&amp; !${secModel>/withoutPO} }" />
                     <Input
                         id="dialogSecPoNumber"
@@ -156,6 +148,7 @@
                         id="dialogSecPoInfoStatus"
                         text="{secModel>/selectedPoInfo}"
                         state="Information"
+                        inverted="true"
                         icon="sap-icon://sales-order"
                         visible="{= ${secModel>/isDelivery} &amp;&amp; !!${secModel>/selectedPoInfo} }" />
 
@@ -243,6 +236,7 @@
             <Button
                 id="btnCancelSecGateIn"
                 text="Cancel"
+                type="Transparent"
                 press=".onCancelSecurityGateIn" />
         </endButton>
     </Dialog>

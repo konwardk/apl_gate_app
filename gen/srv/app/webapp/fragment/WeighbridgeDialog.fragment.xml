@@ -51,13 +51,13 @@
 
                     <Label text="Vehicle Reg No" />
                     <HBox alignItems="Center">
-                        <Label
+                        <Text
                             text="{= ${wbModel>/selectedVehicle/vehicleRegNo} || 'Select a Gate IN Number above' }"
-                            design="Bold"
-                            class="sapUiTinyMarginEnd" />
+                            class="fiori-text-strong sapUiTinyMarginEnd" />
                         <ObjectStatus
                             text="{path: 'wbModel>/selectedVehicle/status', formatter: '.formatter.getStatusText'}"
-                            state="{path: 'wbModel>/selectedVehicle/status', formatter: '.formatter.getStatusState'}" />
+                            state="{path: 'wbModel>/selectedVehicle/status', formatter: '.formatter.getStatusState'}"
+                            inverted="true" />
                     </HBox>
 
                     <Label text="Vehicle &amp; Purpose" />
@@ -66,6 +66,7 @@
                         <ObjectStatus
                             text="{path: 'wbModel>/selectedVehicle/purpose', formatter: '.formatter.getPurposeText'}"
                             state="{path: 'wbModel>/selectedVehicle/purpose', formatter: '.formatter.getPurposeState'}"
+                            inverted="true"
                             class="sapUiTinyMarginEnd" />
                         <Text text="{= ${wbModel>/selectedVehicle/driverName} ? '(' + ${wbModel>/selectedVehicle/driverName} + ')' : '' }" />
                     </HBox>
@@ -106,6 +107,7 @@
                         <ObjectStatus
                             text="{= ${wbModel>/inboundWeightRecord} ? (${wbModel>/inboundWeightRecord/weighmentType} + ': ' + ${wbModel>/inboundWeightRecord/weight} + ' KG') : 'No prior inbound record' }"
                             state="{= ${wbModel>/inboundWeightRecord} ? 'Information' : 'Warning' }"
+                            inverted="true"
                             icon="sap-icon://history"
                             class="sapUiTinyMarginEnd" />
                         <Text text="{= ${wbModel>/inboundWeightRecord} ? ('(' + ${path: 'wbModel>/inboundWeightRecord/weighbridgeDateTime', formatter: '.formatter.formatDateTime'} + ')') : '' }" />
@@ -134,6 +136,7 @@
                             visible="{= Boolean(${wbModel>/calculatedNetWeight}) &amp;&amp; ${wbModel>/calculatedNetWeight} > 0 }"
                             text="{= 'Verified Net Consignment: ' + ${wbModel>/calculatedNetWeight} + ' KG (' + ${wbModel>/calculatedNetWeightMT} + ' MT)' }"
                             state="{wbModel>/netWeightStatusState}"
+                            inverted="true"
                             icon="sap-icon://dimension"
                             class="sapUiTinyMarginTop" />
                     </VBox>
@@ -165,17 +168,19 @@
                 </form:content>
             </form:SimpleForm>
         </content>
-        <buttons>
+        <beginButton>
             <Button
                 id="btnConfirmWeighment"
                 text="Confirm Weighment"
                 icon="sap-icon://accept"
                 type="Emphasized"
                 press=".onConfirmWeighmentDialog" />
+        </beginButton>
+        <endButton>
             <Button
                 text="Cancel"
                 type="Transparent"
                 press=".onCancelWeighmentDialog" />
-        </buttons>
+        </endButton>
     </Dialog>
 </core:FragmentDefinition>

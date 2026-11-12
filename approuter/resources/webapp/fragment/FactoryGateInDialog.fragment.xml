@@ -51,19 +51,19 @@
 
                     <Label text="Vehicle Reg No" />
                     <HBox alignItems="Center">
-                        <Label
+                        <Text
                             text="{= ${facModel>/selectedVehicle/vehicleRegNo} || 'Select a Gate IN Number' }"
-                            design="Bold"
-                            class="sapUiTinyMarginEnd" />
+                            class="fiori-text-strong sapUiTinyMarginEnd" />
                         <ObjectStatus
                             text="{path: 'facModel>/selectedVehicle/status', formatter: '.formatter.getStatusText'}"
-                            state="{path: 'facModel>/selectedVehicle/status', formatter: '.formatter.getStatusState'}" />
+                            state="{path: 'facModel>/selectedVehicle/status', formatter: '.formatter.getStatusState'}"
+                            inverted="true" />
                     </HBox>
 
                     <Label text="Driver &amp; Transporter" />
                     <VBox>
-                        <Text text="{= ${facModel>/selectedVehicle/driverName} ? ${facModel>/selectedVehicle/driverName} + ' (' + (${facModel>/selectedVehicle/vehicleType} || 'TRUCK') + ')' : '-' }" design="Bold" />
-                        <Text text="{= ${facModel>/form/transporterName} || ${facModel>/selectedVehicle/transporter/transporterName} || '-' }" class="sapUiTinyMarginTop" />
+                        <Text text="{= ${facModel>/selectedVehicle/driverName} ? ${facModel>/selectedVehicle/driverName} + ' (' + (${facModel>/selectedVehicle/vehicleType} || 'TRUCK') + ')' : '-' }" class="fiori-text-strong" />
+                        <Text text="{= ${facModel>/form/transporterName} || ${facModel>/selectedVehicle/transporter/transporterName} || '-' }" class="sapUiTinyMarginTop text-muted" />
                     </VBox>
 
                     <Label text="Delivery Flow" />
@@ -71,14 +71,15 @@
                         <ObjectStatus
                             text="{= ${facModel>/selectedVehicle/deliveryFlowDesc} || '-' }"
                             state="{= ${facModel>/selectedVehicle/deliveryFlowState} || 'None' }"
+                            inverted="true"
                             class="sapUiTinyMarginEnd" />
                         <Text text="{= ${facModel>/selectedVehicle/inboundWeightFormatted} ? '(Gross Weight: ' + ${facModel>/selectedVehicle/inboundWeightFormatted} + ')' : '' }" />
                     </HBox>
 
                     <Label text="PO &amp; Supplier" />
                     <VBox>
-                        <Text text="{= ${facModel>/form/poNumber} ? 'PO: ' + ${facModel>/form/poNumber} : 'No PO Assigned' }" design="Bold" />
-                        <Text text="{= ${facModel>/form/supplierName} || ${facModel>/selectedVehicle/supplier/supplierName} || '-' }" class="sapUiTinyMarginTop" />
+                        <Text text="{= ${facModel>/form/poNumber} ? 'PO: ' + ${facModel>/form/poNumber} : 'No PO Assigned' }" class="fiori-text-strong" />
+                        <Text text="{= ${facModel>/form/supplierName} || ${facModel>/selectedVehicle/supplier/supplierName} || '-' }" class="sapUiTinyMarginTop text-muted" />
                     </VBox>
 
                     <Label text="Invoice Number" />
@@ -140,17 +141,19 @@
                 </form:content>
             </form:SimpleForm>
         </content>
-        <buttons>
+        <beginButton>
             <Button
                 id="btnConfirmFactoryGateIn"
                 text="Confirm Factory Gate IN"
                 icon="sap-icon://log-in"
                 type="Emphasized"
                 press=".onConfirmFactoryGateIn" />
+        </beginButton>
+        <endButton>
             <Button
                 text="Cancel"
                 type="Transparent"
                 press=".onCancelFactoryGateIn" />
-        </buttons>
+        </endButton>
     </Dialog>
 </core:FragmentDefinition>

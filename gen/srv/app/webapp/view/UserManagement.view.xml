@@ -2,279 +2,307 @@
     controllerName="factory.gate.controller.UserManagement"
     xmlns:mvc="sap.ui.core.mvc"
     xmlns="sap.m"
+    xmlns:f="sap.f"
     xmlns:core="sap.ui.core">
-    <Page
+    <f:DynamicPage
         id="idUserManagementPage"
-        title="Superadmin - User Management &amp; Role Control"
-        showNavButton="true"
-        navButtonPress=".onNavBack"
-        enableScrolling="true">
-        <headerContent>
-            <Button
-                text="Create New User"
-                icon="sap-icon://add-employee"
-                type="Emphasized"
-                tooltip="Register a new system user with multiple operational roles"
-                press=".onCreateNewUserButtonPress" />
-            <Button
-                icon="sap-icon://refresh"
-                tooltip="Refresh User Directory"
-                press=".onButtonPress" />
-        </headerContent>
-        <VBox class="sapUiResponsiveMargin">
-            <!-- Context Banner -->
-            <MessageStrip
-                text="Superadmin Console: Manage user credentials, assignments across operational modules (Main Gate, Security, Weighbridge, Factory Gate), and service statuses."
-                type="Information"
-                showIcon="true"
-                class="sapUiSmallMarginBottom" />
+        headerExpanded="true"
+        showFooter="false"
+        class="fiori-dynamic-page sapUiNoContentPadding">
+        <f:title>
+            <f:DynamicPageTitle>
+                <f:navigationActions>
+                    <Button
+                        text="Launchpad"
+                        icon="sap-icon://nav-back"
+                        type="Transparent"
+                        tooltip="Back to Launchpad"
+                        press=".onNavBack" />
+                </f:navigationActions>
+                <f:heading>
+                    <HBox alignItems="Center" wrap="Wrap">
+                        <Title text="User Management &amp; Role Control" level="H1" titleStyle="H3" class="sapUiSmallMarginEnd" />
+                        <ObjectStatus text="Superadmin Console" state="Error" inverted="true" icon="sap-icon://user-settings" />
+                    </HBox>
+                </f:heading>
+                <f:expandedContent>
+                    <Text text="Manage user credentials, assignments across operational modules, and account statuses." class="text-muted" />
+                </f:expandedContent>
+                <f:snappedContent>
+                    <Text text="User Directory ({= ${userModel>/kpi/total} || 0 } accounts)" class="text-muted" />
+                </f:snappedContent>
+                <f:actions>
+                    <Button
+                        text="Create New User"
+                        icon="sap-icon://add-employee"
+                        type="Emphasized"
+                        tooltip="Register a new system user with multiple operational roles"
+                        press=".onCreateNewUserButtonPress" />
+                    <Button
+                        icon="sap-icon://refresh"
+                        type="Transparent"
+                        tooltip="Refresh User Directory"
+                        press=".onButtonPress" />
+                </f:actions>
+            </f:DynamicPageTitle>
+        </f:title>
 
-            <!-- KPI Summary Bar -->
-            <HBox wrap="Wrap" class="flp-kpi-bar sapUiSmallMarginBottom">
-                <GenericTile
-                    header="Total Users"
-                    subheader="Registered Accounts"
-                    class="kpi-tile-card">
-                    <tileContent>
-                        <TileContent>
-                            <content>
-                                <NumericContent
-                                    value="{userModel>/kpi/total}"
-                                    icon="sap-icon://group"
-                                    valueColor="Neutral" />
-                            </content>
-                        </TileContent>
-                    </tileContent>
-                </GenericTile>
+        <f:header>
+            <f:DynamicPageHeader pinnable="true">
+                <VBox>
+                    <MessageStrip
+                        text="Superadmin Console: Manage user credentials, role assignments (Main Gate, Security, Weighbridge, Factory Gate, Auditor, Admin), and service statuses."
+                        type="Information"
+                        showIcon="true"
+                        class="sapUiSmallMarginBottom" />
 
-                <GenericTile
-                    header="Active Accounts"
-                    subheader="Authentication Enabled"
-                    class="kpi-tile-card">
-                    <tileContent>
-                        <TileContent>
-                            <content>
-                                <NumericContent
-                                    value="{userModel>/kpi/active}"
-                                    icon="sap-icon://sys-enter-2"
-                                    valueColor="Good" />
-                            </content>
-                        </TileContent>
-                    </tileContent>
-                </GenericTile>
+                    <HBox wrap="Wrap" class="fiori-kpi-strip">
+                        <GenericTile
+                            header="Total Users"
+                            subheader="Registered Accounts"
+                            class="kpi-tile-card">
+                            <tileContent>
+                                <TileContent>
+                                    <content>
+                                        <NumericContent
+                                            value="{userModel>/kpi/total}"
+                                            icon="sap-icon://group"
+                                            valueColor="Neutral" />
+                                    </content>
+                                </TileContent>
+                            </tileContent>
+                        </GenericTile>
 
-                <GenericTile
-                    header="Inactive Accounts"
-                    subheader="Login Disabled"
-                    class="kpi-tile-card">
-                    <tileContent>
-                        <TileContent>
-                            <content>
-                                <NumericContent
-                                    value="{userModel>/kpi/inactive}"
-                                    icon="sap-icon://decline"
-                                    valueColor="Critical" />
-                            </content>
-                        </TileContent>
-                    </tileContent>
-                </GenericTile>
+                        <GenericTile
+                            header="Active Accounts"
+                            subheader="Authentication Enabled"
+                            class="kpi-tile-card">
+                            <tileContent>
+                                <TileContent>
+                                    <content>
+                                        <NumericContent
+                                            value="{userModel>/kpi/active}"
+                                            icon="sap-icon://sys-enter-2"
+                                            valueColor="Good" />
+                                    </content>
+                                </TileContent>
+                            </tileContent>
+                        </GenericTile>
 
-                <GenericTile
-                    header="In Service"
-                    subheader="Active On-Duty Staff"
-                    class="kpi-tile-card">
-                    <tileContent>
-                        <TileContent>
-                            <content>
-                                <NumericContent
-                                    value="{userModel>/kpi/inService}"
-                                    icon="sap-icon://employee"
-                                    valueColor="Good" />
-                            </content>
-                        </TileContent>
-                    </tileContent>
-                </GenericTile>
+                        <GenericTile
+                            header="Inactive Accounts"
+                            subheader="Login Disabled"
+                            class="kpi-tile-card">
+                            <tileContent>
+                                <TileContent>
+                                    <content>
+                                        <NumericContent
+                                            value="{userModel>/kpi/inactive}"
+                                            icon="sap-icon://decline"
+                                            valueColor="Critical" />
+                                    </content>
+                                </TileContent>
+                            </tileContent>
+                        </GenericTile>
 
-                <GenericTile
-                    header="Multi-Role Users"
-                    subheader="Cross-Functional Staff"
-                    class="kpi-tile-card">
-                    <tileContent>
-                        <TileContent>
-                            <content>
-                                <NumericContent
-                                    value="{userModel>/kpi/multiRole}"
-                                    icon="sap-icon://collaborate"
-                                    valueColor="Neutral" />
-                            </content>
-                        </TileContent>
-                    </tileContent>
-                </GenericTile>
-            </HBox>
+                        <GenericTile
+                            header="In Service"
+                            subheader="Active On-Duty Staff"
+                            class="kpi-tile-card">
+                            <tileContent>
+                                <TileContent>
+                                    <content>
+                                        <NumericContent
+                                            value="{userModel>/kpi/inService}"
+                                            icon="sap-icon://employee"
+                                            valueColor="Good" />
+                                    </content>
+                                </TileContent>
+                            </tileContent>
+                        </GenericTile>
 
-            <!-- Users Table -->
-            <Table
-                id="idDisplayedUsersTable"
-                items="{
-                    path: 'userModel>/displayedUsers',
-                    templateShareable: false
-                }"
-                growing="true"
-                growingThreshold="20"
-                noDataText="No user accounts match current search or filters.">
-                <headerToolbar>
-                    <OverflowToolbar>
-                        <Title text="User Directory ({= ${userModel>/displayedUsers} ? ${userModel>/displayedUsers}.length : 0 })" level="H3" />
-                        <ToolbarSpacer />
+                        <GenericTile
+                            header="Multi-Role Users"
+                            subheader="Cross-Functional Staff"
+                            class="kpi-tile-card">
+                            <tileContent>
+                                <TileContent>
+                                    <content>
+                                        <NumericContent
+                                            value="{userModel>/kpi/multiRole}"
+                                            icon="sap-icon://collaborate"
+                                            valueColor="Neutral" />
+                                    </content>
+                                </TileContent>
+                            </tileContent>
+                        </GenericTile>
+                    </HBox>
+                </VBox>
+            </f:DynamicPageHeader>
+        </f:header>
 
-                        <SearchField
-                            id="userSearchField"
-                            width="240px"
-                            placeholder="Search name, username, role..."
-                            liveChange=".onSearchLiveChange"
-                            search=".onSearch" />
+        <f:content>
+            <VBox class="fiori-page-container">
+                <VBox class="fiori-table-card">
+                    <Table
+                        id="idDisplayedUsersTable"
+                        sticky="ColumnHeaders,HeaderToolbar"
+                        alternateRowColors="true"
+                        popinLayout="GridSmall"
+                        items="{
+                            path: 'userModel>/displayedUsers',
+                            templateShareable: false
+                        }"
+                        growing="true"
+                        growingThreshold="20"
+                        noDataText="No user accounts match current search or filters.">
+                        <headerToolbar>
+                            <OverflowToolbar style="Clear">
+                                <Title text="User Directory ({= ${userModel>/displayedUsers} ? ${userModel>/displayedUsers}.length : 0 })" level="H3" />
+                                <ToolbarSpacer />
 
-                        <!-- Role Filter -->
-                        <Select
-                            id="filterRoleSelect"
-                            selectedKey="{userModel>/selectedRoleFilter}"
-                            change=".onFilterChange"
-                            autoAdjustWidth="true">
-                            <core:Item key="ALL" text="All Roles" />
-                            <core:Item key="maingate_user" text="Main Gate User" />
-                            <core:Item key="security_user" text="Security Gate User" />
-                            <core:Item key="weighbridge_user" text="Weighbridge User" />
-                            <core:Item key="factory_user" text="Factory Gate User" />
-                            <core:Item key="audit_user" text="Audit User" />
-                            <core:Item key="superadmin_user" text="Superadmin" />
-                            <core:Item key="admin_user" text="Admin" />
-                        </Select>
+                                <SearchField
+                                    id="userSearchField"
+                                    width="220px"
+                                    placeholder="Search name, username, role..."
+                                    liveChange=".onSearchLiveChange"
+                                    search=".onSearch" />
 
-                        <!-- Service Status Filter -->
-                        <Select
-                            id="filterServiceStatusSelect"
-                            selectedKey="{userModel>/selectedServiceStatusFilter}"
-                            change=".onFilterChange"
-                            autoAdjustWidth="true">
-                            <core:Item key="ALL" text="All Service Statuses" />
-                            <core:Item key="IN_SERVICE" text="In Service" />
-                            <core:Item key="ON_LEAVE" text="On Leave" />
-                            <core:Item key="PROBATION" text="On Probation" />
-                            <core:Item key="SUSPENDED" text="Suspended" />
-                            <core:Item key="RESIGNED" text="Resigned / Terminated" />
-                        </Select>
+                                <Select
+                                    id="filterRoleSelect"
+                                    selectedKey="{userModel>/selectedRoleFilter}"
+                                    change=".onFilterChange"
+                                    autoAdjustWidth="true">
+                                    <core:Item key="ALL" text="All Roles" />
+                                    <core:Item key="maingate_user" text="Main Gate User" />
+                                    <core:Item key="security_user" text="Security Gate User" />
+                                    <core:Item key="weighbridge_user" text="Weighbridge User" />
+                                    <core:Item key="factory_user" text="Factory Gate User" />
+                                    <core:Item key="audit_user" text="Audit User" />
+                                    <core:Item key="superadmin_user" text="Superadmin" />
+                                    <core:Item key="admin_user" text="Admin" />
+                                </Select>
 
-                        <!-- Account Status Filter -->
-                        <Select
-                            id="filterStatusSelect"
-                            selectedKey="{userModel>/selectedStatusFilter}"
-                            change=".onFilterChange"
-                            autoAdjustWidth="true">
-                            <core:Item key="ALL" text="All Account Statuses" />
-                            <core:Item key="ACTIVE" text="Active Only" />
-                            <core:Item key="INACTIVE" text="Inactive Only" />
-                        </Select>
+                                <Select
+                                    id="filterServiceStatusSelect"
+                                    selectedKey="{userModel>/selectedServiceStatusFilter}"
+                                    change=".onFilterChange"
+                                    autoAdjustWidth="true">
+                                    <core:Item key="ALL" text="All Service Statuses" />
+                                    <core:Item key="IN_SERVICE" text="In Service" />
+                                    <core:Item key="ON_LEAVE" text="On Leave" />
+                                    <core:Item key="PROBATION" text="On Probation" />
+                                    <core:Item key="SUSPENDED" text="Suspended" />
+                                    <core:Item key="RESIGNED" text="Resigned / Terminated" />
+                                </Select>
 
-                        <Button
-                            icon="sap-icon://clear-filter"
-                            tooltip="Reset Search &amp; Filters"
-                            press=".onResetFilters" />
-                    </OverflowToolbar>
-                </headerToolbar>
+                                <Select
+                                    id="filterStatusSelect"
+                                    selectedKey="{userModel>/selectedStatusFilter}"
+                                    change=".onFilterChange"
+                                    autoAdjustWidth="true">
+                                    <core:Item key="ALL" text="All Account Statuses" />
+                                    <core:Item key="ACTIVE" text="Active Only" />
+                                    <core:Item key="INACTIVE" text="Inactive Only" />
+                                </Select>
 
-                <columns>
-                    <Column width="250px"><header><Text text="User / Username / Employee ID" /></header></Column>
-                    <Column><header><Text text="Designation &amp; Department" /></header></Column>
-                    <Column width="260px"><header><Text text="Assigned Roles" /></header></Column>
-                    <Column><header><Text text="Contact Details" /></header></Column>
-                    <Column hAlign="Center" width="130px"><header><Text text="Service Status" /></header></Column>
-                    <Column hAlign="Center" width="110px"><header><Text text="Status" /></header></Column>
-                    <Column hAlign="End" width="140px"><header><Text text="Actions" /></header></Column>
-                </columns>
+                                <Button
+                                    icon="sap-icon://clear-filter"
+                                    type="Transparent"
+                                    tooltip="Reset Search &amp; Filters"
+                                    press=".onResetFilters" />
+                            </OverflowToolbar>
+                        </headerToolbar>
 
-                <items>
-                    <ColumnListItem>
-                        <cells>
-                            <!-- User: Avatar + Name + Username + Employee ID -->
-                            <HBox alignItems="Center">
-                                <Avatar
-                                    initials="{path: 'userModel>username', formatter: '.formatter.getUserInitials'}"
-                                    backgroundColor="{path: 'userModel>username', formatter: '.formatter.getUserAvatarColor'}"
-                                    displaySize="XS"
-                                    class="sapUiTinyMarginEnd" />
-                                <VBox>
-                                    <Text text="{userModel>name}" design="Bold" />
-                                    <Text text="@{userModel>username}" class="sapUiTinyMarginTop text-muted" />
+                        <columns>
+                            <Column width="250px"><header><Text text="User / Username / Employee ID" /></header></Column>
+                            <Column minScreenWidth="Tablet" demandPopin="true"><header><Text text="Designation &amp; Department" /></header></Column>
+                            <Column width="250px" minScreenWidth="Tablet" demandPopin="true"><header><Text text="Assigned Roles" /></header></Column>
+                            <Column minScreenWidth="Desktop" demandPopin="true"><header><Text text="Contact Details" /></header></Column>
+                            <Column hAlign="Center" width="135px"><header><Text text="Service Status" /></header></Column>
+                            <Column hAlign="Center" width="110px"><header><Text text="Status" /></header></Column>
+                            <Column hAlign="End" width="140px"><header><Text text="Actions" /></header></Column>
+                        </columns>
+
+                        <items>
+                            <ColumnListItem>
+                                <cells>
+                                    <HBox alignItems="Center">
+                                        <Avatar
+                                            initials="{path: 'userModel>username', formatter: '.formatter.getUserInitials'}"
+                                            backgroundColor="{path: 'userModel>username', formatter: '.formatter.getUserAvatarColor'}"
+                                            displaySize="XS"
+                                            class="sapUiTinyMarginEnd" />
+                                        <VBox>
+                                            <Text text="{userModel>name}" class="fiori-text-strong" />
+                                            <Text text="@{userModel>username}" class="sapUiTinyMarginTop text-muted" />
+                                            <ObjectStatus
+                                                text="{= 'ID: ' + ${userModel>employeeId} }"
+                                                state="None"
+                                                icon="sap-icon://badge"
+                                                visible="{= !!${userModel>employeeId} }"
+                                                class="sapUiTinyMarginTop" />
+                                        </VBox>
+                                    </HBox>
+
+                                    <VBox>
+                                        <Text text="{= ${userModel>designation} || 'Staff Member' }" class="fiori-text-strong" />
+                                        <Text text="{= ${userModel>department} || '-' }" class="sapUiTinyMarginTop text-muted" />
+                                    </VBox>
+
+                                    <VBox>
+                                        <HBox wrap="Wrap" items="{
+                                            path: 'userModel>roleBadges',
+                                            templateShareable: false
+                                        }">
+                                            <ObjectStatus
+                                                text="{userModel>roleName}"
+                                                state="{userModel>state}"
+                                                icon="{userModel>icon}"
+                                                class="sapUiTinyMarginEnd sapUiTinyMarginBottom" />
+                                        </HBox>
+                                    </VBox>
+
+                                    <VBox>
+                                        <Text text="{= ${userModel>email} || '-' }" />
+                                        <Text text="{= ${userModel>phoneNo} || '-' }" class="sapUiTinyMarginTop text-muted" />
+                                    </VBox>
+
                                     <ObjectStatus
-                                        text="{= 'ID: ' + ${userModel>employeeId} }"
-                                        state="None"
-                                        icon="sap-icon://badge"
-                                        visible="{= !!${userModel>employeeId} }"
-                                        class="sapUiTinyMarginTop" />
-                                </VBox>
-                            </HBox>
+                                        text="{path: 'userModel>serviceStatus', formatter: '.formatServiceStatusText'}"
+                                        state="{path: 'userModel>serviceStatus', formatter: '.formatServiceStatusState'}"
+                                        icon="{path: 'userModel>serviceStatus', formatter: '.formatServiceStatusIcon'}" />
 
-                            <!-- Designation & Department -->
-                            <VBox>
-                                <Text text="{= ${userModel>designation} || 'Staff Member' }" design="Bold" />
-                                <Text text="{= ${userModel>department} || '-' }" class="sapUiTinyMarginTop" />
-                            </VBox>
-
-                            <!-- Assigned Roles -->
-                            <VBox>
-                                <HBox wrap="Wrap" items="{
-                                    path: 'userModel>roleBadges',
-                                    templateShareable: false
-                                }">
                                     <ObjectStatus
-                                        text="{userModel>roleName}"
-                                        state="{userModel>state}"
-                                        icon="{userModel>icon}"
-                                        class="sapUiTinyMarginEnd sapUiTinyMarginBottom" />
-                                </HBox>
-                            </VBox>
+                                        text="{= ${userModel>status} === 'ACTIVE' ? 'Active' : 'Inactive' }"
+                                        state="{= ${userModel>status} === 'ACTIVE' ? 'Success' : 'Error' }"
+                                        inverted="true"
+                                        icon="{= ${userModel>status} === 'ACTIVE' ? 'sap-icon://sys-enter-2' : 'sap-icon://error' }" />
 
-                            <!-- Contact -->
-                            <VBox>
-                                <Text text="{= ${userModel>email} || '-' }" />
-                                <Text text="{= ${userModel>phoneNo} || '-' }" class="sapUiTinyMarginTop" />
-                            </VBox>
-
-                            <!-- Service Status -->
-                            <ObjectStatus
-                                text="{path: 'userModel>serviceStatus', formatter: '.formatServiceStatusText'}"
-                                state="{path: 'userModel>serviceStatus', formatter: '.formatServiceStatusState'}"
-                                icon="{path: 'userModel>serviceStatus', formatter: '.formatServiceStatusIcon'}" />
-
-                            <!-- Account Status -->
-                            <ObjectStatus
-                                text="{= ${userModel>status} === 'ACTIVE' ? 'Active' : 'Inactive' }"
-                                state="{= ${userModel>status} === 'ACTIVE' ? 'Success' : 'Error' }"
-                                icon="{= ${userModel>status} === 'ACTIVE' ? 'sap-icon://sys-enter-2' : 'sap-icon://error' }" />
-
-                            <!-- Actions -->
-                            <HBox justifyContent="End" alignItems="Center">
-                                <Button
-                                    icon="sap-icon://edit"
-                                    type="Transparent"
-                                    tooltip="Edit User Details &amp; Roles"
-                                    press=".onEditUserPress" />
-                                <Button
-                                    icon="{= ${userModel>status} === 'ACTIVE' ? 'sap-icon://decline' : 'sap-icon://accept' }"
-                                    type="Transparent"
-                                    tooltip="{= ${userModel>status} === 'ACTIVE' ? 'Deactivate User Account' : 'Activate User Account' }"
-                                    press=".onToggleStatusPress" />
-                                <Button
-                                    icon="sap-icon://delete"
-                                    type="Transparent"
-                                    tooltip="Delete User Account"
-                                    visible="{= ${userModel>username} !== 'superadmin_user' }"
-                                    press=".onDeleteUserPress" />
-                            </HBox>
-                        </cells>
-                    </ColumnListItem>
-                </items>
-            </Table>
-        </VBox>
-    </Page>
+                                    <HBox justifyContent="End" alignItems="Center">
+                                        <Button
+                                            icon="sap-icon://edit"
+                                            type="Transparent"
+                                            tooltip="Edit User Details &amp; Roles"
+                                            press=".onEditUserPress" />
+                                        <Button
+                                            icon="{= ${userModel>status} === 'ACTIVE' ? 'sap-icon://decline' : 'sap-icon://accept' }"
+                                            type="Transparent"
+                                            tooltip="{= ${userModel>status} === 'ACTIVE' ? 'Deactivate User Account' : 'Activate User Account' }"
+                                            press=".onToggleStatusPress" />
+                                        <Button
+                                            icon="sap-icon://delete"
+                                            type="Transparent"
+                                            tooltip="Delete User Account"
+                                            visible="{= ${userModel>username} !== 'superadmin_user' }"
+                                            press=".onDeleteUserPress" />
+                                    </HBox>
+                                </cells>
+                            </ColumnListItem>
+                        </items>
+                    </Table>
+                </VBox>
+            </VBox>
+        </f:content>
+    </f:DynamicPage>
 </mvc:View>

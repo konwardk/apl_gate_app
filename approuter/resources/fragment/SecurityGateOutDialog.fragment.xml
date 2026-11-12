@@ -50,13 +50,14 @@
                     </ComboBox>
 
                     <Label text="Vehicle Reg No" />
-                    <Label text="{= ${secModel>/outSelectedVehicle/vehicleRegNo} || 'Select an outbound vehicle above' }" design="Bold" />
+                    <Text text="{= ${secModel>/outSelectedVehicle/vehicleRegNo} || 'Select an outbound vehicle above' }" class="fiori-text-strong" />
 
                     <Label text="Visit Purpose" />
                     <HBox alignItems="Center">
                         <ObjectStatus
                             text="{= ${secModel>/outSelectedVehicle/purpose} || '-' }"
                             state="{= ${secModel>/outSelectedVehicle/purpose} === 'DELIVERY' ? 'Information' : 'Warning' }"
+                            inverted="true"
                             class="sapUiTinyMarginEnd" />
                         <Text text="{= ${secModel>/outSelectedVehicle/vehicleType} ? '(' + ${secModel>/outSelectedVehicle/vehicleType} + ')' : '' }" />
                     </HBox>
@@ -89,6 +90,7 @@
                         <ObjectStatus
                             text="{path: 'secModel>/outSelectedVehicle/status', formatter: '.formatter.getStatusText'}"
                             state="{path: 'secModel>/outSelectedVehicle/status', formatter: '.formatter.getStatusState'}"
+                            inverted="true"
                             class="sapUiTinyMarginEnd" />
                         <Text text="{path: 'secModel>/outSelectedVehicle/currentStage', formatter: '.formatter.getStageText'}" />
                     </HBox>
@@ -138,6 +140,7 @@
                         id="dialogSecOutPassType"
                         value="{path: 'secModel>/outGatePassType', formatter: '.formatter.getGateOutTypeDesc'}"
                         editable="false"
+                        class="grayed-out-input"
                         width="100%" />
 
                     <Label
@@ -185,6 +188,7 @@
             <Button
                 id="btnCancelSecGateOut"
                 text="Cancel"
+                type="Transparent"
                 press=".onCancelSecurityGateOut" />
         </endButton>
     </Dialog>

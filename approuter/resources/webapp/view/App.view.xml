@@ -23,15 +23,15 @@
             <Text text="" class="sapUiTinyMarginEnd text-muted" />
             <ToolbarSpacer />
 
-            <!-- Authenticated Workspace Navigation -->
-            <!-- <Button
+            <!-- Authenticated Role Workspace Direct Navigation Button -->
+            <Button
                 text="{/assignedScreenTitle}"
                 icon="{/assignedScreenIcon}"
                 type="Emphasized"
-                tooltip="Go to your assigned operational workspace"
-                visible="{= ${/isAuthenticated} &amp;&amp; ${/assignedScreen} !== 'launchpadPage' }"
+                tooltip="Go directly to your assigned operational workspace"
+                visible="{= ${/isAuthenticated} &amp;&amp; !!${/assignedScreen} &amp;&amp; ${/assignedScreen} !== 'launchpadPage' }"
                 press=".onAssignedWorkspaceNav"
-                class="sapUiTinyMarginEnd" /> -->
+                class="sapUiTinyMarginEnd" />
 
             <Button
                 text="Dashboard"
@@ -92,19 +92,22 @@
                 class="sapUiTinyMarginBegin sapUiTinyMarginEnd cursor-pointer" />
 
             <Button
+                id="idSignOutButton"
+                text="Sign Out"
                 icon="sap-icon://log-out"
                 tooltip="Sign Out from Current Session"
                 type="Transparent"
                 visible="{/isAuthenticated}"
                 press=".onSignOutPress" />
 
-            <!-- Sign In button when unauthenticated -->
+            <!-- Sign In button when unauthenticated (local dev only) -->
             <Button
+                id="idSignInNavButton"
                 text="Sign In"
                 icon="sap-icon://account"
                 type="Emphasized"
                 tooltip="Sign In to Operational Workspace"
-                visible="{= !${/isAuthenticated} }"
+                visible="{= !${/isAuthenticated} &amp;&amp; ${/isLocalMode} }"
                 press=".onSignInNav" />
         </tnt:ToolHeader>
 
@@ -112,12 +115,12 @@
         <NavContainer
             id="idAppNavContainer"
             autoFocus="false"
+            visible="{= ${/isAuthenticated} || ${/isLocalMode} }"
             class="app-nav-container">
             <layoutData>
                 <FlexItemData growFactor="1" baseSize="0" />
             </layoutData>
             <pages>
-                <mvc:XMLView id="loginPage" viewName="factory.gate.view.Login" />
                 <mvc:XMLView id="landingPage" viewName="factory.gate.view.Landing" />
                 <mvc:XMLView id="launchpadPage" viewName="factory.gate.view.Dashboard" />
                 <mvc:XMLView id="feViewerPage" viewName="factory.gate.view.Viewer" />
@@ -129,6 +132,7 @@
                 <mvc:XMLView id="factoryGateOpsPage" viewName="factory.gate.view.FactoryOperations" />
                 <mvc:XMLView id="userManagementPage" viewName="factory.gate.view.UserManagement" />
                 <mvc:XMLView id="reportsPage" viewName="factory.gate.view.Reports" />
+                <mvc:XMLView id="loginPage" viewName="factory.gate.view.Login" />
             </pages>
         </NavContainer>
     </VBox>

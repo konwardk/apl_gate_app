@@ -1,15 +1,19 @@
 <core:FragmentDefinition
     xmlns="sap.m"
     xmlns:form="sap.ui.layout.form"
-    xmlns:core="sap.ui.core">
+    xmlns:core="sap.ui.core"
+    xmlns:custom="http://schemas.sap.com/sapui5/extension/sap.ui.core.CustomData/1">
     <Dialog
         id="idSignInDialog"
         title="Sign In to Factory Gate Operations"
-        contentWidth="460px">
+        icon="sap-icon://log-in"
+        contentWidth="480px"
+        draggable="true"
+        class="sapUiContentPadding">
         <content>
-            <VBox class="sapUiSmallMargin">
+            <VBox class="sapUiTinyMargin">
                 <MessageStrip
-                    text="Enter user credentials or select a mock persona to authenticate with CAP RBAC policies."
+                    text="Enter user credentials or select a persona to authenticate with CAP RBAC policies."
                     type="Information"
                     showIcon="true"
                     class="sapUiSmallMarginBottom" />
@@ -38,23 +42,23 @@
                     </form:content>
                 </form:SimpleForm>
 
-                <Title text="Quick Persona Selection" level="H4" class="sapUiSmallMarginTop sapUiTinyMarginBottom" />
+                <Title text="Quick Persona Selection" level="H4" titleStyle="H5" class="sapUiSmallMarginTop sapUiTinyMarginBottom" />
                 <HBox wrap="Wrap">
-                    <Button text="Superadmin" icon="sap-icon://shield" type="Ghost" press=".onSelectQuickPersona" custom:user="superadmin_user" xmlns:custom="http://schemas.sap.com/sapui5/extension/sap.ui.core.CustomData/1" class="sapUiTinyMargin" />
-                    <Button text="Main Gate" icon="sap-icon://log-in" type="Ghost" press=".onSelectQuickPersona" custom:user="maingate_user" xmlns:custom="http://schemas.sap.com/sapui5/extension/sap.ui.core.CustomData/1" class="sapUiTinyMargin" />
-                    <Button text="Security" icon="sap-icon://key-user-settings" type="Ghost" press=".onSelectQuickPersona" custom:user="security_user" xmlns:custom="http://schemas.sap.com/sapui5/extension/sap.ui.core.CustomData/1" class="sapUiTinyMargin" />
-                    <Button text="Weighbridge" icon="sap-icon://sys-monitor" type="Ghost" press=".onSelectQuickPersona" custom:user="weighbridge_user" xmlns:custom="http://schemas.sap.com/sapui5/extension/sap.ui.core.CustomData/1" class="sapUiTinyMargin" />
-                    <Button text="Factory Yard" icon="sap-icon://factory" type="Ghost" press=".onSelectQuickPersona" custom:user="factory_user" xmlns:custom="http://schemas.sap.com/sapui5/extension/sap.ui.core.CustomData/1" class="sapUiTinyMargin" />
-                    <Button text="Admin" icon="sap-icon://user-settings" type="Ghost" press=".onSelectQuickPersona" custom:user="admin_user" xmlns:custom="http://schemas.sap.com/sapui5/extension/sap.ui.core.CustomData/1" class="sapUiTinyMargin" />
-                    <Button text="Auditor" icon="sap-icon://history" type="Ghost" press=".onSelectQuickPersona" custom:user="auditor_user" xmlns:custom="http://schemas.sap.com/sapui5/extension/sap.ui.core.CustomData/1" class="sapUiTinyMargin" />
+                    <Button text="Superadmin" icon="sap-icon://shield" type="Ghost" press=".onSelectQuickPersona" custom:user="superadmin_user" class="sapUiTinyMarginEnd sapUiTinyMarginBottom" />
+                    <Button text="Main Gate" icon="sap-icon://log-in" type="Ghost" press=".onSelectQuickPersona" custom:user="maingate_user" class="sapUiTinyMarginEnd sapUiTinyMarginBottom" />
+                    <Button text="Security" icon="sap-icon://key-user-settings" type="Ghost" press=".onSelectQuickPersona" custom:user="security_user" class="sapUiTinyMarginEnd sapUiTinyMarginBottom" />
+                    <Button text="Weighbridge" icon="sap-icon://sys-monitor" type="Ghost" press=".onSelectQuickPersona" custom:user="weighbridge_user" class="sapUiTinyMarginEnd sapUiTinyMarginBottom" />
+                    <Button text="Factory Yard" icon="sap-icon://factory" type="Ghost" press=".onSelectQuickPersona" custom:user="factory_user" class="sapUiTinyMarginEnd sapUiTinyMarginBottom" />
+                    <Button text="Admin" icon="sap-icon://user-settings" type="Ghost" press=".onSelectQuickPersona" custom:user="admin_user" class="sapUiTinyMarginEnd sapUiTinyMarginBottom" />
+                    <Button text="Auditor" icon="sap-icon://history" type="Ghost" press=".onSelectQuickPersona" custom:user="auditor_user" class="sapUiTinyMarginEnd sapUiTinyMarginBottom" />
                 </HBox>
             </VBox>
         </content>
         <beginButton>
-            <Button text="Authenticate" type="Emphasized" press=".onSignInConfirm" />
+            <Button text="Authenticate" icon="sap-icon://accept" type="Emphasized" press=".onSignInConfirm" />
         </beginButton>
         <endButton>
-            <Button text="Cancel" press=".onSignInCancel" />
+            <Button text="Cancel" type="Transparent" press=".onSignInCancel" />
         </endButton>
     </Dialog>
 </core:FragmentDefinition>

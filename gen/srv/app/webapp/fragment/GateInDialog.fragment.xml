@@ -5,7 +5,11 @@
     <Dialog
         id="idGateInDialog"
         title="Create Gate IN (Entry Registration)"
-        contentWidth="480px">
+        icon="sap-icon://log-in"
+        contentWidth="500px"
+        draggable="true"
+        resizable="true"
+        class="sapUiContentPadding">
         <content>
             <form:SimpleForm
                 editable="true"
@@ -70,12 +74,14 @@
         <beginButton>
             <Button
                 text="Register Gate IN"
+                icon="sap-icon://accept"
                 type="Emphasized"
                 press=".onGateInConfirm" />
         </beginButton>
         <endButton>
             <Button
                 text="Cancel"
+                type="Transparent"
                 press=".onGateInCancel" />
         </endButton>
     </Dialog>

@@ -69,21 +69,57 @@ sap.ui.define([
             }
         },
 
+        onSignInBtpButtonPress: function () {
+            const oModel = this.getOwnerComponent().getModel();
+            const sUser = (oModel.getProperty("/loginUsername") || "").trim();
+            const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+
+            if (isLocal) {
+                oModel.setProperty("/loginUsername", sUser || "superadmin_user");
+                oModel.setProperty("/loginPassword", "password");
+                return this.onSignInToWorkspaceButtonPress();
+            }
+
+            let sLoginUrl = "/auth/login";
+            if (sUser) {
+                sLoginUrl += "?login_hint=" + encodeURIComponent(sUser);
+            }
+            window.location.href = sLoginUrl;
+        },
+
         onSignInToWorkspaceButtonPress: async function () {
             const oModel = this.getOwnerComponent().getModel();
             const sUser = (oModel.getProperty("/loginUsername") || "").trim();
             const sPass = (oModel.getProperty("/loginPassword") || "").trim();
+            const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
 
             const oUserInput = this.byId("idLoginUsernameInput");
             const oPassInput = this.byId("idLoginPasswordInput");
 
             if (!sUser) {
                 if (oUserInput) oUserInput.setValueState(ValueState.Error);
-                oModel.setProperty("/loginError", "Please enter your Username / User ID.");
+                oModel.setProperty("/loginError", "Please enter your Username or BTP User ID.");
                 return;
             }
             if (oUserInput) oUserInput.setValueState(ValueState.None);
 
+            // When deployed on SAP BTP Cloud Foundry:
+            // Route through XSUAA protected authentication route with user's ID pre-populated
+            if (!isLocal) {
+                oModel.setProperty("/loginError", "Authenticating with SAP BTP...");
+                oModel.setProperty("/isLoginBusy", true);
+                const oBtn = this.byId("idSignInToWorkspaceButton");
+                if (oBtn) oBtn.setBusy(true);
+
+                let sLoginUrl = "/auth/login";
+                if (sUser) {
+                    sLoginUrl += "?login_hint=" + encodeURIComponent(sUser);
+                }
+                window.location.href = sLoginUrl;
+                return;
+            }
+
+            // Local development authentication with username & password
             if (!sPass) {
                 if (oPassInput) oPassInput.setValueState(ValueState.Error);
                 oModel.setProperty("/loginError", "Please enter your password.");

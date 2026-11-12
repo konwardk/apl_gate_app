@@ -20,7 +20,7 @@
     "start": "cds-serve",
     "watch": "cds watch",
     "build": "node scripts/build.js",
-    "build:mta": "mbt build",
+    "build:mta": "node scripts/package-mta.js",
     "test": "node test/gate-crud.test.js && node test/security-gate.test.js && node test/weighbridge.test.js && node test/gate-out.test.js && node test/security-gate-out.test.js && node test/bypass-weighbridge.test.js && node test/entry-wise-edit.test.js && node test/factory-gate.test.js && node test/security-route-assign.test.js && node test/po-service.test.js && node test/s4-supplier.test.js && node test/user-management.test.js && node test/auth-rbac-login.test.js && node test/cbo-integration.test.js && node test/custom-user-cbo.test.js"
   },
   "sapux": [
@@ -83,7 +83,7 @@
         },
         "[production]": {
           "credentials": {
-            "destination": "S4HANA_CUST",
+            "destination": "S4HANA_TEST",
             "path": "/sap/opu/odata4/sap/api_purchaseorder_2/srvd_a2x/sap/purchaseorder/0001"
           }
         },
@@ -112,7 +112,7 @@
         },
         "[production]": {
           "credentials": {
-            "destination": "S4HANA_CUST",
+            "destination": "S4HANA_TEST",
             "path": "/sap/opu/odata4/sap/yy1_api_customuser/srvd_a2x/sap/yy1_api_customuser/0001"
           }
         },
@@ -137,7 +137,7 @@
         },
         "[production]": {
           "credentials": {
-            "destination": "S4HANA_CUST",
+            "destination": "S4HANA_TEST",
             "path": "/sap/opu/odata4/sap/yy1_api_vehiclegateoperation/srvd_a2x/sap/yy1_api_vehiclegateoperation/0001"
           }
         },
@@ -160,7 +160,7 @@
         },
         "[production]": {
           "credentials": {
-            "destination": "S4HANA_CUST",
+            "destination": "S4HANA_TEST",
             "path": "/sap/opu/odata/sap/YY1_SUPPLIER_CDS"
           }
         },

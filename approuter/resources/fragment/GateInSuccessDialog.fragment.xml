@@ -7,7 +7,8 @@
         title="Gate IN Created Successfully"
         type="Message"
         state="Success"
-        contentWidth="480px">
+        contentWidth="500px"
+        class="sapUiContentPadding">
         <content>
             <VBox alignItems="Center">
                 <Image
@@ -19,29 +20,32 @@
                     level="H4"
                     titleStyle="H5" />
                 <Text
-                    text="Address: Namprup, Dist: Dibrugarh(ASSAM), PO: Parbatpur-786623."
+                    text="Address: Namrup, Dist: Dibrugarh (ASSAM), PO: Parbatpur-786623."
                     class="sapUiTinyMarginBottom text-muted" />
-                <Text text="Generated Gate IN Pass Identifier:" class="sapUiSmallMarginTop" />
+                <Text text="Generated Gate IN Pass Identifier" class="sapUiSmallMarginTop text-muted" />
                 <Title
                     text="{gateInSuccess>/gateInNumber}"
                     level="H1"
                     titleStyle="H1"
-                    class="sapUiSmallMarginTop success-gate-number" />
+                    class="sapUiTinyMarginTop success-gate-number" />
                 <ObjectStatus
                     text="Status: IN (Main Gate Entered)"
                     state="Success"
+                    inverted="true"
                     class="sapUiSmallMarginTop sapUiSmallMarginBottom" />
                 <form:SimpleForm
                     layout="ResponsiveGridLayout"
                     labelSpanXL="5"
                     labelSpanL="5"
                     labelSpanM="5"
-                    labelSpanS="12">
+                    labelSpanS="12"
+                    adjustLabelSpan="false"
+                    width="100%">
                     <form:content>
                         <Label text="Gate IN #" />
-                        <Text text="{gateInSuccess>/gateInNumber}" />
+                        <Text text="{gateInSuccess>/gateInNumber}" class="fiori-text-strong" />
                         <Label text="Vehicle Reg No" />
-                        <Text text="{gateInSuccess>/vehicleRegNo}" />
+                        <Text text="{gateInSuccess>/vehicleRegNo}" class="fiori-text-strong" />
                         <Label text="Vehicle Type" />
                         <Text text="{path: 'gateInSuccess>/vehicleType', formatter: '.formatter.getVehicleTypeText'}" />
                         <Label text="Driver Name" />
@@ -68,6 +72,7 @@
         <endButton>
             <Button
                 text="Close"
+                type="Transparent"
                 press=".onGateInSuccessDone" />
         </endButton>
     </Dialog>

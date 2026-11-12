@@ -12,7 +12,7 @@
         class="sapUiContentPadding">
         <customHeader>
             <Toolbar>
-                <core:Icon src="sap-icon://sales-order" class="sapUiTinyMarginBegin" />
+                <core:Icon src="sap-icon://sales-order" color="#0070f2" class="sapUiTinyMarginBegin" />
                 <Title text="Select Purchase Order (SAP S/4HANA Cloud)" level="H2" />
                 <ToolbarSpacer />
                 <Button
@@ -25,7 +25,7 @@
         <content>
             <VBox class="sapUiTinyMarginBottom">
                 <!-- Filter Section: Supplier, PurchaseOrderDate, Search -->
-                <VBox class="dashboard-hero-card sapUiSmallMarginBottom">
+                <VBox class="fiori-surface-card sapUiSmallMarginBottom">
                     <HBox alignItems="Center" justifyContent="SpaceBetween" wrap="Wrap" class="sapUiTinyMarginBottom">
                         <HBox alignItems="Center">
                             <core:Icon src="sap-icon://filter" size="16px" color="#0070f2" class="sapUiTinyMarginEnd" />
@@ -99,71 +99,52 @@
                 </VBox>
 
                 <!-- Purchase Orders Table -->
-                <Table
-                    id="poValueHelpTable"
-                    mode="SingleSelectLeft"
-                    selectionChange=".onPoSelectionChange"
-                    growing="true"
-                    growingThreshold="25"
-                    growingScrollToLoad="true"
-                    noDataText="No Purchase Orders found matching the filter criteria"
-                    items="{
-                        path: 'poModel>/',
-                        templateShareable: false
-                    }">
-                    <columns>
-                        <Column width="22%">
-                            <header>
-                                <Text text="PO Number / Type" />
-                            </header>
-                        </Column>
-                        <Column width="18%">
-                            <header>
-                                <Text text="Supplier" />
-                            </header>
-                        </Column>
-                        <Column width="12%" minScreenWidth="Tablet" demandPopin="true">
-                            <header>
-                                <Text text="Company" />
-                            </header>
-                        </Column>
-                        <Column width="20%" minScreenWidth="Desktop" demandPopin="true">
-                            <header>
-                                <Text text="Purchasing Org / Group" />
-                            </header>
-                        </Column>
-                        <Column width="16%">
-                            <header>
-                                <Text text="PO Date" />
-                            </header>
-                        </Column>
-                        <Column width="12%" minScreenWidth="Tablet" demandPopin="true">
-                            <header>
-                                <Text text="Currency" />
-                            </header>
-                        </Column>
-                    </columns>
-                    <items>
-                        <ColumnListItem type="Active" press=".onPoRowSelect">
-                            <cells>
-                                <ObjectIdentifier
-                                    title="{poModel>PurchaseOrder}"
-                                    text="{= ${poModel>PurchaseOrderType} ? ('Type: ' + ${poModel>PurchaseOrderType}) : '' }" />
-                                <VBox>
-                                    <Text text="{poModel>Supplier}" design="Bold" />
-                                    <Text text="{poModel>SupplierName}" class="text-muted sapUiTinyMarginTop" visible="{= !!${poModel>SupplierName} }" />
-                                </VBox>
-                                <Text text="{poModel>CompanyCode}" />
-                                <VBox>
-                                    <Text text="{= ${poModel>PurchasingOrganization} ? ('Org: ' + ${poModel>PurchasingOrganization}) : '-' }" />
-                                    <Text text="{= ${poModel>PurchasingGroup} ? ('Grp: ' + ${poModel>PurchasingGroup}) : '-' }" />
-                                </VBox>
-                                <Text text="{poModel>PurchaseOrderDate}" />
-                                <Text text="{= ${poModel>DocumentCurrency} || 'INR' }" />
-                            </cells>
-                        </ColumnListItem>
-                    </items>
-                </Table>
+                <VBox class="fiori-table-card">
+                    <Table
+                        id="poValueHelpTable"
+                        mode="SingleSelectLeft"
+                        sticky="ColumnHeaders"
+                        alternateRowColors="true"
+                        popinLayout="GridSmall"
+                        selectionChange=".onPoSelectionChange"
+                        growing="true"
+                        growingThreshold="25"
+                        growingScrollToLoad="true"
+                        noDataText="No Purchase Orders found matching the filter criteria"
+                        items="{
+                            path: 'poModel>/',
+                            templateShareable: false
+                        }">
+                        <columns>
+                            <Column width="22%"><header><Text text="PO Number / Type" /></header></Column>
+                            <Column width="18%"><header><Text text="Supplier" /></header></Column>
+                            <Column width="12%" minScreenWidth="Tablet" demandPopin="true"><header><Text text="Company" /></header></Column>
+                            <Column width="20%" minScreenWidth="Desktop" demandPopin="true"><header><Text text="Purchasing Org / Group" /></header></Column>
+                            <Column width="16%"><header><Text text="PO Date" /></header></Column>
+                            <Column width="12%" minScreenWidth="Tablet" demandPopin="true"><header><Text text="Currency" /></header></Column>
+                        </columns>
+                        <items>
+                            <ColumnListItem type="Active" press=".onPoRowSelect">
+                                <cells>
+                                    <ObjectIdentifier
+                                        title="{poModel>PurchaseOrder}"
+                                        text="{= ${poModel>PurchaseOrderType} ? ('Type: ' + ${poModel>PurchaseOrderType}) : '' }" />
+                                    <VBox>
+                                        <Text text="{poModel>Supplier}" class="fiori-text-strong" />
+                                        <Text text="{poModel>SupplierName}" class="text-muted sapUiTinyMarginTop" visible="{= !!${poModel>SupplierName} }" />
+                                    </VBox>
+                                    <Text text="{poModel>CompanyCode}" />
+                                    <VBox>
+                                        <Text text="{= ${poModel>PurchasingOrganization} ? ('Org: ' + ${poModel>PurchasingOrganization}) : '-' }" />
+                                        <Text text="{= ${poModel>PurchasingGroup} ? ('Grp: ' + ${poModel>PurchasingGroup}) : '-' }" class="text-muted" />
+                                    </VBox>
+                                    <Text text="{poModel>PurchaseOrderDate}" />
+                                    <Text text="{= ${poModel>DocumentCurrency} || 'INR' }" />
+                                </cells>
+                            </ColumnListItem>
+                        </items>
+                    </Table>
+                </VBox>
             </VBox>
         </content>
         <beginButton>
@@ -178,6 +159,7 @@
         <endButton>
             <Button
                 text="Cancel"
+                type="Transparent"
                 press=".onPoValueHelpCancel" />
         </endButton>
     </Dialog>

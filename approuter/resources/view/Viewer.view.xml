@@ -4,14 +4,15 @@
     xmlns:core="sap.ui.core"
     xmlns="sap.m">
     <Page showHeader="false" enableScrolling="false">
-        <OverflowToolbar class="fe-subtoolbar">
+        <OverflowToolbar class="fe-subtoolbar" style="Clear">
             <Button
-                text="Back to Launchpad"
+                text="Launchpad"
                 icon="sap-icon://nav-back"
-                type="Emphasized"
+                type="Transparent"
+                tooltip="Back to Launchpad"
                 press=".onNavBack" />
             <ToolbarSpacer />
-            <Title text="{/currentFeAppTitle}" level="H2" titleStyle="H3" />
+            <Title text="{/currentFeAppTitle}" level="H2" titleStyle="H4" />
             <ToolbarSpacer />
             <Button
                 text="Open in New Tab"

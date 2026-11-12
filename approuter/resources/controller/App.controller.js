@@ -5,6 +5,13 @@ sap.ui.define([
 
     return Controller.extend("factory.gate.controller.App", {
         onInit: function () {
+            // Clean up login query parameters or sub-path from URL bar if present
+            if (window.location.pathname !== "/" && window.location.pathname !== "/index.html") {
+                if (window.history && window.history.replaceState) {
+                    window.history.replaceState({}, document.title, "/" + (window.location.hash || ""));
+                }
+            }
+
             const oNavContainer = this.byId("idAppNavContainer") || this.byId("navContainer");
             this.getOwnerComponent().setNavContainer(oNavContainer);
 
@@ -12,6 +19,7 @@ sap.ui.define([
             const oComp = this.getOwnerComponent();
             const oModel = oComp.getModel();
             const bAuth = oModel ? oModel.getProperty("/isAuthenticated") : false;
+            const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
 
             if (bAuth) {
                 oComp.navigateTo("landingPage", "show");
@@ -19,22 +27,23 @@ sap.ui.define([
                 oComp.initSession().then(function (bLoggedIn) {
                     if (bLoggedIn) {
                         oComp.navigateTo("landingPage", "show");
-                    } else {
+                    } else if (isLocal) {
                         oComp.navigateTo("loginPage", "show");
+                    } else {
+                        // On SAP BTP Cloud Foundry, trigger standard XSUAA login
+                        window.location.replace("/index.html");
                     }
                 }).catch(function () {
-                    oComp.navigateTo("loginPage", "show");
+                    if (isLocal) {
+                        oComp.navigateTo("loginPage", "show");
+                    } else {
+                        window.location.replace("/index.html");
+                    }
                 });
             }
         },
 
         onHomePressed: function () {
-            const oModel = this.getOwnerComponent().getModel();
-            const bAuth = oModel ? oModel.getProperty("/isAuthenticated") : false;
-            if (!bAuth) {
-                this.getOwnerComponent().navigateTo("loginPage", "slide");
-                return;
-            }
             this.getOwnerComponent().navigateTo("landingPage", "slide");
         },
 
@@ -71,7 +80,12 @@ sap.ui.define([
         },
 
         onSignInNav: function () {
-            this.getOwnerComponent().navigateTo("loginPage", "slide");
+            const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+            if (isLocal) {
+                this.getOwnerComponent().navigateTo("loginPage", "slide");
+            } else {
+                window.location.replace("/index.html");
+            }
         },
 
         onSignOutPress: function () {

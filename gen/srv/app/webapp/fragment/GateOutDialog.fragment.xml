@@ -5,7 +5,11 @@
     <Dialog
         id="idGateOutDialog"
         title="{= ${gateOutModel>/isRowAction} ? ('Main Gate Exit - ' + ${gateOutModel>/selectedVehicle/gateInNumber} + ' (' + ${gateOutModel>/selectedVehicle/vehicleRegNo} + ')') : 'Main Gate Exit - Authorize Gate OUT' }"
-        contentWidth="520px">
+        icon="sap-icon://log-out"
+        contentWidth="520px"
+        draggable="true"
+        resizable="true"
+        class="sapUiContentPadding">
         <content>
             <form:SimpleForm
                 editable="true"
@@ -35,7 +39,7 @@
                     </ComboBox>
 
                     <Label text="Vehicle Reg No" visible="{= !!${gateOutModel>/selectedVehicle} }" />
-                    <Text text="{gateOutModel>/selectedVehicle/vehicleRegNo}" visible="{= !!${gateOutModel>/selectedVehicle} }" />
+                    <Text text="{gateOutModel>/selectedVehicle/vehicleRegNo}" class="fiori-text-strong" visible="{= !!${gateOutModel>/selectedVehicle} }" />
 
                     <Label text="Driver Name" visible="{= !!${gateOutModel>/selectedVehicle} }" />
                     <Text text="{= ${gateOutModel>/selectedVehicle/driverName} || '-' }" visible="{= !!${gateOutModel>/selectedVehicle} }" />
@@ -47,9 +51,9 @@
                     <ObjectStatus
                         text="{path: 'gateOutModel>/selectedVehicle/status', formatter: '.formatter.getStatusText'}"
                         state="{path: 'gateOutModel>/selectedVehicle/status', formatter: '.formatter.getStatusState'}"
+                        inverted="true"
                         visible="{= !!${gateOutModel>/selectedVehicle} }" />
 
-                    <!-- Main Gate Operator -->
                     <Label text="Main Gate Operator" required="true" />
                     <Input
                         id="inputGateOutOperator"
@@ -74,6 +78,7 @@
         <endButton>
             <Button
                 text="Cancel"
+                type="Transparent"
                 press=".onGateOutCancel" />
         </endButton>
     </Dialog>

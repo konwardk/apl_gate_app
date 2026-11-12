@@ -34,19 +34,33 @@ export default cds.service.impl(async function () {
     const ROLE_EXPANSIONS = {
         'maingate_user': ['maingate_user', 'MainGateUser'],
         'MainGateUser': ['maingate_user', 'MainGateUser'],
+        'MainGateRole': ['maingate_user', 'MainGateUser'],
+        'Gate_MainGate_Operator': ['maingate_user', 'MainGateUser'],
         'security_user': ['security_user', 'SecurityGateUser'],
         'SecurityGateUser': ['security_user', 'SecurityGateUser'],
+        'SecurityGateRole': ['security_user', 'SecurityGateUser'],
+        'Gate_Security_Officer': ['security_user', 'SecurityGateUser'],
         'weighbridge_user': ['weighbridge_user', 'WeighbridgeUser'],
         'WeighbridgeUser': ['weighbridge_user', 'WeighbridgeUser'],
+        'WeighbridgeRole': ['weighbridge_user', 'WeighbridgeUser'],
+        'Gate_Weighbridge_Operator': ['weighbridge_user', 'WeighbridgeUser'],
         'factory_user': ['factory_user', 'FactoryGateUser'],
         'FactoryGateUser': ['factory_user', 'FactoryGateUser'],
+        'FactoryGateRole': ['factory_user', 'FactoryGateUser'],
+        'Gate_Factory_Supervisor': ['factory_user', 'FactoryGateUser'],
         'audit_user': ['audit_user', 'Auditor', 'auditor_user'],
         'auditor_user': ['audit_user', 'Auditor', 'auditor_user'],
         'Auditor': ['audit_user', 'Auditor', 'auditor_user'],
+        'AuditorRole': ['audit_user', 'Auditor', 'auditor_user'],
+        'Gate_Auditor': ['audit_user', 'Auditor', 'auditor_user'],
         'superadmin_user': ['superadmin_user', 'Superadmin'],
         'Superadmin': ['superadmin_user', 'Superadmin'],
+        'SuperadminRole': ['superadmin_user', 'Superadmin'],
+        'Gate_Super_Administrator': ['superadmin_user', 'Superadmin'],
         'admin_user': ['admin_user', 'Admin'],
-        'Admin': ['admin_user', 'Admin']
+        'Admin': ['admin_user', 'Admin'],
+        'AdminRole': ['admin_user', 'Admin'],
+        'Gate_Administrator': ['admin_user', 'Admin']
     };
 
     const ROLE_NAMES = {
@@ -4564,61 +4578,130 @@ export default cds.service.impl(async function () {
      * ============================================================
      */
 
+    function normalizeGateRole(raw) {
+        if (!raw || typeof raw !== 'string') return null;
+        const s = raw.trim();
+        const clean = s.includes('.') ? s.split('.').pop() : s;
+        const lower = clean.toLowerCase();
+        const rawLower = s.toLowerCase();
+
+        if (rawLower.includes('super_admin') || rawLower.includes('superadmin') || lower === 'superadminrole' || lower === 'superadmin' || lower === 'superadmin_user') {
+            return 'Superadmin';
+        }
+        if (rawLower.includes('gate_administrator') || lower === 'adminrole' || lower === 'admin' || lower === 'admin_user') {
+            return 'Admin';
+        }
+        if (rawLower.includes('maingate') || rawLower.includes('main_gate') || lower === 'maingaterole') {
+            return 'MainGateUser';
+        }
+        if (rawLower.includes('security') || lower === 'securitygaterole') {
+            return 'SecurityGateUser';
+        }
+        if (rawLower.includes('weighbridge') || lower === 'weighbridgerole') {
+            return 'WeighbridgeUser';
+        }
+        if (rawLower.includes('factory') || lower === 'factorygaterole') {
+            return 'FactoryGateUser';
+        }
+        if (rawLower.includes('auditor') || rawLower.includes('audit') || lower === 'auditorrole') {
+            return 'Auditor';
+        }
+        return null;
+    }
+
     this.on('userInfo', async (req) => {
         let roles = [];
+        const rawRoleCandidates = [];
+
+        // 1. Direct role check via req.user.is()
         const checkRoles = [
-            'Superadmin',
-            'superadmin_user',
-            'Admin',
-            'admin_user',
-            'MainGateUser',
-            'maingate_user',
-            'SecurityGateUser',
-            'security_user',
-            'WeighbridgeUser',
-            'weighbridge_user',
-            'FactoryGateUser',
-            'factory_user',
-            'Auditor',
-            'audit_user',
-            'auditor_user'
+            'Superadmin', 'Admin', 'MainGateUser', 'SecurityGateUser',
+            'WeighbridgeUser', 'FactoryGateUser', 'Auditor',
+            'Gate_Super_Administrator', 'Gate_Administrator', 'Gate_MainGate_Operator',
+            'Gate_Security_Officer', 'Gate_Weighbridge_Operator', 'Gate_Factory_Supervisor', 'Gate_Auditor'
         ];
 
         if (typeof req.user?.is === 'function') {
-            for (const role of checkRoles) {
-                if (req.user.is(role)) {
-                    roles.push(role);
+            for (const r of checkRoles) {
+                if (req.user.is(r) || req.user.is(`$XSAPPNAME.${r}`)) {
+                    rawRoleCandidates.push(r);
                 }
             }
         }
 
+        // 2. req.user.roles (array or object)
         if (Array.isArray(req.user?.roles)) {
-            for (const r of req.user.roles) {
-                if (checkRoles.includes(r) && !roles.includes(r)) {
-                    roles.push(r);
+            rawRoleCandidates.push(...req.user.roles);
+        } else if (req.user?.roles && typeof req.user.roles === 'object') {
+            rawRoleCandidates.push(...Object.keys(req.user.roles));
+        }
+
+        // 3. req.user._roles
+        if (Array.isArray(req.user?._roles)) {
+            rawRoleCandidates.push(...req.user._roles);
+        }
+
+        // 4. req.user.scopes
+        if (Array.isArray(req.user?.scopes)) {
+            rawRoleCandidates.push(...req.user.scopes);
+        }
+
+        // 5. Attributes (xs.rolecollections / role collections assigned in BTP Cockpit)
+        const userAttrs = req.user?.attr || {};
+        const roleCollections = userAttrs['xs.rolecollections'] || userAttrs['rolecollections'] || userAttrs['xs.system.attributes']?.['xs.rolecollections'];
+        if (Array.isArray(roleCollections)) {
+            rawRoleCandidates.push(...roleCollections);
+        }
+
+        // 6. Token info / Auth info payload
+        try {
+            const tokenInfo = req.user?._tokenInfo || req.authInfo;
+            if (tokenInfo) {
+                if (typeof tokenInfo.getScopes === 'function') {
+                    const tokenScopes = tokenInfo.getScopes();
+                    if (Array.isArray(tokenScopes)) rawRoleCandidates.push(...tokenScopes);
+                }
+                if (typeof tokenInfo.getAttribute === 'function') {
+                    const rcAttr = tokenInfo.getAttribute('xs.rolecollections');
+                    if (Array.isArray(rcAttr)) rawRoleCandidates.push(...rcAttr);
+                }
+                if (typeof tokenInfo.getPayload === 'function') {
+                    const payload = tokenInfo.getPayload();
+                    if (Array.isArray(payload?.scope)) rawRoleCandidates.push(...payload.scope);
+                    const sysAttrs = payload?.['xs.system.attributes'];
+                    if (Array.isArray(sysAttrs?.['xs.rolecollections'])) {
+                        rawRoleCandidates.push(...sysAttrs['xs.rolecollections']);
+                    }
                 }
             }
-        } else if (req.user?.roles && typeof req.user.roles === 'object') {
-            for (const r of Object.keys(req.user.roles)) {
-                if (checkRoles.includes(r) && !roles.includes(r)) {
-                    roles.push(r);
-                }
+        } catch (_) {}
+
+        // Normalize all discovered candidates
+        for (const candidate of rawRoleCandidates) {
+            const norm = normalizeGateRole(candidate);
+            if (norm && !roles.includes(norm)) {
+                roles.push(norm);
             }
         }
 
         const username = req.user?.id ? req.user.id.toLowerCase() : '';
+        const userEmail = (req.user?.attr?.email || req.user?.id || '').toLowerCase();
         let userDb = null;
         let s4User = null;
 
-        if (username) {
+        if (username || userEmail) {
             try {
-                userDb = await SELECT.one.from(Users).where({ username: username });
+                userDb = await SELECT.one.from(Users).where({ username: username })
+                    .or({ email: userEmail })
+                    .or({ employeeId: username });
             } catch (_) {}
 
             try {
                 const s4UserCbo = await getS4CustomUserService();
                 s4User = await s4UserCbo.run(
                     SELECT.one.from(s4UserCbo.entities.CustomUser).where({ username: username })
+                ) || await s4UserCbo.run(
+                    SELECT.one.from(s4UserCbo.entities.CustomUser).where({ email: userEmail })
                 ) || await s4UserCbo.run(
                     SELECT.one.from(s4UserCbo.entities.CustomUser).where({ UserId: username })
                 );
@@ -4627,17 +4710,22 @@ export default cds.service.impl(async function () {
             if (roles.length === 0) {
                 if (s4User) {
                     const s4Roles = (s4User.assignedRoles || s4User.roleCode || '').split(',').map(r => r.trim()).filter(Boolean);
-                    roles.push(...s4Roles.filter(r => checkRoles.includes(r)));
+                    for (const r of s4Roles) {
+                        const norm = normalizeGateRole(r);
+                        if (norm && !roles.includes(norm)) roles.push(norm);
+                    }
                 } else if (userDb) {
                     if (userDb.assignedRoles) {
                         const dbRoles = userDb.assignedRoles.split(',').map(r => r.trim());
-                        roles.push(...dbRoles.filter(r => checkRoles.includes(r)));
+                        for (const r of dbRoles) {
+                            const norm = normalizeGateRole(r);
+                            if (norm && !roles.includes(norm)) roles.push(norm);
+                        }
                     }
                     const assigned = await SELECT.from(UserRoles).where({ user_ID: userDb.ID });
                     for (const a of assigned) {
-                        if (checkRoles.includes(a.roleCode) && !roles.includes(a.roleCode)) {
-                            roles.push(a.roleCode);
-                        }
+                        const norm = normalizeGateRole(a.roleCode);
+                        if (norm && !roles.includes(norm)) roles.push(norm);
                     }
                 }
             }

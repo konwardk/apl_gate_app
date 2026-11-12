@@ -17,19 +17,33 @@ sap.ui.define([
     const ROLE_TITLES = {
         "MainGateUser": "Main Gate Operator",
         "maingate_user": "Main Gate Operator",
+        "MainGateRole": "Main Gate Operator",
+        "Gate_MainGate_Operator": "Main Gate Operator",
         "SecurityGateUser": "Security Gate Officer",
         "security_user": "Security Gate Officer",
+        "SecurityGateRole": "Security Gate Officer",
+        "Gate_Security_Officer": "Security Gate Officer",
         "WeighbridgeUser": "Weighbridge Scale Operator",
         "weighbridge_user": "Weighbridge Scale Operator",
+        "WeighbridgeRole": "Weighbridge Scale Operator",
+        "Gate_Weighbridge_Operator": "Weighbridge Scale Operator",
         "FactoryGateUser": "Factory Yard Supervisor",
         "factory_user": "Factory Yard Supervisor",
+        "FactoryGateRole": "Factory Yard Supervisor",
+        "Gate_Factory_Supervisor": "Factory Yard Supervisor",
         "Admin": "Operations Administrator",
         "admin_user": "Operations Administrator",
+        "AdminRole": "Operations Administrator",
+        "Gate_Administrator": "Operations Administrator",
         "Superadmin": "System Superadministrator",
         "superadmin_user": "System Superadministrator",
+        "SuperadminRole": "System Superadministrator",
+        "Gate_Super_Administrator": "System Superadministrator",
         "Auditor": "Compliance Auditor",
         "audit_user": "Compliance Auditor",
-        "auditor_user": "Compliance Auditor"
+        "auditor_user": "Compliance Auditor",
+        "AuditorRole": "Compliance Auditor",
+        "Gate_Auditor": "Compliance Auditor"
     };
 
     const ROLE_ICONS = {
@@ -242,15 +256,16 @@ sap.ui.define([
 
         getPermissionsForUser: function (roles, username) {
             const aRoles = (roles || []).map(r => (r || "").trim());
+            const aLower = aRoles.map(r => r.toLowerCase());
             const u = (username || this.getActiveUser() || "").toLowerCase();
 
-            const isSuper = aRoles.includes("Superadmin") || aRoles.includes("superadmin_user") || aRoles.includes("superadmin") || u === "superadmin_user";
-            const isAdmin = aRoles.includes("Admin") || aRoles.includes("admin_user") || aRoles.includes("admin") || u === "admin_user";
-            const isMainGate = aRoles.includes("MainGateUser") || aRoles.includes("maingate_user") || u === "maingate_user";
-            const isSecurity = aRoles.includes("SecurityGateUser") || aRoles.includes("security_user") || u === "security_user";
-            const isWeighbridge = aRoles.includes("WeighbridgeUser") || aRoles.includes("weighbridge_user") || u === "weighbridge_user";
-            const isFactory = aRoles.includes("FactoryGateUser") || aRoles.includes("factory_user") || u === "factory_user";
-            const isAuditor = aRoles.includes("Auditor") || aRoles.includes("audit_user") || aRoles.includes("auditor_user") || u === "auditor_user";
+            const isSuper = aLower.some(r => r.includes("superadmin") || r.includes("super_admin")) || u === "superadmin_user";
+            const isAdmin = isSuper || aLower.some(r => r.includes("admin")) || u === "admin_user";
+            const isMainGate = isSuper || aLower.some(r => r.includes("maingate") || r.includes("main_gate")) || u === "maingate_user";
+            const isSecurity = isSuper || aLower.some(r => r.includes("security")) || u === "security_user";
+            const isWeighbridge = isSuper || aLower.some(r => r.includes("weighbridge")) || u === "weighbridge_user";
+            const isFactory = isSuper || aLower.some(r => r.includes("factory")) || u === "factory_user";
+            const isAuditor = isSuper || aLower.some(r => r.includes("audit")) || u === "auditor_user";
 
             // Determine primary role & assigned workspace screen & role dashboard tab
             let primaryRole = "Authenticated";
@@ -344,8 +359,10 @@ sap.ui.define([
             const savedRoles = savedInfo ? (savedInfo.roles || []) : [];
             const bAuth = !!(activeUser && (this.getAuthHeaderValue() || this.isXsuaaAuth()));
             const perms = bAuth ? this.getPermissionsForUser(savedRoles, activeUser) : this.getPermissionsForUser([], "");
+            const bIsLocal = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
 
             const oModel = new JSONModel({
+                isLocalMode: bIsLocal,
                 activeUser: activeUser,
                 userName: savedInfo?.name || activeUser || "",
                 userEmployeeId: savedInfo?.employeeId || "",

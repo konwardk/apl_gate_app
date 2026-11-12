@@ -51,19 +51,19 @@
 
                     <Label text="Vehicle Reg No" />
                     <HBox alignItems="Center">
-                        <Label
+                        <Text
                             text="{= ${facModel>/selectedVehicle/vehicleRegNo} || 'Select a vehicle above' }"
-                            design="Bold"
-                            class="sapUiTinyMarginEnd" />
+                            class="fiori-text-strong sapUiTinyMarginEnd" />
                         <ObjectStatus
                             text="{path: 'facModel>/selectedVehicle/status', formatter: '.formatter.getStatusText'}"
-                            state="{path: 'facModel>/selectedVehicle/status', formatter: '.formatter.getStatusState'}" />
+                            state="{path: 'facModel>/selectedVehicle/status', formatter: '.formatter.getStatusState'}"
+                            inverted="true" />
                     </HBox>
 
                     <Label text="Driver &amp; Transporter" />
                     <VBox>
-                        <Text text="{= ${facModel>/selectedVehicle/driverName} ? ${facModel>/selectedVehicle/driverName} + ' (' + (${facModel>/selectedVehicle/vehicleType} || 'TRUCK') + ')' : '-' }" design="Bold" />
-                        <Text text="{= ${facModel>/form/transporterName} || ${facModel>/selectedVehicle/transporter/transporterName} || '-' }" class="sapUiTinyMarginTop" />
+                        <Text text="{= ${facModel>/selectedVehicle/driverName} ? ${facModel>/selectedVehicle/driverName} + ' (' + (${facModel>/selectedVehicle/vehicleType} || 'TRUCK') + ')' : '-' }" class="fiori-text-strong" />
+                        <Text text="{= ${facModel>/form/transporterName} || ${facModel>/selectedVehicle/transporter/transporterName} || '-' }" class="sapUiTinyMarginTop text-muted" />
                     </VBox>
 
                     <Label text="Consignment PO" />
@@ -73,9 +73,8 @@
                     <HBox alignItems="Center">
                         <Text
                             text="{path: 'facModel>/form/factoryGateInDateTime', formatter: '.formatter.formatDateTime'}"
-                            design="Bold"
-                            class="sapUiTinyMarginEnd" />
-                        <Text text="{= ${facModel>/form/factoryGateInOperator} ? '(Operator: ' + ${facModel>/form/factoryGateInOperator} + ')' : '' }" />
+                            class="fiori-text-strong sapUiTinyMarginEnd" />
+                        <Text text="{= ${facModel>/form/factoryGateInOperator} ? '(Operator: ' + ${facModel>/form/factoryGateInOperator} + ')' : '' }" class="text-muted" />
                     </HBox>
 
                     <Label text="Factory Yard Area / Bay" />
@@ -181,17 +180,19 @@
                 </form:content>
             </form:SimpleForm>
         </content>
-        <buttons>
+        <beginButton>
             <Button
                 id="btnConfirmFactoryGateOut"
                 text="Confirm Factory Gate OUT"
                 icon="sap-icon://log-out"
                 type="Success"
                 press=".onConfirmFactoryGateOut" />
+        </beginButton>
+        <endButton>
             <Button
                 text="Cancel"
                 type="Transparent"
                 press=".onCancelFactoryGateOut" />
-        </buttons>
+        </endButton>
     </Dialog>
 </core:FragmentDefinition>

@@ -5,7 +5,7 @@
     xmlns:core="sap.ui.core"
     displayBlock="true"
     height="100%">
-    <Page showHeader="false" enableScrolling="true" class="login-page-container">
+    <Page showHeader="false" enableScrolling="true" visible="{/isLocalMode}" class="login-page-container">
         <VBox alignItems="Center" justifyContent="Center" class="login-wrapper sapUiMediumMarginTop sapUiMediumMarginBottom">
 
             <!-- Brand Header -->
@@ -51,29 +51,30 @@
 
                 <!-- Login Form -->
                 <VBox class="sapUiSmallMarginTop">
-                    <Label text="Username / User ID" required="true" labelFor="idLoginUsernameInput" class="login-field-label" />
+                    <Label text="Username / BTP User ID" required="true" labelFor="idLoginUsernameInput" class="login-field-label" />
                     <Input
                         id="idLoginUsernameInput"
                         value="{/loginUsername}"
-                        placeholder="Enter username (e.g. superadmin_user or SAP User ID)"
+                        placeholder="Enter BTP User ID or corporate email (e.g. user@company.com)"
                         width="100%"
                         liveChange=".onLoginUsernameInputLiveChange"
                         submit=".onLoginUsernameInputSubmit"
                         editable="{= !${/isLoginBusy} }"
                         class="sapUiTinyMarginBottom" />
 
-                    <Label text="Password" required="true" labelFor="idLoginPasswordInput" class="login-field-label sapUiSmallMarginTop" />
+                    <Label text="Password (Optional for BTP SSO)" labelFor="idLoginPasswordInput" class="login-field-label sapUiSmallMarginTop" />
                     <Input
                         id="idLoginPasswordInput"
                         type="Password"
                         value="{/loginPassword}"
-                        placeholder="Enter password"
+                        placeholder="Enter password (for local / direct sign-in)"
                         width="100%"
                         liveChange=".onLoginPasswordInputLiveChange"
                         submit=".onLoginPasswordInputSubmit"
                         editable="{= !${/isLoginBusy} }"
                         class="sapUiMediumMarginBottom" />
 
+                    <!-- Primary BTP / Workspace Sign In Button -->
                     <Button
                         id="idSignInToWorkspaceButton"
                         text="Sign In to Workspace"
@@ -82,7 +83,17 @@
                         press=".onSignInToWorkspaceButtonPress"
                         enabled="{= !${/isLoginBusy} }"
                         width="100%"
-                        class="login-submit-btn" />
+                        class="login-submit-btn sapUiSmallMarginBottom" />
+
+                    <!-- Quick Direct BTP SSO Button -->
+                    <Button
+                        id="idSignInBtpButton"
+                        text="Sign In with SAP BTP Account"
+                        icon="sap-icon://account"
+                        type="Default"
+                        press=".onSignInBtpButtonPress"
+                        enabled="{= !${/isLoginBusy} }"
+                        width="100%" />
                 </VBox>
             </VBox>
 

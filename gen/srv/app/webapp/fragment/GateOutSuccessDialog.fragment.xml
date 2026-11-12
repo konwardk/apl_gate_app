@@ -6,27 +6,30 @@
         title="Gate OUT Exit Completed"
         type="Message"
         state="Success"
-        contentWidth="440px">
+        contentWidth="440px"
+        class="sapUiContentPadding">
         <content>
-            <VBox alignItems="Center">
+            <VBox alignItems="Center" class="sapUiSmallMargin">
                 <Title
                     text="{gateOutSuccess>/gateInNumber}"
                     level="H1"
                     titleStyle="H1"
-                    class="sapUiSmallMarginTop success-gate-number" />
+                    class="sapUiTinyMarginTop success-gate-number" />
                 <ObjectStatus
                     text="Status: Exit (Authorized)"
                     state="Success"
+                    inverted="true"
                     class="sapUiSmallMarginTop sapUiSmallMarginBottom" />
                 <Text
                     text="Vehicle {gateOutSuccess>/vehicleRegNo} has cleared the Main Gate and exited factory premises."
+                    textAlign="Center"
                     class="sapUiSmallMarginTop" />
                 <ObjectStatus
                     text="{= 'Main Gate Operator: ' + (${gateOutSuccess>/gateOutOperator} || '-') }"
                     state="Information"
                     icon="sap-icon://person-placeholder"
                     visible="{= !!${gateOutSuccess>/gateOutOperator} }"
-                    class="sapUiTinyMarginTop" />
+                    class="sapUiSmallMarginTop" />
             </VBox>
         </content>
         <beginButton>

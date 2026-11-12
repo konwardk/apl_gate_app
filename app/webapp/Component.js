@@ -120,9 +120,20 @@ sap.ui.define([
             const oModel = this.getModel();
             const bAuth = oModel ? oModel.getProperty("/isAuthenticated") : false;
 
+            const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+
             // Authentication & Authorization Route Guard
+            if (!isLocal && sPageId === "loginPage") {
+                window.location.replace("/index.html");
+                return;
+            }
             if (!bAuth && sPageId !== "loginPage") {
-                sPageId = "loginPage";
+                if (isLocal) {
+                    sPageId = "loginPage";
+                } else {
+                    window.location.replace("/index.html");
+                    return;
+                }
             } else if (bAuth) {
                 if (sPageId === "userManagementPage" && !oModel.getProperty("/canManageUsers")) {
                     MessageBox.warning("Access Denied: Only Superadmin has authorization to manage user accounts and system roles.");
@@ -610,7 +621,26 @@ sap.ui.define([
         },
 
         handleSignOut: function () {
+            const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
             const wasXsuaa = models.isXsuaaAuth();
+
+            if (wasXsuaa || !isLocal) {
+                const oRoot = this.getRootControl();
+                if (oRoot) {
+                    if (oRoot.setBusyIndicatorDelay) {
+                        oRoot.setBusyIndicatorDelay(0);
+                    }
+                    if (oRoot.setBusy) {
+                        oRoot.setBusy(true);
+                    }
+                }
+                models.clearSession();
+                // In BTP Cloud Foundry with Approuter, redirecting to /logout clears the session cookie
+                // and redirects to the SAP BTP Sign In page without showing the local custom login view
+                window.location.replace("/logout");
+                return;
+            }
+
             const oModel = this.getModel();
             models.clearSession();
 
@@ -673,13 +703,7 @@ sap.ui.define([
                 USERS: 0
             });
 
-            if (wasXsuaa) {
-                // In BTP Cloud Foundry with Approuter, redirecting to /logout clears the session cookie
-                window.location.replace("/logout");
-                return;
-            }
-
-            // Navigate to login page
+            // Navigate to local login page (local dev only)
             this.navigateTo("loginPage", "slide");
             MessageToast.show("You have signed out successfully.");
         },
@@ -702,13 +726,6 @@ sap.ui.define([
             this._pProfilePopover.then(function (oPopover) {
                 oPopover.openBy(oSource);
             });
-        },
-
-        onSwitchUserPress: function () {
-            if (this._pProfilePopover) {
-                this._pProfilePopover.then(oPopover => oPopover.close());
-            }
-            this.handleSignOut();
         },
 
         onSignOutPress: function () {

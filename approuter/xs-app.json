@@ -28,12 +28,6 @@
       "csrfProtection": false
     },
     {
-      "source": "^/user-api/currentUser$",
-      "target": "$1",
-      "service": "user-container",
-      "authenticationType": "xsuaa"
-    },
-    {
       "source": "^/gate-entry/webapp/(.*)$",
       "target": "/gate-entry/webapp/$1",
       "localDir": "resources",

@@ -41,13 +41,35 @@ if (fs.existsSync(gateEntrySrc)) {
     console.log('[BUILD] Copied app/gate-entry -> approuter/resources/gate-entry');
 }
 
-// 3. Sync app directory into gen/srv/app for backend Express static fallback
-const genSrvAppDir = path.join(rootDir, 'gen', 'srv', 'app');
-console.log(`[BUILD] Syncing app directory to: ${genSrvAppDir}`);
-fs.mkdirSync(genSrvAppDir, { recursive: true });
-fs.cpSync(path.join(rootDir, 'app'), genSrvAppDir, { recursive: true });
+// 3. Ensure external CSN models are present in gen/srv/srv/external for cds.connect.to
+const srvExternalSrc = path.join(rootDir, 'srv', 'external');
+const srvExternalDest = path.join(rootDir, 'gen', 'srv', 'srv', 'external');
+if (fs.existsSync(srvExternalSrc)) {
+    fs.mkdirSync(srvExternalDest, { recursive: true });
+    for (const f of fs.readdirSync(srvExternalSrc)) {
+        if (f.endsWith('.csn')) {
+            fs.copyFileSync(path.join(srvExternalSrc, f), path.join(srvExternalDest, f));
+        }
+    }
+    console.log('[BUILD] Copied external CSN models into gen/srv/srv/external');
+}
 
-// 4. Ensure gen/db/package.json has valid engines configuration for Cloud Foundry HDI buildpack
+// 4. Sync static frontend assets into gen/srv/app for backend Express static fallback (excluding raw .cds files)
+const genSrvAppDir = path.join(rootDir, 'gen', 'srv', 'app');
+console.log(`[BUILD] Syncing static app directory to: ${genSrvAppDir}`);
+if (fs.existsSync(genSrvAppDir)) {
+    fs.rmSync(genSrvAppDir, { recursive: true, force: true });
+}
+fs.mkdirSync(genSrvAppDir, { recursive: true });
+if (fs.existsSync(webappSrc)) {
+    fs.cpSync(webappSrc, path.join(genSrvAppDir, 'webapp'), { recursive: true });
+}
+if (fs.existsSync(gateEntrySrc)) {
+    fs.cpSync(gateEntrySrc, path.join(genSrvAppDir, 'gate-entry'), { recursive: true });
+}
+console.log('[BUILD] Copied static webapp and gate-entry to gen/srv/app (excluding raw .cds files)');
+
+// 5. Ensure gen/db/package.json has valid engines configuration for Cloud Foundry HDI buildpack
 const genDbPkgPath = path.join(rootDir, 'gen', 'db', 'package.json');
 if (fs.existsSync(genDbPkgPath)) {
     const dbPkg = JSON.parse(fs.readFileSync(genDbPkgPath, 'utf8'));
