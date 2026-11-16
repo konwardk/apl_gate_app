@@ -35,7 +35,7 @@ sap.ui.define([
         },
 
         onOpenGateOut: function () {
-            this.getOwnerComponent().openGateOutDialog();
+            this.getOwnerComponent().openGateOutDialog(null);
         },
 
         onRowGateInPress: function (oEvt) {

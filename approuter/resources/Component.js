@@ -1056,7 +1056,11 @@ sap.ui.define([
         // ============================================================
         // Dialog: Gate OUT
         // ============================================================
-        openGateOutDialog: function (targetTx) {
+        /**
+         * Opens the Gate OUT exit clearance dialog.
+         * @param {object} [targetTx=null] Optional transaction object when triggered from a table row.
+         */
+        openGateOutDialog: function (targetTx = null) {
             let eligible = (this._rawTransactions || []).filter(tx => tx.status !== "COMPLETED" && tx.status !== "CANCELLED");
 
             if (eligible.length === 0) {
